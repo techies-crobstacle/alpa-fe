@@ -1,0 +1,47 @@
+"use client";
+import React, { memo } from "react";
+
+export default memo(function Page() {
+  return (
+    <div className="bg-[#f3e9dd] p-4">
+
+      {/* HERO SECTION */}
+      <div className="relative min-h-[70vh]  rounded-2xl overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
+
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/50"></div>
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center py-60 justify-center  text-white text-center px-4">
+          <h1 className="text-5xl font-bold mb-2">Disclaimer</h1>
+          <p className="text-1xl">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. 
+            Facilis excepturi sed ab aut tempora vitae.
+          </p>
+        </div>
+
+      </div>
+
+      {/* CONTENT SECTION */}
+      <div className="min-h-screen px-20 mx-auto py-10">
+        <h2 className="font-bold text-3xl mb-4">Disclaimer</h2>
+
+        <p className="mb-4">
+          Lorem ipsum dolor sit, amet consectetur adipisicing elit. 
+          Mollitia laborum laboriosam vero eaque. Corporis ipsam omnis asperiores sint rem? Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsum atque ea iure saepe nobis accusamus magnam sint magni doloribus at! Quasi amet similique neque sunt ad laboriosam ipsam qui, quaerat aperiam nulla ab odio sequi nemo velit explicabo temporibus adipisci veniam voluptates sed quas? Magni, dolores. Ex molestias dolorem quo, magni unde, voluptatum doloremque ab, praesentium aliquam dicta atque reiciendis autem suscipit incidunt odio! Perferendis, iste voluptates est, quia cupiditate porro in veritatis iure neque voluptate odio! Vitae natus sapiente corporis voluptatibus rerum neque itaque, consequatur excepturi suscipit! Laborum nesciunt deleniti, ut voluptatum quas pariatur doloribus nihil itaque iure error.
+        </p>
+
+        <p className="mb-4">
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. 
+          Ad autem earum eligendi excepturi fugit voluptates dignissimos.
+        </p>
+
+        <p>
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. 
+          Labore deleniti totam sunt in illo itaque sed neque perferendis.
+        </p>
+      </div>
+
+    </div>
+  );
+});
