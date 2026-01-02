@@ -10,3 +10,8 @@ const page = () => {
 }
 
 export default page
+
+
+//  nabar size and hover effect {border}
+// tertimonial  fix size 
+//  sTart home page

@@ -6,20 +6,16 @@ export default memo(function Page() {
     <div className="bg-[#f3e9dd] p-4">
 
       {/* HERO SECTION */}
-      <div className="relative min-h-[70vh]  rounded-2xl overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
-
-        {/* Overlay */}
+      <div className="relative min-h-[70vh] rounded-2xl overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
         <div className="absolute inset-0 bg-black/50"></div>
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col items-center py-60 justify-center  text-white text-center px-4">
+        <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-4 py-60 ">
           <h1 className="text-5xl font-bold mb-2">Disclaimer</h1>
-          <p className="text-1xl">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. 
+          <p className="text-lg max-w-2xl">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit.
             Facilis excepturi sed ab aut tempora vitae.
           </p>
         </div>
-
       </div>
 
       {/* CONTENT SECTION */}
