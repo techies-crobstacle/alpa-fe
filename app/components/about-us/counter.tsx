@@ -76,8 +76,8 @@ export default function Counter({ end, suffix = "" }: CounterProps) {
       : count;
 
   return (
-    <h1 className="font-bold text-4xl mb-1">
+    <div className="font-bold text-4xl mb-1">
       {display}
-    </h1>
+    </div>
   );
 }

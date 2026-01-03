@@ -16,17 +16,11 @@ export default function Testimonials() {
   const GAP = 32;
   const TOTAL_WIDTH = cards.length * (CARD_WIDTH + GAP);
 
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState<number>(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setOffset((prev) => {
-        // reset when half (original set) is crossed
-        if (prev >= TOTAL_WIDTH) {
-          return 0;
-        }
-        return prev + 1;
-      });
+      setOffset((prev) => (prev >= TOTAL_WIDTH ? 0 : prev + 1));
     }, 20);
 
     return () => clearInterval(timer);
@@ -36,14 +30,12 @@ export default function Testimonials() {
     <div className="overflow-hidden w-full">
       <div
         className="flex gap-8"
-        style={{
-          transform: `translateX(-${offset}px)`,
-        }}
+        style={{ transform: `translateX(-${offset}px)` }}
       >
         {[...cards, ...cards].map((card, i) => (
           <div
             key={i}
-            className={`w-85 h-65 shrink-0 rounded-3xl p-8 shadow-xl ${card.bg}`}
+            className={`w-100 h-60 shrink-0 rounded-3xl p-8 shadow-xl ${card.bg}`} // cards size
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 rounded-full bg-white/80"></div>

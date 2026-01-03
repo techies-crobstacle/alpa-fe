@@ -110,7 +110,7 @@ export default function Page() {
           </h1>
           <p className="  z-30 w-160 text-center items-center justify-center">Lorem ipsum dolor sit amet consectetur adipisicing elit. Reiciendis tenetur quam voluptatibus numquam inventore officiis quibusdam, nesciunt sit optio quidem !</p>
 
-          <button className="z-30 px-10 py-2 rounded-4xl bg-[#E7D0B0]">Explore more</button>
+          <button className="z-30 px-16 py-1.5 rounded-4xl bg-[#d3b994] text-[#582419]">Explore Marketplace</button>
         </div>
       </section>
     </>
