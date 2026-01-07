@@ -28,7 +28,9 @@ export default function RootLayout({
         {/* PAGE CONTENT */}
         {children}
 
-        <Footer/>
+        <div>
+          { !hideNavbar && <Footer/>}
+        </div>
 
       </body>
     </html>
