@@ -15,7 +15,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   return (
     <div className="bg-amber-50 p-4 rounded-xl flex flex-col h-full">
-      <div className="relative w-full h-80 mb-3">
+      <div className="relative w-full h-80 mb-5">
         <Image
           src={photo}
           alt={name}
@@ -24,9 +24,10 @@ export default function ProductCard({
         />
       </div>
 
-      <h1 className="font-bold text-lg">{name}</h1>
-      <p className="text-sm text-gray-700 grow">{description}</p>
+      <h1 className="font-bold text-lg mb-2">{name}</h1>
+      <p className="text-sm text-gray-700 grow mb-5 ">{description}</p>
       <h1 className="font-black text-2xl">{amount} AUD</h1>
+      
     </div>
   );
 }

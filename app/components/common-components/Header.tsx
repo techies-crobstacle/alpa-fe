@@ -16,12 +16,14 @@ const NAV_LINKS = [
 export default function Header() {
   const pathname = usePathname();
 
-  const isActive = (href) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <div className="mx-auto rounded-full bg-[#EAD7B7] px-6 py-3 flex items-center justify-between shadow-lg">
-      
       {/* Logo */}
       <Link href="/" className="font-bold">
         <Image

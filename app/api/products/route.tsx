@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const products = Array.from({ length: 1000 }, (_, i) => ({
+  const products = Array.from({ length: 9 }, (_, i) => ({
     id: i + 1,
     photo: `/images/temp/${(i % 3) + 1}.jpg`,
     name: `Product ${i + 1}`,
@@ -11,3 +11,5 @@ export async function GET() {
 
   return NextResponse.json(products);
 }
+
+

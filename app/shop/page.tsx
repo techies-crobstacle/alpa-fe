@@ -4,9 +4,17 @@ import Image from "next/image";
 import { HiOutlineViewGrid, HiOutlineViewList } from "react-icons/hi";
 import ProductCard from "../components/cards/productCard";
 
+type Product = {
+  id: number;
+  photo: string;
+  name: string;
+  description: string;
+  amount: string;
+};
+
 export default function Page() {
   const [view, setView] = useState("grid");
-  const [products, setProducts] = useState([]);
+ const [products, setProducts] = useState<Product[]>([]);
 
   // for Products Images, with descriptions
   useEffect(() => {
@@ -144,6 +152,7 @@ export default function Page() {
             {products.map((product) => (
               <ProductCard key={product.id} {...product} />
             ))}
+            <h1>Hello</h1>
           </div>
         </section>
       </section>
