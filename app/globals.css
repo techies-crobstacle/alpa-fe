@@ -78,7 +78,7 @@ html {
 .animated-underline.bold::after { --line-thickness: 4px; }
 
 /* Animation styles */
-.animated-underline.slow { --animation-duration: 1.2s; }
+.animated-underline.slow { --animation-duration: 1.0s; }
 .animated-underline.fast { --animation-duration: 0.3s; }
 .animated-underline.delayed { --animation-delay: 0.2s; }
 
@@ -171,4 +171,20 @@ html {
     animation: none !important;
   }
 }
+
+/* Active Navbar Link */
+.animated-underline.active {
+  font-weight: 600;
+  text-underline-offset: var(--line-color);
+}
+
+.animated-underline.active::after {
+  width: 100%;
+}
+
 /* ________________________________________________________ */
+
+
+.underline-text {
+  text-decoration: underline;
+}

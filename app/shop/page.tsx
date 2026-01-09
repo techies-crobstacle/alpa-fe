@@ -1,10 +1,22 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import { HiOutlineViewGrid, HiOutlineViewList } from "react-icons/hi";
+import ProductCard from "../components/cards/productCard";
 
 export default function Page() {
+  const [view, setView] = useState("grid");
+  const [products, setProducts] = useState([]);
+
+  // for Products Images, with descriptions
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then(setProducts);
+  }, []);
+
   return (
     <section className="bg-[#EBE3D5]">
-
       {/* HERO SECTION */}
       <section>
         <div className="relative min-h-[35vh] bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center m-1 rounded-2xl overflow-hidden">
@@ -14,8 +26,7 @@ export default function Page() {
             <h1 className="text-6xl font-bold -mb-4">Shop</h1>
             <svg className="mt-6 w-full h-6 mb-8" viewBox="0 1 400 30">
               <path
-               d="M5 20 C80 10, 160 30, 240 22 C300 15, 350 25, 395 20"
-
+                d="M5 20 C80 10, 160 30, 240 22 C300 15, 350 25, 395 20"
                 stroke="#000"
                 strokeWidth="6"
                 strokeLinecap="round"
@@ -27,7 +38,6 @@ export default function Page() {
 
       {/* MAIN SHOP LAYOUT */}
       <section className="max-w-378 mx-auto px-20 py-10 flex gap-8">
-
         {/* LEFT SIDEBAR */}
         <aside className="w-65 shrink-0">
           <h2 className="font-semibold mb-4">Filters:</h2>
@@ -41,9 +51,13 @@ export default function Page() {
             </div>
 
             {["Nike", "Adidas", "Zara", "Puma"].map((b) => (
-              <div key={b} className="flex justify-between text-sm mb-2">
-                <label className="flex gap-2">
-                  <input type="checkbox" /> {b}
+              <div key={b} className="flex justify-between text-lg mb-2">
+                <label className="flex gap-5 items-center ">
+                  <input
+                    type="checkbox"
+                    className="accent-[#441208] scale-200"
+                  />
+                  {b}
                 </label>
                 <span className="opacity-60">32</span>
               </div>
@@ -57,55 +71,107 @@ export default function Page() {
 
         {/* RIGHT CONTENT */}
         <section className="flex-1">
+          <div className="mb-5">
+            <h1>
+              Showing {1} out {9} of Product
+            </h1>
+          </div>
+          {/* Active Filter Se */}
+          <div className="flex items-center justify-between py-4">
+            {/* Left: Active Filters */}
+            <div className="flex items-center gap-6">
+              <h1 className="font-bold">Active Filters:</h1>
 
-          {/* TOP BAR */}
-          <div className="flex justify-between items-center mb-8">
-            <p className="text-sm opacity-70">
-              Showing 9 out of 18 Products
-            </p>
+              <div className="bg-[#6F433A] text-white px-4 py-1 rounded flex items-center gap-3">
+                Brand
+                <button className="font-bold">×</button>
+              </div>
 
-            <div className="flex gap-4 text-sm items-center">
-              <span className="bg-[#6B4A3E] text-white px-3 py-1 rounded-full">
-                Brand ×
-              </span>
-              <span className="bg-[#6B4A3E] text-white px-3 py-1 rounded-full">
-                Men ×
-              </span>
-              <span className="underline cursor-pointer">Clear All</span>
+              <div className="bg-[#6F433A] text-white px-4 py-1 rounded flex items-center gap-3">
+                Men
+                <button className="font-bold">×</button>
+              </div>
+
+              <button className="underline text-sm text-gray-700 hover:text-black">
+                Clear All
+              </button>
+            </div>
+
+            {/* Right: Sorting */}
+
+            <div className="flex gap-5">
+              <select
+                // value={sort}
+                // onChange={(e) => setSort(e.target.value)}
+                className="py-2"
+              >
+                <option value="">Default sorting</option>
+                <option value="popularity">Sort by popularity</option>
+                <option value="rating">Sort by average rating</option>
+                <option value="latest">Sort by latest</option>
+                <option value="price-low-high">
+                  Sort by price: low to high
+                </option>
+                <option value="price-high-low">
+                  Sort by price: high to low
+                </option>
+              </select>
+              <div className="flex gap-4">
+                <button
+                  // onClick={() => setView("grid")}
+                  className={`p-2  rounded ${
+                    view === "grid" ? "border-black" : "border-gray-400"
+                  }`}
+                >
+                  <HiOutlineViewGrid size={20} />
+                </button>
+
+                <button
+                  // onClick={() => setView("list")}
+                  className={`p-2 border rounded ${
+                    view === "list" ? "border-black" : "border-gray-400"
+                  }`}
+                >
+                  <HiOutlineViewList size={20} />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* PRODUCTS GRID */}
-          <div className="grid grid-cols-3 gap-8">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl p-4 flex flex-col"
-              >
-                <div className="h-90 bg-gray-200 rounded-xl mb-4" />
-                <h3 className="font-semibold mb-1">Product Title</h3>
-                <p className="text-sm opacity-70 mb-4">
-                  Lorem Ipsum is dummy text.
-                </p>
-                <div className="mt-auto flex justify-between items-center">
-                  <span className="font-semibold text-[#6B2C1A]">
-                    29.99 AUD
-                  </span>
-                  <div className="flex gap-2">
-                    <button className="w-9 h-9 bg-[#3B0F06] text-white rounded-full">
-                      <span className="w-10">♥</span>
-                    </button>
-                    <button className="w-9 h-9 bg-[#3B0F06] text-white rounded-full">
-                      🛒
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {/* Product Carts  */}
+          {/* 1 row ________________________________________API__________________________________________________*/}
+          <div className="grid grid-cols-3 gap-3">
+            {products.map((product) => (
+              <ProductCard key={product.id} {...product} />
             ))}
           </div>
-
         </section>
       </section>
     </section>
   );
 }
+
+<div className="grid grid-cols-3 gap-3 items-stretch">
+  {/* Column 1 */}
+  <div className="bg-amber-50 p-4 rounded-xl flex flex-col h-full">
+    {/* Image */}
+    <div className="relative w-full h-80 mb-3">
+      <Image
+        src="/images/temp/1.jpg"
+        alt="Nike Jordan"
+        fill
+        className="object-cover rounded-lg"
+      />
+    </div>
+    {/* Title */}
+    <h1 className="font-bold text-lg mb-1">Nike Jordan</h1>
+    {/* Description */}
+    <p className="text-sm text-gray-700 grow">
+      Nike Jordan is famous because of basketball legend Michael Jordan's
+      partnership with Nike, which started in 1984.
+    </p>
+    <div className="flex flex-row">
+      <h1 className="font-black text-2xl">29.00 AUD</h1>
+    </div>
+  </div>
+</div>;
