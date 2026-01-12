@@ -5,32 +5,19 @@ import Counter from "../components/about-us/counter";
 
 export default function Page() {
   return (
-    <>
+    <section className="bg-[#f3e9dd] p-4">
       {/* HERO SECTION */}
-      <section>
-        <div className="relative min-h-[70vh] overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
-          <div className="absolute inset-0 bg-black/60"></div>
+      <div className="relative min-h-[70vh] rounded-2xl overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
+        <div className="absolute inset-0 bg-black/50"></div>
 
-          <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-4 py-60 ">
-            <h1 className="text-6xl font-bold -mb-4">About Us</h1>
-             <svg className="mt-6 w-full h-6 mb-8" viewBox="0 1 400 30" fill="none">
-            <path
-              d="M5 15 C60 5, 120 10, 180 30 C240 5, 300 25, 395 15"
-              stroke="#000"
-              strokeWidth="6"
-              strokeLinecap="round"
-            />
-          </svg>
-            <p className="text-sm max-w-2xl">
-              Lorem ipsum dolor, sit amet consectetur adipisicing elit. Ratione
-              aspernatur assumenda asperiores, vitae corrupti minus voluptates
-              placeat recusandae error velit rem eum vel similique iure odit.
-              Libero doloremque pariatur perspiciatis expedita maxime adipisci
-              placeat ipsum, esse ducimus aut laboriosam rem.
-            </p>
-          </div>
+        <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-4 py-60 ">
+          <h1 className="text-5xl font-bold mb-2">About us</h1>
+          <p className="text-lg max-w-2xl">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit.
+            Facilis excepturi sed ab aut tempora vitae.
+          </p>
         </div>
-      </section>
+      </div>
 
       {/* Photo section with content */}
       <section className="bg-[#ebe2d5]">
@@ -175,6 +162,6 @@ export default function Page() {
       </section>
       {/* Empty Section */}
       <section className="h-screen"></section>
-    </>
+    </section>
   );
 }
