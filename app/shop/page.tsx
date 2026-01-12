@@ -125,11 +125,11 @@ export default function Page() {
   );
 
   return (
-    <section className="bg-[#EBE3D5]">
+    <section className="bg-[#EBE3D5] p-2">
       {/* HERO SECTION */}{" "}
       <section>
         {" "}
-        <div className="relative min-h-[35vh] bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center m-1 rounded-2xl overflow-hidden">
+        <div className="relative min-h-[35vh] bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center  rounded-2xl overflow-hidden">
           {" "}
           <div className="absolute inset-0 bg-black/30" />{" "}
           <div className="relative z-10 flex flex-col items-center justify-center text-white text-center py-40">
@@ -201,7 +201,7 @@ export default function Page() {
             {["T-Shirt", "Shirt", "SweatShirt", "Hoodies"].map((c) => (
               <label
                 key={c}
-                className="flex justify-between items-center text-lg mb-2"
+                className="flex justify-between items-center text-md mb-2"
               >
                 <span className="flex gap-4 items-center">
                   <input

@@ -10,7 +10,7 @@ const Page = () => {
           <div className="absolute inset-0 bg-amber-900/30"></div>
           <div className="absolute inset-0 bg-black/30"></div>
 
-          <div className="relative z-10 flex flex-col text-white px-6 py-32 md:px-24 md:py-44">
+          <div className="relative z-10 flex flex-col text-white px-6 py-32 md:px-24 md:py-60">
             <h1 className="text-4xl font-bold mb-2">Discover the Spirit of</h1>
             <h1 className="text-4xl font-bold mb-8 text-amber-100">
               Arnhem Land
