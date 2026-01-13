@@ -5,7 +5,7 @@ interface ProductCardProps {
   photo: string;
   name: string;
   description: string;
-  amount: string;
+  amount: number;
 }
 
 export default function ProductCard({
