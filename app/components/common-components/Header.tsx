@@ -457,7 +457,7 @@ export default function Header() {
                 <>
                   {/* Outer Pulse Effect - Only pulse when cart is closed */}
                   {!cartOpen && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full animate-ping opacity-75 p-8" />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full animate-ping opacity-75 p-8" />
                   )}
                   {/* Badge */}
                   <span className={`absolute -top-1 -right-1 h-5 w-5 text-xs flex items-center justify-center bg-linear-to-br from-red-500 to-red-600 text-white rounded-full font-bold shadow-sm transition-transform duration-300 ${

@@ -20,7 +20,7 @@ export default function Page() {
       </div>
 
       {/* Photo section with content */}
-      <section className="bg-[#ebe2d5]">
+      <section className="bg-[#F4E9DC] max-w-screen-2xl mx-auto">
         {/* CONTENT SECTION */}
         <div className=" gap-20 pt-20 px-6 md:px-16">
           {/* Content section 1.0 */}
@@ -43,7 +43,7 @@ export default function Page() {
       </section>
 
       {/* Challenges Section */}
-      <section className="flex items-start px-24 py-15 gap-32">
+      <section className="flex items-start px-24 py-15 gap-32 max-w-screen-2xl mx-auto">
         {/* LEFT CONTENT */}
         <div className="w-1/2">
           <p className="text-sm mb-6">The Challenge</p>
@@ -70,7 +70,7 @@ export default function Page() {
       <hr />
 
       {/* statistics Sections  */}
-      <section className="flex items-start px-24 py-28 gap-32">
+      <section className="flex items-start px-24 py-28 gap-32 max-w-screen-2xl mx-auto">
         <div className="w-1/4">
           <h1 className="font-bold text-4xl mb-1">
             <Counter end={8000} suffix="+" />
@@ -118,7 +118,7 @@ export default function Page() {
       </section>
 
       {/* Last Section */}
-      <section className="flex flex-row justify-center items-center gap-30 bg-[#F2F2F2]">
+      <section className="flex flex-row justify-center items-center gap-30 bg-[#F2F2F2] max-w-screen-2xl mx-auto">
         {/* LEFT CONTENT */}
         <div className="w-1/2 p-10">
           <div className="font-serif">

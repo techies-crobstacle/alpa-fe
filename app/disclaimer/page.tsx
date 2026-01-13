@@ -3,7 +3,7 @@ import React, { memo } from "react";
 
 export default memo(function Page() {
   return (
-    <div className="bg-[#f3e9dd] p-4">
+    <div className="bg-[#f3e9dd] p-5">
 
       {/* HERO SECTION */}
       <div className="relative min-h-[70vh] rounded-2xl overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
@@ -19,7 +19,7 @@ export default memo(function Page() {
       </div>
 
       {/* CONTENT SECTION */}
-      <div className="min-h-screen px-20 mx-auto py-10">
+      <div className="max-w-screen-2xl mx-auto py-10 px-12">
         <h2 className="font-bold text-3xl mb-4">Disclaimer</h2>
 
         <p className="mb-4">

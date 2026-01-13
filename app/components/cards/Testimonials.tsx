@@ -1,53 +1,47 @@
-"use client";
-import { useEffect, useState } from "react";
-
 export default function Testimonials() {
-  const cards = [
-    { name: "User", text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.", bg: "bg-[#6B4A3E] text-white" },
-    { name: "User", text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.", bg: "bg-[#3b0f06] text-white" },
-    { name: "User", text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.", bg: "bg-white text-black" },
-    { name: "User", text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.", bg: "bg-[#6B4A3E] text-white" },
-    { name: "User", text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.", bg: "bg-[#3b0f06] text-white" },
-    { name: "User", text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.", bg: "bg-white text-black" },
-    { name: "User", text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.", bg: "bg-[#6B4A3E] text-white" },
-  ];
-
-  const CARD_WIDTH = 440;
-  const GAP = 32;
-  const TOTAL_WIDTH = cards.length * (CARD_WIDTH + GAP);
-
-  const [offset, setOffset] = useState<number>(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setOffset((prev) => (prev >= TOTAL_WIDTH ? 0 : prev + 1));
-    }, 20);
-
-    return () => clearInterval(timer);
-  }, [TOTAL_WIDTH]);
-
   return (
-    <div className="overflow-hidden w-full">
-      <div
-        className="flex gap-8"
-        style={{ transform: `translateX(-${offset}px)` }}
-      >
-        {[...cards, ...cards].map((card, i) => (
-          <div
-            key={i}
-            className={`w-100 h-60 shrink-0 rounded-3xl p-8 shadow-xl ${card.bg}`} // cards size
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-white/80"></div>
-              <p className="font-medium">{card.name}</p>
-            </div>
-
-            <p className="text-sm leading-relaxed opacity-90">
-              {card.text}
-            </p>
+     <section className="w-full max-w-screen-2xl px-15 mb-5 mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Card 1 */}
+        <div className="rounded-3xl p-10 shadow-xl bg-[#6B4A3E] text-white max-w-7xl">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-full bg-white" />
+            <p className="font-medium">saddasdasdas</p>
           </div>
-        ))}
+          <p className="text-sm leading-relaxed opacity-90">
+            Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry. Lorem Ipsum has been the industry's standard dummy text
+            ever since the 1500s, when an unknown printer took a
+          </p>
+       </div>
+        <div className="rounded-3xl p-10 shadow-xl bg-[440C03] text-white max-w-7xl">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-full bg-[#440C03]" />
+            <p className="font-medium">saddasdasdas</p>
+          </div>
+          <p className="text-sm leading-relaxed opacity-90">
+            Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry. Lorem Ipsum has been the industry's standard dummy text
+            ever since the 1500s, when an unknown printer took a
+          </p>
+       </div>
+        <div className="rounded-3xl p-10 shadow-xl bg-white text-black max-w-7xl">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-full bg-gray-400" />
+            <p className="font-medium">saddasdasdas</p>
+          </div>
+          <p className="text-sm leading-relaxed opacity-90">
+            Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry. Lorem Ipsum has been the industry's standard dummy text
+            ever since the 1500s, when an unknown printer took a
+          </p>
+       </div>
+       
+       
+       
+
+       
       </div>
-    </div>
+    </section>
   );
 }

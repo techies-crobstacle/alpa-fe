@@ -26,7 +26,7 @@ export default function Page() {
       </section>
 
       {/* Map and Form section */}
-      <section className="flex items-start px-24 py-24 gap-24">
+      <section className="flex items-start mt-10 mb-10 px-14 gap-24 max-w-screen-2xl mx-auto">
         {/* LEFT FORM */}
         <div className="w-3/5">
           <form className="space-y-6">
@@ -86,12 +86,12 @@ export default function Page() {
       </section>
 
       {/* User Reviews / Testimonials */}
-      <section className="flex items-start my-5  gap-16">
+      <section className="flex items-start py-14 gap-16 ">
         <Testimonials />
       </section>
 
       {/* Explore Section*/}
-      <section className="m-16 text-white">
+      <section className="pb-12 text-white max-w-screen-2xl mx-auto">
         <div className="relative bg-[url('/images/contact-us.jpg')] bg-cover bg-center h-120 w-full rounded-3xl overflow-hidden flex flex-col justify-center items-center">
           {/* BLACK OVERLAY */}
           <div className="absolute inset-0 bg-black/30"></div>

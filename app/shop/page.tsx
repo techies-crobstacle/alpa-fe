@@ -19,7 +19,7 @@ type Product = {
   photo: string;
   name: string;
   description: string;
-  amount: string;
+  amount: number;
 };
 
 /* =======================
@@ -49,23 +49,29 @@ export default function Page() {
   }, [page]);
 
   /* ---------- TOGGLE FILTER ---------- */
-  const toggleFilter = (
-    value: string,
-    setState: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
-    setState((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-    );
-  };
+const toggleFilter = (
+  value: string,
+  setState: React.Dispatch<React.SetStateAction<string[]>>
+) => {
+  setPage(1);
+  setState((prev) =>
+    prev.includes(value)
+      ? prev.filter((v) => v !== value)
+      : [...prev, value]
+  );
+};
+
 
   /* ---------- SORT ---------- */
   const sortedProducts = useMemo(() => {
     return [...products].sort((a, b) => {
       if (sort === "price-low-high") {
-        return Number(a.amount) - Number(b.amount);
+        return a.amount - b.amount;
+
       }
       if (sort === "price-high-low") {
-        return Number(b.amount) - Number(a.amount);
+        return b.amount - a.amount;
+
       }
       return 0;
     });
@@ -90,11 +96,10 @@ export default function Page() {
   }, [sortedProducts, selectedBrands, selectedCategories, selectedGenders]);
 
   /* ---------- ACTIVE FILTER LABELS ---------- */
-  const activeFilters = [
-    ...selectedBrands,
-    ...selectedCategories,
-    ...selectedGenders,
-  ];
+  const activeFilters = useMemo(
+    () => [...selectedBrands, ...selectedCategories, ...selectedGenders],
+    [selectedBrands, selectedCategories, selectedGenders]
+  );
 
   // clear section (ALL)
   const clearAll = () => {
@@ -102,6 +107,12 @@ export default function Page() {
     setSelectedCategories([]);
     setSelectedGenders([]);
   };
+
+const hasActiveFilters = !!(
+  selectedBrands.length ||
+  selectedCategories.length ||
+  selectedGenders.length
+);
 
 
   // fir test delete it later
@@ -151,7 +162,6 @@ export default function Page() {
       <section className=" mx-auto px-20 py-10 flex gap-14 mt-5">
         {/* LEFT SIDEBAR */}
         <aside className="w-65 shrink-0 sticky top-24 h-fit">
-
           <h2 className="font-semibold mb-4">Filters:</h2>
           <hr className="mb-6 border-black/10" />
 
@@ -170,7 +180,7 @@ export default function Page() {
             {["Nike", "Adidas", "Zara", "Puma"].map((b) => (
               <label
                 key={b}
-                className="flex justify-between items-center text-lg mb-2"
+                className="flex justify-between items-center  mb-2"
               >
                 <span className="flex gap-4 items-center">
                   <input
@@ -199,10 +209,7 @@ export default function Page() {
             </div>
 
             {["T-Shirt", "Shirt", "SweatShirt", "Hoodies"].map((c) => (
-              <label
-                key={c}
-                className="flex justify-between items-center text-md mb-2"
-              >
+              <label key={c} className="flex justify-between items-center mb-2">
                 <span className="flex gap-4 items-center">
                   <input
                     type="checkbox"
@@ -232,7 +239,7 @@ export default function Page() {
             {["Male", "Female"].map((g) => (
               <label
                 key={g}
-                className="flex justify-between items-center text-lg mb-2"
+                className="flex justify-between items-center  mb-2"
               >
                 <span className="flex gap-4 items-center">
                   <input
@@ -280,12 +287,15 @@ export default function Page() {
                 </div>
               ))}
 
-              <button
-                onClick={clearAll}
-                className="underline text-sm text-gray-700 hover:text-black"
-              >
-                Clear All
-              </button>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAll}
+                  className="underline text-sm text-gray-700 hover:text-black"
+                >
+                  Clear All
+                </button>
+              )}
+
             </div>
 
             {/* SORT + VIEW */}
@@ -324,15 +334,21 @@ export default function Page() {
           </div>
 
           {/* PRODUCTS */}
-          <div
-            className={`grid gap-8 ${
-              view === 3 ? "grid-cols-3" : "grid-cols-4"
-            }`}
-          >
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
-          </div>
+          {filteredProducts.length === 0 ? (
+            <p className="text-center text-gray-600 mt-16">
+              No products match your filters.
+            </p>
+          ) : (
+            <div
+              className={`grid gap-8 ${
+                view === 3 ? "grid-cols-3" : "grid-cols-4"
+              }`}
+            >
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} {...product} />
+              ))}
+            </div>
+          )}
 
           {/* Pagination */}
           <div className="flex gap-3 justify-center mt-8">

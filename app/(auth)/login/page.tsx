@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen w-full flex overflow-hidden">
+    <main className="min-h-screen w-full flex overflow-hidden max-w-screen-2xl mx-auto">
       {/* LEFT PANEL */}
       <section
         className="relative w-1/2 flex flex-col justify-center px-20 text-white
