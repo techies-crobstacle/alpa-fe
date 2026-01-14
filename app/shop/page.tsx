@@ -6,6 +6,8 @@ import {
   HiViewGrid,
 } from "react-icons/hi";
 import ProductCard from "../components/cards/productCard";
+import CheckOutPage from "../shop/cart/checkout/page";
+
 
 /* =======================
    TYPES
@@ -374,6 +376,8 @@ const hasActiveFilters = !!(
           </div>
         </section>
       </section>
+
+
     </section>
   );
 }

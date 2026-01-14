@@ -1,20 +1,18 @@
 "use client";
 import { TruckElectric } from "lucide-react";
 import CartItem from "../../components/cards/shopCart";
+import CheckOutPage from "./checkout/page";
 import { useState } from "react";
-
- 
-
 
 export default function Page() {
   const [shipping, setShipping] = useState<"free" | "express">("free");
+
+  const [open, setOpen] = useState(false);
   // temp
 
   const subtotal = 150;
   const shippingCost = shipping === "free" ? 0 : 15;
   const total = subtotal + shippingCost;
-
- 
 
   return (
     <section className="bg-[#EBE3D5]">
@@ -42,117 +40,147 @@ export default function Page() {
       </section>
       <section className="p-10">
         {/* CART TABLE */}
-      <section className="p-10">
-        {/* Header */}
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-6 items-center pb-4 border-b border-black/30 font-bold text-xl">
-          <h2 className="text-left">Product</h2>
-          <h2 className="text-center">Quantity</h2>
-          <h2 className="text-center">Price</h2>
-          <h2 className="text-center">Sub-Total</h2>
-        </div>
+        <section className="p-10">
+          {/* Header */}
+          <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-6 items-center pb-4 border-b border-black/30 font-bold text-xl">
+            <h2 className="text-left">Product</h2>
+            <h2 className="text-center">Quantity</h2>
+            <h2 className="text-center">Price</h2>
+            <h2 className="text-center">Sub-Total</h2>
+          </div>
 
-        {Array.from({ length: 3 }).map((_, index) => (
-          <CartItem key={index} />
-        ))}
-      </section>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <CartItem key={index} />
+          ))}
+        </section>
 
-      {/* CHECKOUT SECTION */}
-      <section className="p-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 w-full items-start">
-          {/* LEFT – COUPON */}
-          <div>
-            <h1 className="font-bold text-2xl mb-4">Have a Coupon?</h1>
+        {/* CHECKOUT SECTION */}
+        <section className="p-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 w-full items-start">
+            {/* LEFT – COUPON */}
+            <div>
+              <h1 className="font-bold text-2xl mb-4">Have a Coupon?</h1>
 
-            <p className="mb-8 text-black/70 max-w-md">
-              Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-            </p>
+              <p className="mb-8 text-black/70 max-w-md">
+                Lorem ipsum dolor, sit amet consectetur adipisicing elit.
+              </p>
 
-            <div className="flex bg-white rounded-2xl overflow-hidden w-fit">
-              <input
-                type="text"
-                placeholder="Enter coupon code"
-                className="px-5 py-3 outline-none text-black"
-              />
-              <button className="px-6 font-semibold hover:bg-black/5">
-                Apply
+              <div className="flex bg-white rounded-2xl overflow-hidden w-fit">
+                <input
+                  type="text"
+                  placeholder="Enter coupon code"
+                  className="px-5 py-3 outline-none text-black"
+                />
+                <button className="px-6 font-semibold hover:bg-black/5">
+                  Apply
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT – SUMMARY */}
+            <div className="bg-[#EFE7DA] rounded-2xl border border-white p-8 w-full">
+              <h2 className="text-2xl font-bold mb-6">Cart Summary</h2>
+
+              {/* Shipping Options */}
+              <div className="space-y-4">
+                {/* Free Shipping */}
+                <label
+                  className={`flex items-center justify-between p-4 rounded-lg cursor-pointer border ${
+                    shipping === "free"
+                      ? "border-black bg-[#EFE7DA]"
+                      : "border-transparent bg-white/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="shipping"
+                      value="free"
+                      checked={shipping === "free"}
+                      onChange={() => setShipping("free")}
+                      className="accent-black w-4 h-4"
+                    />
+                    <span className="font-medium">Free Shipping</span>
+                  </div>
+                  <span className="font-bold">$0.00</span>
+                </label>
+
+                {/* Express Shipping */}
+                <label
+                  className={`flex items-center justify-between p-4 rounded-lg cursor-pointer ${
+                    shipping === "express"
+                      ? "border border-black bg-[#EFE7DA]"
+                      : "bg-white/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="shipping"
+                      value="express"
+                      checked={shipping === "express"}
+                      onChange={() => setShipping("express")}
+                      className="accent-black w-4 h-4"
+                    />
+                    <span className="font-medium">Express Shipping</span>
+                  </div>
+                  <span className="font-bold">$15.00</span>
+                </label>
+              </div>
+
+              {/* Divider */}
+              <div className="my-6 h-px bg-black/10" />
+
+              {/* Subtotal */}
+              <div className="flex justify-between mb-4">
+                <span className="text-lg">Subtotal</span>
+                <span className="text-lg">${subtotal.toFixed(2)}</span>
+              </div>
+
+              {/* Divider */}
+              <div className="mb-4 h-px bg-black/10" />
+
+              {/* Total */}
+              <div className="flex justify-between text-xl font-bold mb-10">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xl font-bold">
+              <button
+                onClick={() => setOpen(true)}
+                className="px-10 py-3  bg-black rounded-2xl text-white flex justify-center items-center"
+              >
+                Proceed to Checkout
               </button>
+              </div>
             </div>
           </div>
+        </section>
+      </section>
 
-          {/* RIGHT – SUMMARY */}
-          <div className="bg-[#EFE7DA] rounded-2xl border border-white p-8 w-full">
-            <h2 className="text-2xl font-bold mb-6">Cart Summary</h2>
-
-            {/* Shipping Options */}
-            <div className="space-y-4">
-              {/* Free Shipping */}
-              <label
-                className={`flex items-center justify-between p-4 rounded-lg cursor-pointer border ${
-                  shipping === "free"
-                    ? "border-black bg-[#EFE7DA]"
-                    : "border-transparent bg-white/40"
-                }`}
+      {/* CHECKOUT OVERLAY PAGE */}
+      {open && (
+        <div className="fixed inset-0 z-50 bg-black/40">
+          {/* Checkout panel  */}
+          <div className="absolute top-0 right-0 h-full w-full lg:w-[75%] bg-white overflow-y-auto shadow-2xl">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b p-6 flex items-center gap-4">
+              <button
+                onClick={() => setOpen(false)}
+                className="text-sm underline"
               >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="shipping"
-                    value="free"
-                    checked={shipping === "free"}
-                    onChange={() => setShipping("free")}
-                    className="accent-black w-4 h-4"
-                  />
-                  <span className="font-medium">Free Shipping</span>
-                </div>
-                <span className="font-bold">$0.00</span>
-              </label>
-
-              {/* Express Shipping */}
-              <label
-                className={`flex items-center justify-between p-4 rounded-lg cursor-pointer ${
-                  shipping === "express"
-                    ? "border border-black bg-[#EFE7DA]"
-                    : "bg-white/40"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="shipping"
-                    value="express"
-                    checked={shipping === "express"}
-                    onChange={() => setShipping("express")}
-                    className="accent-black w-4 h-4"
-                  />
-                  <span className="font-medium">Express Shipping</span>
-                </div>
-                <span className="font-bold">$15.00</span>
-              </label>
+                ← Back to Cart
+              </button>
+              <h2 className="text-xl font-bold">Checkout</h2>
             </div>
 
-            {/* Divider */}
-            <div className="my-6 h-px bg-black/10" />
-
-            {/* Subtotal */}
-            <div className="flex justify-between mb-4">
-              <span className="text-lg">Subtotal</span>
-              <span className="text-lg">${subtotal.toFixed(2)}</span>
-            </div>
-
-            {/* Divider */}
-            <div className="mb-4 h-px bg-black/10" />
-
-            {/* Total */}
-            <div className="flex justify-between text-xl font-bold">
-              <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+            {/* Checkout content with padding */}
+            <div className="p-10">
+              <CheckOutPage />
             </div>
           </div>
         </div>
-      </section>
-      </section>
-
-      
+      )}
     </section>
   );
 }
