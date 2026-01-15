@@ -1,73 +1,80 @@
-import { Trash2 } from "lucide-react";
-import { useState,useEffect } from "react";
+"use client";
+import { Link, Trash2 } from "lucide-react";
 
-// fake api
-type Product = {
-    id : string,
-    name : string,
-    data : {
-        year?: number,
-        price?: number,
-        "CPU model"?: string;
-        "Hard disk size"?: string;
-    };
-  };
+type CartItemProps = {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  onUpdate: (id: number, change: number) => void;
+  onRemove: (id: number) => void;
+};
 
-
-export default function CartItem() {
-  const quantity = 1;
-  const price = 120;
-  const subtotal = quantity * price;
-
-
-  // temp
-    const [loading, setLoading] = useState(true);
-    const [product, setProduct] = useState< Product | null>(null)
-
-    useEffect(() =>{
-        fetch("https://api.restful-api.dev/objects/7")
-        .then((res) =>res.json())
-        .then((data) =>{
-            setProduct(data)
-            setLoading(false)
-        })
-        .catch((err) =>{
-            console.log(err)
-            setLoading(false)
-        });
-    },[])
+export default function CartItem({
+  id,
+  name,
+  price,
+  quantity,
+  onUpdate,
+  onRemove,
+}: CartItemProps) {
+  const subtotal = price * quantity;
 
   return (
-    <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-6 items-center py-6 border-t border-black/30">
+    <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] items-center py-4 border-b border-black/20">
+
       {/* Product */}
-      <div className="flex gap-4 items-center">
+      <div className="flex gap-2 items-center">
         <img
           src="/images/temp/1.jpg"
-          alt="product"
-          className="h-24 w-24 rounded-2xl object-cover"
+          alt={name}
+          className="h-16 w-20 rounded-lg object-cover"
+          
         />
-        <div>
-          <h3 className="font-bold mb-1">Description</h3>
-          <p className="text-sm">Color: Red</p>
-          <p className="text-sm">Size: SM</p>
-          <Trash2 className="mt-2 text-red-600 cursor-pointer" />
-        </div>
+        <h3 className="font-medium text">{name}</h3>
       </div>
 
       {/* Quantity */}
       <div className="flex justify-center">
-        <div className="bg-white flex items-center gap-4 px-4 py-2 rounded-full border">
-          <button className="text-lg font-bold">−</button>
-          <span>{quantity}</span>
-          <button className="text-lg font-bold">+</button>
+        <div className="bg-white flex items-center gap-3 px-3 py-1 rounded-full border">
+          <button
+            className="text-sm font-bold"
+            onClick={() => onUpdate(id, -1)}
+          >
+            −
+          </button>
+
+          <span className="text-sm">{quantity}</span>
+
+          <button
+            className="text-sm font-bold"
+            onClick={() => onUpdate(id, 1)}
+          >
+            +
+          </button>
         </div>
       </div>
 
       {/* Price */}
-      <div className="text-center font-semibold">${product?.data.price}</div>
+      <div className="text-center font-medium text-sm">
+        ${price}
+      </div>
 
       {/* Subtotal */}
-      <div className="text-center font-semibold">${subtotal}</div>
+      <div className="text-center font-medium text-sm">
+        ${subtotal}
+      </div>
+
+      {/* Delete (RIGHTMOST) */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => onRemove(id)}
+          className="text-red-500 hover:text-red-700"
+          aria-label="Remove item"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }

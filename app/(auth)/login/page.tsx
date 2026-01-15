@@ -1,13 +1,15 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen w-full flex overflow-hidden max-w-screen-2xl mx-auto">
+    <main className="min-h-screen w-full flex overflow-hidden">
       {/* LEFT PANEL */}
       <section
         className="relative w-1/2 flex flex-col justify-center px-20 text-white
-       bg-linear-to-r from-[#7A2F12] via-[#8E3A18] to-[#9B3F1A]"
+        bg-linear-to-r from-[#7A2F12] via-[#8E3A18] to-[#9B3F1A]"
       >
         {/* Logo */}
         <div className="absolute top-8 left-8">
@@ -53,7 +55,7 @@ export default function LoginPage() {
             <button
               type="submit"
               className="w-full mt-6 bg-white text-[#7A2F12] font-semibold
-                rounded-full py-3 flex items-center justify-center gap-2"
+              rounded-full py-3 flex items-center justify-center gap-2"
             >
               Button CTA →
             </button>
@@ -71,10 +73,10 @@ export default function LoginPage() {
           priority
         />
 
-        {/* Gradient blend from left (color) → right (image) */}
+        {/* Gradient blend */}
         <div
           className="absolute inset-0 bg-linear-to-r
-    from-[#9B3F1A] via-[#9B3F1A]/40 to-transparent"
+          from-[#9B3F1A] via-[#9B3F1A]/40 to-transparent"
         ></div>
       </section>
     </main>
