@@ -3,6 +3,7 @@ import NavbarWrapper from "./NavbarWrapper";
 import FooterWrapper from "./FooterWrapper";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
+import { AuthProvider } from "./context/AuthContext";
 
 export default function RootLayout({
   children,
@@ -13,9 +14,11 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-[#ECE4D6]">
         <CartProvider>
-          <NavbarWrapper />
-          {children}
-          <FooterWrapper />
+          <AuthProvider>
+            <NavbarWrapper />
+            {children}
+            <FooterWrapper />
+          </AuthProvider>
         </CartProvider>
       </body>
     </html>
