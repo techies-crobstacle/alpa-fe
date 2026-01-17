@@ -1,3 +1,4 @@
+// app/context/AuthContext.tsx
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -6,6 +7,9 @@ type User = {
   id: string;
   name: string;
   email: string;
+  role?: string;
+  profileImage?: string;
+  isVerified?: boolean;
 };
 
 type AuthContextType = {
@@ -14,81 +18,131 @@ type AuthContextType = {
   fetchUser: () => Promise<void>;
   setUserDirect: (user: User) => void;
   logout: () => void;
-  login: (userData: User) => void; // Added login function
+  login: (userData: User, token?: string) => void;
+  token: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Initialize user from localStorage on mount (optional persistence)
+  // Initialize from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
+    
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
+        console.error("Error parsing stored user:", error);
         localStorage.removeItem("user");
       }
     }
+    
+    if (storedToken) {
+      setToken(storedToken);
+    }
   }, []);
 
-  // OPTIONAL: only use if /me actually works
+  // Fetch user profile using token
   const fetchUser = async () => {
+    const currentToken = token || localStorage.getItem("token");
+    
+    if (!currentToken) {
+      setUser(null);
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await fetch(
-        "https://alpa-be-1.onrender.com/api/auth/me",
-        { credentials: "include" }
+        "https://alpa-be-1.onrender.com/api/profile",
+        {
+          headers: { 
+            Authorization: `Bearer ${currentToken}`,
+            "Content-Type": "application/json"
+          },
+        }
       );
 
       if (!res.ok) {
-        setUser(null);
-        localStorage.removeItem("user");
+        // If unauthorized, clear everything
+        if (res.status === 401) {
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem("user");
+          localStorage.removeItem("token");
+        }
         return;
       }
 
       const data = await res.json();
-      setUser(data);
-      localStorage.setItem("user", JSON.stringify(data));
-    } catch {
+      const userData = data.user || data;
+      
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+    } catch (error) {
+      console.error("Error fetching user:", error);
       setUser(null);
-      localStorage.removeItem("user");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Directly set user (for login)
-  const setUserDirect = (user: User) => {
-    setUser(user);
-    setLoading(false);
-    localStorage.setItem("user", JSON.stringify(user));
+  // Fetch user whenever token changes
+  useEffect(() => {
+    if (token) {
+      fetchUser();
+    }
+  }, [token]);
+
+  // Directly set user (for login)
+  const setUserDirect = (userData: User, authToken?: string) => {
+    setUser(userData);
+    if (authToken) {
+      setToken(authToken);
+      localStorage.setItem("token", authToken);
+    }
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
-  // ✅ Login function (alias for setUserDirect)
-  const login = (userData: User) => {
-    setUserDirect(userData);
+  // Login function
+  const login = (userData: User, authToken?: string) => {
+    setUserDirect(userData, authToken);
   };
 
-  // ✅ Proper logout that clears cookies and localStorage
+  // Proper logout
   const logout = async () => {
+    const currentToken = token || localStorage.getItem("token");
+    
     try {
-      // Call logout API to clear server-side session
-      await fetch("https://alpa-be-1.onrender.com/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Logout API error:", error);
+      // Call logout API if token exists
+      if (currentToken) {
+        await fetch("https://alpa-be-1.onrender.com/api/auth/logout", {
+          method: "POST",
+          headers: { 
+            Authorization: `Bearer ${currentToken}`,
+            "Content-Type": "application/json"
+          },
+        }).catch(error => {
+          console.error("Logout API error:", error);
+        });
+      }
     } finally {
       // Clear client-side state
       setUser(null);
+      setToken(null);
       localStorage.removeItem("user");
-      // Force page reload to clear any cached state
-      window.location.href = "/";
+      localStorage.removeItem("token");
+      
+      // Redirect to home page
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     }
   };
 
@@ -100,7 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchUser, 
         setUserDirect, 
         logout,
-        login 
+        login,
+        token
       }}
     >
       {children}

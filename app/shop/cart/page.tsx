@@ -3,57 +3,38 @@ import { TruckElectric } from "lucide-react";
 import CartItem from "../../components/cards/shopCart";
 import CheckOutPage from "./checkout/page";
 import { useState, useMemo } from "react";
-import { copyFile } from "fs";
-
 import { useCart } from "@/app/context/CartContext";
 
-// Mock data to make the page "real"
-
-
 export default function Page() {
-
   // cart value
-  const {  updateQty, removeFromCart, subtotal } = useCart();
-
-
+  const { updateQty, cartItems, removeFromCart, subtotal } = useCart();
   const [shipping, setShipping] = useState<"free" | "express">("free");
   const [open, setOpen] = useState(false);
-
-
-
-    // fake coupon
-  const [coupon, setCoupon] = useState("")
-  const todayDiscount = "XXYY"
-  const discount = 150;
-
-  // Real Calculations
-  // const subtotal = useMemo(() => {
-  //   return items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  // }, [items]);
-
-  // const updateQuantity = (id: number, change: number) => {
-  //   setItems((prev) =>
-  //     prev.map((item) =>
-  //       item.id === id
-  //         ? { ...item, quantity: Math.max(1, item.quantity + change) }
-  //         : item
-  //     )
-  //   );
-  // };
-
-  // const removeItem = (id: number) => {
-  //   setItems((prev) => prev.filter((item) => item.id !== id));
-  // };
-
-
   const shippingCost = shipping === "free" ? 0 : 15;
   const total = subtotal + shippingCost;
 
-
-
+  // fake coupon
+  const [coupon, setCoupon] = useState("");
+  const todayDiscount = "XXYY";
+  const discount = 150;
 
   return (
     <section className="bg-[#EBE3D5]">
+      {/* *********  for testing **************************/}
+      <div>
+        {cartItems.length === 0 ? (
+          <p>Your cart is empty</p>
+        ) : (
+          cartItems.map((item) => (
+            <div key={item.id}>
+              <p>{item.name}</p>
+              <p>Qty: {item.qty}</p>
+              <p>Price: {item.price}</p>
+              <p>Total: {item.price * item.qty}</p>
+            </div>
+          ))
+        )}
+      </div>
       {/* HERO SECTION */}
       <section>
         <div className="relative min-h-[35vh] bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center overflow-hidden">
@@ -86,7 +67,6 @@ export default function Page() {
         </div>
 
         {/* Rendering real items */}
-        
       </section>
 
       {/* CHECKOUT SECTION */}
@@ -109,7 +89,10 @@ export default function Page() {
                 className="px-5 py-3 outline-none text-black"
               />
               <button
-                onClick={() => coupon == todayDiscount && alert(`Coupon ${coupon} applied an amount of $${150} !`)}
+                onClick={() =>
+                  coupon == todayDiscount &&
+                  alert(`Coupon ${coupon} applied an amount of $${150} !`)
+                }
                 className="px-6 font-semibold hover:bg-black hover:text-white transition-colors"
               >
                 Apply
@@ -175,19 +158,26 @@ export default function Page() {
               </span>
             </div>
 
-            { coupon === todayDiscount && <div className="flex justify-between mb-4">
-              <span className="text-lg">Discount</span>
-              <span className="text-lg font-medium">
-                -${discount.toFixed(2)}
-              </span>
-            </div>}
+            {coupon === todayDiscount && (
+              <div className="flex justify-between mb-4">
+                <span className="text-lg">Discount</span>
+                <span className="text-lg font-medium">
+                  -${discount.toFixed(2)}
+                </span>
+              </div>
+            )}
 
             <div className="mb-4 h-px bg-black/10" />
 
             <div className="flex justify-between text-xl font-bold mb-10">
               <span>Total</span>
               {/* Temp coupon applied */}
-              <span>${coupon == todayDiscount ? ((total - discount) .toFixed(2)) : total.toFixed(2)}</span>
+              <span>
+                $
+                {coupon == todayDiscount
+                  ? (total - discount).toFixed(2)
+                  : total.toFixed(2)}
+              </span>
             </div>
 
             <div className="flex">
