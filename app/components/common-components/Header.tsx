@@ -125,7 +125,7 @@ export default function Header() {
   };
 
   return (
-    <div className="-mt-1">
+    <div className="">
       {/* Cart Overlay */}
       {cartOpen && (
         <div
@@ -136,7 +136,7 @@ export default function Header() {
 
       {/* Main Header */}
       <header
-        className={`fixed top-4 left-4 right-4 lg:left-10 lg:right-10 rounded-full px-6 md:px-12 py-3
+        className={`fixed -top-2 left-4 right-4 lg:left-10 lg:right-10 rounded-full px-6 md:px-12 py-3
           flex items-center justify-between shadow-xl transition-all duration-500 z-50
           ${scrolled ? "bg-[#EAD7B7]/95 backdrop-blur-md shadow-lg" : "bg-[#EAD7B7]"}
         `}

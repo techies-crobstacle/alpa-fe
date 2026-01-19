@@ -20,22 +20,6 @@ export default function Page() {
 
   return (
     <section className="bg-[#EBE3D5]">
-      {/* *********  for testing **************************/}
-      <div>
-        {cartItems.length === 0 ? (
-          <p>Your cart is empty</p>
-        ) : (
-          cartItems.map((item) => (
-            <div key={item.id}>
-              <p>{item.name}</p>
-              <p>Qty: {item.qty}</p>
-              <p>Price: {item.price}</p>
-              <p>Total: {item.price * item.qty}</p>
-            </div>
-          ))
-        )}
-      </div>
-      {/* *************** remove this  */}
       {/* HERO SECTION */}
       <section>
         <div className="relative min-h-[35vh] bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center overflow-hidden">
@@ -86,11 +70,11 @@ export default function Page() {
               <div className="text-center">{item.qty}</div>
 
               {/* Price */}
-              <div className="text-center">₹{item.price}</div>
+              <div className="text-center">${item.price}</div>
 
               {/* Sub Total */}
               <div className="text-center font-semibold">
-                ₹{item.price * item.qty}
+                ${item.price * item.qty}
               </div>
             </div>
           ))
