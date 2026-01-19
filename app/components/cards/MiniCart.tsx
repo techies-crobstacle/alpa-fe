@@ -1,458 +1,3 @@
-// "use client";
-
-// import { useState } from "react";
-// import Image from "next/image";
-// import Link from "next/link";
-// import { X, Plus, Minus, Truck, Tag, ShoppingCart as CartIcon } from "lucide-react";
-
-// type CartItem = {
-//   id: number;
-//   name: string;
-//   size: string;
-//   price: number;
-//   image: string;
-//   qty: number;
-// };
-
-// const MOCK_CART: CartItem[] = [
-//   {
-//     id: 1,
-//     name: "Bal d'Afrique",
-//     size: "225 ml",
-//     price: 40,
-//     qty: 1,
-//     image: "/images/temp/1.jpg",
-//   },
-//   {
-//     id: 2,
-//     name: "Seven Veils",
-//     size: "100 ml",
-//     price: 180,
-//     qty: 1,
-//     image: "/images/temp/2.jpg",
-//   },
-//   {
-//     id: 3,
-//     name: "Rose of No Man's Land",
-//     size: "30 ml",
-//     price: 32,
-//     qty: 1,
-//     image: "/images/temp/3.jpg",
-//   },
-// ];
-
-// export default function MiniCart({ onClose }: { onClose: () => void }) {
-//   const [cartItems, setCartItems] = useState<CartItem[]>(MOCK_CART);
-//   const [isAnimating, setIsAnimating] = useState<number | null>(null);
-
-//   const subtotal = cartItems.reduce(
-//     (sum, item) => sum + item.price * item.qty,
-//     0
-//   );
-
-//   const shippingThreshold = 100;
-//   const isFreeShipping = subtotal >= shippingThreshold;
-
-//   const updateQuantity = (id: number, change: number) => {
-//     setCartItems(prev =>
-//       prev.map(item =>
-//         item.id === id
-//           ? { ...item, qty: Math.max(1, item.qty + change) }
-//           : item
-//       )
-//     );
-//     setIsAnimating(id);
-//     setTimeout(() => setIsAnimating(null), 300);
-//   };
-
-//   const removeItem = (id: number) => {
-//     setCartItems(prev => prev.filter(item => item.id !== id));
-//   };
-
-//   return (
-//     <div className="h-full w-full flex flex-col">
-//       {/* Cart Items */}
-//       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-//         {cartItems.length === 0 ? (
-//           <div className="h-full flex flex-col items-center justify-center text-gray-500 py-12">
-//             <div className="w-20 h-20 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-//               <CartIcon className="h-10 w-10 text-gray-400" />
-//             </div>
-//             <p className="text-lg font-medium text-gray-700">Your cart is empty</p>
-//             <p className="text-sm mt-1 text-gray-500">Add items to get started</p>
-//             <button
-//               onClick={onClose}
-//               className="mt-6 px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-//             >
-//               Continue Shopping
-//             </button>
-//           </div>
-//         ) : (
-//           cartItems.map((item) => (
-//             <div
-//               key={item.id}
-//               className={`relative p-4 rounded-xl border transition-all duration-300
-//                 ${isAnimating === item.id 
-//                   ? 'scale-105 bg-blue-50 border-blue-200 shadow-md' 
-//                   : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
-//                 }
-//               `}
-//             >
-//               <div className="flex gap-4">
-//                 {/* Product Image */}
-//                 <div className="relative">
-//                   <div className="relative w-16 h-20 shrink-0 overflow-hidden rounded-lg">
-//                     <Image
-//                       src={item.image}
-//                       alt={item.name}
-//                       fill
-//                       className="object-cover transition-transform duration-300 hover:scale-110"
-//                     />
-//                   </div>
-//                 </div>
-
-//                 {/* Product Info */}
-//                 <div className="flex-1 min-w-0">
-//                   <div className="flex justify-between items-start">
-//                     <div className="pr-2">
-//                       <p className="font-semibold text-gray-900 truncate">
-//                         {item.name}
-//                       </p>
-//                       <p className="text-sm text-gray-500 mt-1">{item.size}</p>
-//                       <p className="text-lg font-bold text-gray-900 mt-2">
-//                         €{(item.price * item.qty).toFixed(2)}
-//                       </p>
-//                     </div>
-//                     <button
-//                       onClick={() => removeItem(item.id)}
-//                       className="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-full hover:bg-red-50 ml-2 shrink-0"
-//                       aria-label={`Remove ${item.name} from cart`}
-//                     >
-//                       <X size={18} />
-//                     </button>
-//                   </div>
-
-//                   {/* Quantity Controls */}
-//                   <div className="flex items-center justify-between mt-4">
-//                     <div className="flex items-center border rounded-full">
-//                       <button
-//                         onClick={() => updateQuantity(item.id, -1)}
-//                         className="p-2 hover:bg-gray-100 rounded-l-full transition-colors"
-//                         aria-label="Decrease quantity"
-//                       >
-//                         <Minus size={14} />
-//                       </button>
-//                       <span className="px-4 py-1 text-sm font-medium min-w-10 text-center">
-//                         {item.qty}
-//                       </span>
-//                       <button
-//                         onClick={() => updateQuantity(item.id, 1)}
-//                         className="p-2 hover:bg-gray-100 rounded-r-full transition-colors"
-//                         aria-label="Increase quantity"
-//                       >
-//                         <Plus size={14} />
-//                       </button>
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           ))
-//         )}
-//       </div>
-
-//       {/* Summary & Checkout - Only show if cart has items */}
-//       {cartItems.length > 0 && (
-//         <div className="sticky bottom-0 border-t border-gray-100 bg-white/95  p-6 space-y-4">
-//           {/* Shipping Progress */}
-          
-
-          
-
-//           {/* Total */}
-//           <div className="pt-4 border-t border-gray-200">
-//             <div className="flex justify-between items-center">
-//               <div>
-//                 <p className="text-lg font-bold text-gray-900">Total</p>
-//                 <p className="text-sm text-gray-500">Including VAT</p>
-//               </div>
-//               <p className="text-2xl font-bold text-gray-900">
-//                 €{subtotal.toFixed(2)}
-//               </p>
-//             </div>
-//           </div>
-
-//           {/* CTA Buttons */}
-//           <div className="space-y-3 pt-2">
-            
-//             <Link
-//               href="/cart"
-//               onClick={onClose}
-//               className="block w-full text-center border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-//             >
-//               View Full Cart
-//             </Link>
-//           </div>
-
-//           {/* Close cart hint */}
-          
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-// "use client";
-
-// import { useState } from "react";
-// import Image from "next/image";
-// import Link from "next/link";
-// import { X, Plus, Minus, Truck, Tag, ShoppingCart as CartIcon } from "lucide-react";
-
-// type CartItem = {
-//   id: number;
-//   name: string;
-//   size: string;
-//   price: number;
-//   image: string;
-//   qty: number;
-// };
-
-// const MOCK_CART: CartItem[] = [
-//   {
-//     id: 1,
-//     name: "Bal d'Afrique",
-//     size: "225 ml",
-//     price: 40,
-//     qty: 1,
-//     image: "/images/temp/1.jpg",
-//   },
-//   {
-//     id: 2,
-//     name: "Seven Veils",
-//     size: "100 ml",
-//     price: 180,
-//     qty: 1,
-//     image: "/images/temp/2.jpg",
-//   },
-//   {
-//     id: 3,
-//     name: "Rose of No Man's Land",
-//     size: "30 ml",
-//     price: 32,
-//     qty: 1,
-//     image: "/images/temp/3.jpg",
-//   },
-//   {
-//     id: 4,
-//     name: "Rose of No Man's Land",
-//     size: "30 ml",
-//     price: 32,
-//     qty: 1,
-//     image: "/images/temp/3.jpg",
-//   },
-// ];
-
-// export default function MiniCart({ onClose }: { onClose: () => void }) {
-//   const [cartItems, setCartItems] = useState<CartItem[]>(MOCK_CART);
-//   const [isAnimating, setIsAnimating] = useState<number | null>(null);
-
-
-//   const subtotal = cartItems.reduce(
-//     (sum, item) => sum + item.price * item.qty,
-//     0
-//   );
-
-//   const cartItemCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
-
-//   const shippingThreshold = 100;
-//   const isFreeShipping = subtotal >= shippingThreshold;
-
-//   const updateQuantity = (id: number, change: number) => {
-//     setCartItems(prev =>
-//       prev.map(item =>
-//         item.id === id
-//           ? { ...item, qty: Math.max(1, item.qty + change) }
-//           : item
-//       )
-//     );
-//     setIsAnimating(id);
-//     setTimeout(() => setIsAnimating(null), 300);
-//   };
-
-//   const removeItem = (id: number) => {
-//     setCartItems(prev => prev.filter(item => item.id !== id));
-//   };
-
-//   return (
-//     <div className="fixed top-0 right-0 h-screen w-full max-w-sm flex flex-col bg-white/95 rounded-l-2xl shadow-2xl border-l border-gray-100 z-50">
-//       {/* Close button */}
-//       <div className="absolute top-6 right-6 z-10">
-//         <button
-//           onClick={onClose}
-//           className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white transition-colors hover:shadow-md group"
-//           aria-label="Close cart"
-//         >
-//           <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-//         </button>
-//       </div>
-      
-//       {/* Cart Header */}
-//       <div className="p-5">
-//         <div className="flex items-center justify-between">
-//           <div>
-//             <div className="flex flex-row gap-3 justify-center items-center">
-//             <CartIcon />
-//             <h2 className="text-2xl font-bold text-black bg-clip-text">
-//               Your Cart
-//             </h2></div>
-//             <p className="text-sm text-gray-500 mt-1">
-//               {cartItemCount} item{cartItemCount !== 1 ? 's' : ''}
-//             </p>
-//           </div>
-//           <button
-//             onClick={onClose}
-//             className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-//             aria-label="Close cart"
-//           >
-//             <X size={24} />
-//           </button>
-//         </div>
-//       </div>
-      
-//       {/* Cart Items */}
-//       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-//         {cartItems.length === 0 ? (
-//           <div className="h-full flex flex-col items-center justify-center text-gray-500 py-12">
-//             <div className="w-20 h-20 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-//               <CartIcon className="h-10 w-10 text-gray-400" />
-//             </div>
-//             <p className="text-lg font-medium text-gray-700">Your cart is empty</p>
-//             <p className="text-sm mt-1 text-gray-500">Add items to get started</p>
-//             <button
-//               onClick={onClose}
-//               className="mt-6 px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-//             >
-//               Continue Shopping
-//             </button>
-//           </div>
-//         ) : (
-//           cartItems.map((item) => (
-//             <div
-//               key={item.id}
-//               className={`relative p-3 rounded-lg border transition-all duration-300 flex flex-col gap-2
-//                 ${isAnimating === item.id 
-//                   ? 'scale-105 bg-blue-50 border-blue-200 shadow-md' 
-//                   : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
-//                 }
-//               `}
-//             >
-//               <div className="flex gap-3">
-//                 {/* Product Image */}
-//                 <div className="relative">
-//                   <div className="relative w-14 h-16 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50">
-//                     <Image
-//                       src={item.image}
-//                       alt={item.name}
-//                       fill
-//                       className="object-cover transition-transform duration-300 hover:scale-110"
-//                     />
-//                   </div>
-//                 </div>
-
-//                 {/* Product Info */}
-//                 <div className="flex-1 min-w-0">
-//                   <div className="flex justify-between items-start gap-2">
-//                     <div className="pr-1">
-//                       <p className="font-semibold text-gray-900 truncate text-sm">
-//                         {item.name}
-//                       </p>
-//                       <p className="text-xs text-gray-500 mt-0.5">{item.size}</p>
-//                       <p className="text-base font-bold text-gray-900 mt-1">
-//                         €{(item.price * item.qty).toFixed(2)}
-//                       </p>
-//                     </div>
-//                     <button
-//                       onClick={() => removeItem(item.id)}
-//                       className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 ml-1 shrink-0"
-//                       aria-label={`Remove ${item.name} from cart`}
-//                     >
-//                       <X size={16} />
-//                     </button>
-//                   </div>
-
-//                   {/* Quantity Controls */}
-//                   <div className="flex items-center justify-between mt-3">
-//                     <div className="flex items-center border rounded-full bg-gray-50">
-//                       <button
-//                         onClick={() => updateQuantity(item.id, -1)}
-//                         className="px-2 py-1 hover:bg-gray-100 rounded-l-full transition-colors"
-//                         aria-label="Decrease quantity"
-//                       >
-//                         <Minus size={12} />
-//                       </button>
-//                       <span className="px-3 py-0.5 text-xs font-medium min-w-8 text-center">
-//                         {item.qty}
-//                       </span>
-//                       <button
-//                         onClick={() => updateQuantity(item.id, 1)}
-//                         className="px-2 py-1 hover:bg-gray-100 rounded-r-full transition-colors"
-//                         aria-label="Increase quantity"
-//                       >
-//                         <Plus size={12} />
-//                       </button>
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           ))
-//         )}
-//       </div>
-
-//       {/* Summary & Checkout - Only show if cart has items */}
-//       {cartItems.length > 0 && (
-//         <div className="sticky bottom-0 border-t border-gray-100 bg-white/95 rounded-b-2xl p-4 space-y-4 shadow-inner">
-//           {/* Shipping Progress */}
-          
-
-          
-
-//           {/* Total */}
-//           <div className="pt-3 border-t border-gray-200">
-//             <div className="flex justify-between items-center">
-//               <div>
-//                 <p className="text-base font-bold text-gray-900">Total</p>
-//                 <p className="text-xs text-gray-500">Including VAT</p>
-//               </div>
-//               <p className="text-xl font-bold text-gray-900">
-//                 €{subtotal.toFixed(2)}
-//               </p>
-//             </div>
-//           </div>
-
-//           {/* CTA Buttons */}
-//           <div className="space-y-2 pt-1">
-//             <Link
-//               href="../shop/cart"
-//               onClick={onClose}
-//               className="block w-full text-center border-2 border-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-//             >
-//               View Full Cart
-//             </Link>
-//           </div>
-
-//           {/* Close cart hint */}
-          
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-
-// ##############################___using api 
-
 "use client";
 
 import Image from "next/image";
@@ -465,137 +10,121 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
   const { cartItems, updateQty, removeFromCart, subtotal } = useCart();
   const router = useRouter();
 
-  // Close the mini cart when route changes
   useEffect(() => {
-    const handleRouteChange = () => {
-      onClose();
-    };
-
-    // Listen to route changes
-    const handleComplete = () => handleRouteChange();
-    
-    // You could also use Next.js router events, but for simplicity:
-    window.addEventListener('popstate', handleRouteChange);
-    
-    return () => {
-      window.removeEventListener('popstate', handleRouteChange);
-    };
+    const handlePopState = () => onClose();
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [onClose]);
 
-  const handleNavigation = (path: string) => {
-    onClose(); // Close the mini cart first
-    router.push(path); // Then navigate
-  };
-
-  const handleCheckout = () => {
+  const navigate = (path: string) => {
     onClose();
-    router.push("shop/cart/checkout"); // Changed from /shop/cart/checkout to /cart
-  };
-
-  const handleViewCart = () => {
-    onClose();
-    router.push("shop/cart");
+    router.push(path);
   };
 
   return (
-    <div className="fixed top-0 right-0 h-screen w-full sm:w-96 bg-white shadow-2xl z-50 flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b flex justify-between items-center shrink-0">
-        <h2 className="font-bold text-lg">Your Cart</h2>
-        <button 
+    <div className="fixed inset-y-0 right-0 w-full sm:w-105 py-5 bg-white z-50 flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.15)]">
+      
+      {/* HEADER */}
+      <div className="flex items-center justify-between px-6 py-5 border-b">
+        <div>
+          <h2 className="text-xl font-semibold">Your Cart</h2>
+          <p className="text-sm text-gray-500">
+            {cartItems.length} item{cartItems.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <button
           onClick={onClose}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          aria-label="Close cart"
+          className="p-2 rounded-full hover:bg-gray-100 transition"
         >
           <X size={20} />
         </button>
       </div>
 
-      {/* Cart Items */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* CONTENT */}
+      <div className="flex-1 overflow-y-auto px-6 py-4">
         {cartItems.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6">
-            <div className="w-24 h-24 relative mb-4">
-              <Image
-                src="/images/empty-cart.svg"
-                alt="Empty cart"
-                fill
-                className="object-contain opacity-50"
-              />
-            </div>
-            <p className="text-gray-500 mb-4">Your cart is empty</p>
+          <div className="h-full flex flex-col items-center justify-center text-center">
+            <Image
+              src="/images/empty-cart.svg"
+              alt="Empty cart"
+              width={120}
+              height={120}
+              className="opacity-60 mb-4"
+            />
+            <p className="text-gray-600 mb-6">Your cart is empty</p>
             <button
-              onClick={() => handleNavigation("/shop")}
-              className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              onClick={() => navigate("/shop")}
+              className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition"
             >
               Start Shopping
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {cartItems.map((item) => (
-              <div 
-                key={item.id} 
-                className="flex gap-3 items-start p-3 hover:bg-gray-50 rounded-lg transition-colors group"
+              <div
+                key={item.id}
+                className="flex gap-4 p-4 rounded-xl border hover:shadow-sm transition"
               >
-                {/* Image */}
-                <div className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden">
+                {/* IMAGE */}
+                <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                   <Image
                     src={item.image || "/images/placeholder.png"}
                     alt={item.name}
                     fill
-                    sizes="80px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-200"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = "/images/placeholder.png";
-                    }}
+                    className="object-cover"
                   />
                 </div>
 
-                {/* Info */}
+                {/* INFO */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm truncate hover:text-[#441208] transition-colors cursor-pointer"
-                      onClick={() => handleNavigation(`/product/${item.slug || item.id}`)}>
+                  <h3
+                    className="font-semibold text-sm truncate cursor-pointer hover:text-[#441208]"
+                    onClick={() =>
+                      navigate(`/shop/${item.slug || item.id}`)
+                    }
+                  >
                     {item.name}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1">
+
+                  <p className="text-sm text-gray-500 mt-1">
                     ${item.price.toFixed(2)} each
                   </p>
 
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-2 mt-3">
-                    <button
-                      onClick={() => updateQty(item.id, -1)}
-                      className="border border-gray-300 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-                      disabled={item.qty <= 1}
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus size={14} />
-                    </button>
+                  {/* QTY */}
+                  <div className="flex items-center gap-3 mt-4">
+                    <div className="flex items-center border rounded-full overflow-hidden">
+                      <button
+                        onClick={() => updateQty(item.id, -1)}
+                        disabled={item.qty <= 1}
+                        className="px-3 py-2 hover:bg-gray-100 disabled:opacity-40"
+                      >
+                        <Minus size={14} />
+                      </button>
 
-                    <span className="w-8 text-center font-medium">{item.qty}</span>
+                      <span className="px-4 text-sm font-medium">
+                        {item.qty}
+                      </span>
 
-                    <button
-                      onClick={() => updateQty(item.id, 1)}
-                      className="border border-gray-300 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors active:scale-95"
-                      aria-label="Increase quantity"
-                      disabled={item.stock ? item.qty >= item.stock : false}
-                    >
-                      <Plus size={14} />
-                    </button>
+                      <button
+                        onClick={() => updateQty(item.id, 1)}
+                        disabled={item.stock ? item.qty >= item.stock : false}
+                        className="px-3 py-2 hover:bg-gray-100 disabled:opacity-40"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Subtotal & Remove */}
-                <div className="flex flex-col items-end justify-between h-20">
-                  <p className="font-bold text-sm">
+                {/* PRICE + REMOVE */}
+                <div className="flex flex-col items-end justify-between">
+                  <p className="font-semibold text-sm">
                     ${(item.price * item.qty).toFixed(2)}
                   </p>
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 transition-colors"
-                    aria-label="Remove item"
+                    className="p-1.5 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition"
                   >
                     <X size={16} />
                   </button>
@@ -606,57 +135,42 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      {/* Footer */}
+      {/* FOOTER */}
       {cartItems.length > 0 && (
-        <div className="border-t p-4 shrink-0 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-          <div className="space-y-3 mb-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Subtotal</span>
-              <span className="font-bold text-lg">${subtotal.toFixed(2)}</span>
-            </div>
-            
-            {subtotal < 100 && (
-              <div className="text-sm text-green-600 bg-green-50 p-2 rounded-lg">
-                Add ${(100 - subtotal).toFixed(2)} more for free shipping!
-              </div>
-            )}
+        <div className="border-t px-6 py-5 bg-white">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-gray-600">Subtotal</span>
+            <span className="text-xl font-semibold">
+              ${subtotal.toFixed(2)}
+            </span>
           </div>
-          
-          <div className="space-y-3">
-            <button 
-              className="w-full bg-black text-white py-3.5 rounded-xl font-medium hover:bg-gray-800 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-              onClick={handleCheckout}
+
+          {subtotal < 100 && (
+            <div className="text-sm bg-green-50 text-green-700 px-4 py-2 rounded-lg mb-4">
+              Add ${(100 - subtotal).toFixed(2)} more for free shipping
+            </div>
+          )}
+
+          <button
+            onClick={() => navigate("/shop/cart/checkout")}
+            className="w-full bg-black text-white py-3.5 rounded-xl font-medium hover:bg-gray-800 transition mb-3"
+          >
+            Proceed to Checkout
+          </button>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate("/shop/cart")}
+              className="flex-1 border py-3 rounded-xl hover:bg-gray-50 transition"
             >
-              <span>Proceed to Checkout</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+              View Cart
             </button>
-            
-            <div className="flex gap-2">
-              <button 
-                className="flex-1 border border-gray-300 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-                onClick={handleViewCart}
-              >
-                View Cart
-              </button>
-              
-              <button 
-                className="flex-1 border border-gray-300 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-                onClick={() => handleNavigation("/shop")}
-              >
-                Continue Shopping
-              </button>
-            </div>
-          </div>
-          
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-              <span>Secure checkout</span>
-            </div>
+            <button
+              onClick={() => navigate("/shop")}
+              className="flex-1 border py-3 rounded-xl hover:bg-gray-50 transition"
+            >
+              Continue Shopping
+            </button>
           </div>
         </div>
       )}

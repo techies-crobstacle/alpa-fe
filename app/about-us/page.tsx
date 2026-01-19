@@ -5,9 +5,9 @@ import Counter from "../components/about-us/counter";
 
 export default function Page() {
   return (
-    <section className="bg-[#f3e9dd] p-4">
+    <section className="bg-[#f3e9dd]">
       {/* HERO SECTION */}
-      <div className="relative min-h-[70vh] rounded-2xl overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
+      <div className="relative min-h-[70vh] overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
         <div className="absolute inset-0 bg-black/50"></div>
 
         <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-4 py-60 ">
@@ -20,7 +20,7 @@ export default function Page() {
       </div>
 
       {/* Photo section with content */}
-      <section className="bg-[#F4E9DC] max-w-screen-2xl mx-auto">
+      <section className="bg-[#F4E9DC] ">
         {/* CONTENT SECTION */}
         <div className=" gap-20 pt-20 px-6 md:px-16">
           {/* Content section 1.0 */}
@@ -118,7 +118,7 @@ export default function Page() {
       </section>
 
       {/* Last Section */}
-      <section className="flex flex-row justify-center items-center gap-30 bg-[#F2F2F2] max-w-screen-2xl mx-auto">
+      <section className="flex flex-row justify-center items-center gap-30 bg-[#F2F2F2]">
         {/* LEFT CONTENT */}
         <div className="w-1/2 p-10">
           <div className="font-serif">
@@ -150,7 +150,7 @@ export default function Page() {
         </div>
 
         {/* RIGHT CONTENT */}
-        <div className="w-1/2 ">
+        <div className="w-1/2  ">
           <Image
             src="/images/about-us-what-we-offer.jpg"
             alt="about-us-what-we-offer"
