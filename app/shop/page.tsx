@@ -48,21 +48,21 @@ export default function Page() {
       try {
         setLoading(true);
         const response = await fetch(`${baseURL}/api/products/all`);
-        if (!response.ok) throw new Error('Failed to fetch products');
+        if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
-        
+
         // Extract brand from title if not provided (fallback logic)
         const productsWithBrand = data.products.map((product: Product) => ({
           ...product,
-          brand: product.brand || product.title.split(' ')[0], // Extract first word as brand
-          slug: product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') // Generate slug
+          brand: product.brand || product.title.split(" ")[0], // Extract first word as brand
+          slug: product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"), // Generate slug
         }));
-        
+
         setProducts(productsWithBrand);
         setError(null);
       } catch (err) {
-        console.error('Error fetching products:', err);
-        setError('Failed to load products. Please try again later.');
+        console.error("Error fetching products:", err);
+        setError("Failed to load products. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -74,11 +74,11 @@ export default function Page() {
   /* ---------- TOGGLE FILTER ---------- */
   const toggleFilter = (
     value: string,
-    setState: React.Dispatch<React.SetStateAction<string[]>>
+    setState: React.Dispatch<React.SetStateAction<string[]>>,
   ) => {
     setPage(1);
     setState((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
     );
   };
 
@@ -122,19 +122,25 @@ export default function Page() {
   /* ---------- ACTIVE FILTER LABELS ---------- */
   const activeFilters = useMemo(
     () => [...selectedBrands, ...selectedCategories],
-    [selectedBrands, selectedCategories]
+    [selectedBrands, selectedCategories],
   );
 
   /* ---------- UNIQUE CATEGORIES ---------- */
-  const categories = useMemo(() => 
-    Array.from(new Set(products.map((p) => p.category).filter(Boolean))),
-    [products]
+  const categories = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category).filter(Boolean))),
+    [products],
+  );
+  const title = useMemo(
+    () =>
+      // for now it is title but in future it would be Brands
+      Array.from(new Set(products.map((p) => p.title).filter(Boolean))),
+    [products],
   );
 
   /* ---------- UNIQUE BRANDS ---------- */
-  const brands = useMemo(() => 
-    Array.from(new Set(products.map((p) => p.brand).filter(Boolean))),
-    [products]
+  const brands = useMemo(
+    () => Array.from(new Set(products.map((p) => p.brand).filter(Boolean))),
+    [products],
   );
 
   const clearAll = () => {
@@ -180,7 +186,7 @@ export default function Page() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
           <p className="text-gray-700">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
@@ -220,46 +226,56 @@ export default function Page() {
                 Reset
               </button>
             </div>
-
-
-{/* check and fix this on monday */}
-            {/* <div className="max-h-48 overflow-y-auto pr-2">
-              {brands.map((b) => (
-                <label key={b} className="flex gap-3 items-center mb-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={selectedBrands.includes(b)}
-                    onChange={() => toggleFilter(b, setSelectedBrands)}
-                    className="accent-[#441208] w-4 h-4"
-                  />
-                  <span className="group-hover:text-[#441208] transition-colors">{b}</span>
-                </label>
-              ))}
-            </div> */}
           </div>
 
           {/* Category Filter */}
           <div className="mb-8">
-            <div className="flex justify-between mb-3 text-sm font-medium">
-              <span>Category</span>
-              <button
-                onClick={() => setSelectedCategories([])}
-                className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
-              >
-                Reset
-              </button>
-            </div>
-
+            <hr />
             <div className="max-h-48 overflow-y-auto pr-2">
-              {categories.map((c) => (
-                <label key={c} className="flex gap-3 items-center mb-3 cursor-pointer group">
+              {title.map((c) => (
+                <label
+                  key={c}
+                  className="flex gap-3 items-center mb-3 cursor-pointer group"
+                >
                   <input
                     type="checkbox"
                     checked={selectedCategories.includes(c)}
                     onChange={() => toggleFilter(c, setSelectedCategories)}
                     className="accent-[#441208] w-4 h-4"
                   />
-                  <span className="group-hover:text-[#441208] transition-colors">{c}</span>
+                  <span className="group-hover:text-[#441208] transition-colors">
+                    {c}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="mb-8">
+            <div className="max-h-48 overflow-y-auto pr-2 mt-5">
+              <div className="flex justify-between mb-3 text-sm font-medium">
+                <span>Category</span>
+                <button
+                  onClick={() => setSelectedCategories([])}
+                  className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                >
+                  Reset
+                </button>
+              </div>
+              <hr />
+              {categories.map((c) => (
+                <label
+                  key={c}
+                  className="flex gap-3 items-center mb-3 cursor-pointer group"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(c)}
+                    onChange={() => toggleFilter(c, setSelectedCategories)}
+                    className="accent-[#441208] w-4 h-4"
+                  />
+                  <span className="group-hover:text-[#441208] transition-colors">
+                    {c}
+                  </span>
                 </label>
               ))}
             </div>
@@ -276,15 +292,17 @@ export default function Page() {
               </h1>
               {hasActiveFilters && (
                 <p className="text-sm text-gray-600 mt-1">
-                  {selectedBrands.length} brand{selectedBrands.length !== 1 ? 's' : ''}, 
-                  {selectedCategories.length} categor{selectedCategories.length !== 1 ? 'ies' : 'y'} selected
+                  {selectedBrands.length} brand
+                  {selectedBrands.length !== 1 ? "s" : ""},
+                  {selectedCategories.length} categor
+                  {selectedCategories.length !== 1 ? "ies" : "y"} selected
                 </p>
               )}
             </div>
 
             <div className="flex gap-4 items-center">
-              <select 
-                value={sort} 
+              <select
+                value={sort}
                 onChange={(e) => setSort(e.target.value)}
                 className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
               >
@@ -294,16 +312,16 @@ export default function Page() {
               </select>
 
               <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                <button 
+                <button
                   onClick={() => setView(3)}
-                  className={`p-2 ${view === 3 ? 'bg-black text-white' : 'bg-white hover:bg-gray-100'}`}
+                  className={`p-2 ${view === 3 ? "bg-black text-white" : "bg-white hover:bg-gray-100"}`}
                   title="3-column view"
                 >
                   <ThreeGridIcon />
                 </button>
-                <button 
+                <button
                   onClick={() => setView(4)}
-                  className={`p-2 ${view === 4 ? 'bg-black text-white' : 'bg-white hover:bg-gray-100'}`}
+                  className={`p-2 ${view === 4 ? "bg-black text-white" : "bg-white hover:bg-gray-100"}`}
                   title="4-column view"
                 >
                   <HiViewGrid size={20} />
@@ -325,8 +343,8 @@ export default function Page() {
                   <span className="ml-1">×</span>
                 </span>
               ))}
-              <button 
-                onClick={clearAll} 
+              <button
+                onClick={clearAll}
                 className="text-[#441208] hover:text-black underline text-sm font-medium"
               >
                 Clear all
@@ -341,7 +359,7 @@ export default function Page() {
             <div className="text-center mt-16 py-12 bg-white/50 rounded-xl">
               <p className="text-xl text-gray-600 mb-4">No products found</p>
               {hasActiveFilters && (
-                <button 
+                <button
                   onClick={clearAll}
                   className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                 >
@@ -353,7 +371,9 @@ export default function Page() {
             <>
               <div
                 className={`grid gap-6 ${
-                  view === 3 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+                  view === 3
+                    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
                 }`}
               >
                 {paginatedProducts.map((product) => (
@@ -366,15 +386,6 @@ export default function Page() {
                     amount={Number(product.price)}
                     stock={product.stock}
                     slug={product.slug}
-                    onAddToCart={() => addToCart({
-                      id: product.id,
-                      name: product.title,
-                      price: Number(product.price),
-                      image: product.images?.[0] || "/images/placeholder.png",
-                      stock: product.stock,
-                      slug: product.slug
-                    })}
-                    currentQuantity={getItemQuantity(product.id)}
                   />
                 ))}
               </div>
@@ -386,9 +397,9 @@ export default function Page() {
                     disabled={page === 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     className={`px-5 py-2.5 border rounded-lg transition-colors ${
-                      page === 1 
-                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
-                        : 'border-black text-black hover:bg-black hover:text-white'
+                      page === 1
+                        ? "border-gray-300 text-gray-400 cursor-not-allowed"
+                        : "border-black text-black hover:bg-black hover:text-white"
                     }`}
                   >
                     Previous
@@ -396,18 +407,21 @@ export default function Page() {
 
                   <div className="flex items-center gap-2">
                     <span className="text-gray-700">
-                      Page <span className="font-bold">{page}</span> of <span className="font-bold">{totalPages}</span>
+                      Page <span className="font-bold">{page}</span> of{" "}
+                      <span className="font-bold">{totalPages}</span>
                     </span>
                     <select
                       value={page}
                       onChange={(e) => setPage(Number(e.target.value))}
                       className="border border-gray-300 rounded-lg px-3 py-1.5 outline-none bg-white"
                     >
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
 
@@ -415,9 +429,9 @@ export default function Page() {
                     disabled={page === totalPages}
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     className={`px-5 py-2.5 border rounded-lg transition-colors ${
-                      page === totalPages 
-                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
-                        : 'border-black text-black hover:bg-black hover:text-white'
+                      page === totalPages
+                        ? "border-gray-300 text-gray-400 cursor-not-allowed"
+                        : "border-black text-black hover:bg-black hover:text-white"
                     }`}
                   >
                     Next

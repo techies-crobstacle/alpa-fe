@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ShoppingCart, Minus, Plus } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
 
@@ -12,6 +13,7 @@ interface ProductCardProps {
   description: string;
   amount: number;
   stock?: number;
+  slug?: string;
 }
 
 export default function ProductCard({
@@ -21,49 +23,41 @@ export default function ProductCard({
   description,
   amount,
   stock = 50,
+  slug,
 }: ProductCardProps) {
   const { cartItems, addToCart, updateQty, removeFromCart } = useCart();
 
-  const [isAdded, setIsAdded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const cartItem = cartItems.find((item) => item.id === id);
   const qty = cartItem?.qty ?? 0;
 
   // SINGLE SOURCE OF TRUTH
-  const itemStock = Math.max(0, stock - qty);
+  const remainingStock = Math.max(0, stock - qty);
   const isInCart = qty > 0;
-  const isOutOfStock = itemStock === 0;
+  const isOutOfStock = remainingStock === 0;
 
-  /* ---------- ADD TO CART ---------- */
-  const handleAddToCart = () => {
+  /* ---------- ADD ---------- */
+  const handleAdd = () => {
     if (isOutOfStock) return;
 
-    if (cartItem) {
-      updateQty(id, +1);
-    } else {
-      addToCart({
-        id,
-        name,
-        price: amount,
-        image: photo,
-      });
-    }
+    addToCart({
+      id,
+      name,
+      price: amount,
+      image: photo,
+      stock,
+      slug,
+    });
 
-    setIsAdded(true);
-    setIsAnimating(true);
-
-    setTimeout(() => setIsAnimating(false), 300);
-    setTimeout(() => setIsAdded(false), 1200);
+    animate();
   };
 
   /* ---------- INCREASE ---------- */
   const handleIncrease = () => {
     if (isOutOfStock) return;
-
     updateQty(id, +1);
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 300);
+    animate();
   };
 
   /* ---------- DECREASE ---------- */
@@ -76,6 +70,10 @@ export default function ProductCard({
       updateQty(id, -1);
     }
 
+    animate();
+  };
+
+  const animate = () => {
     setIsAnimating(true);
     setTimeout(() => setIsAnimating(false), 300);
   };
@@ -88,17 +86,38 @@ export default function ProductCard({
     }).format(price);
 
   return (
-    <div className="group bg-white p-4 py-8 rounded-xl border shadow-sm hover:shadow-lg transition relative overflow-hidden">
-      {/* Image */}
-      <div className="relative  h-75 mb-6 rounded-lg overflow-hidden">
-        <Image src={photo} alt={name} fill className="object-cover group-hover:scale-105 transition" />
+    <div className="group bg-white p-4 py-8 rounded-xl border shadow-sm hover:shadow-lg transition relative">
+      {/* IMAGE */}
+      <div className="relative h-64 mb-6 rounded-lg overflow-hidden">
+        {slug ? (
+          <Link href={`/shop/${slug}`}>
+            <Image
+              src={photo}
+              alt={name}
+              fill
+              className="object-cover group-hover:scale-105 transition"
+            />
+          </Link>
+        ) : (
+          <Image
+            src={photo}
+            alt={name}
+            fill
+            className="object-cover group-hover:scale-105 transition"
+          />
+        )}
       </div>
 
-      {/* Info */}
-      <h2 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1">{name}</h2>
-      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{description}</p>
+      {/* INFO */}
+      <h2 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1">
+        {slug ? <Link href={`/shop/${slug}`}>{name}</Link> : name}
+      </h2>
 
-      {/* Price + Cart */}
+      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+        {description}
+      </p>
+
+      {/* PRICE + CART */}
       <div className="flex justify-between items-center">
         <span className="font-bold text-xl">{formatPrice(amount)}</span>
 
@@ -108,7 +127,10 @@ export default function ProductCard({
               isAnimating ? "scale-105" : ""
             }`}
           >
-            <button onClick={handleDecrease} className="p-1 hover:bg-amber-800 rounded-full">
+            <button
+              onClick={handleDecrease}
+              className="p-1 hover:bg-amber-800 rounded-full"
+            >
               <Minus size={16} />
             </button>
 
@@ -124,22 +146,18 @@ export default function ProductCard({
           </div>
         ) : (
           <button
-            onClick={handleAddToCart}
+            onClick={handleAdd}
             disabled={isOutOfStock}
-            className={`p-2 rounded-full transition
-              ${
-                isOutOfStock
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-amber-900 text-white hover:bg-amber-800 active:scale-95"
-              }
-            `}
+            className={`p-2 rounded-full transition ${
+              isOutOfStock
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-amber-900 text-white hover:bg-amber-800 active:scale-95"
+            }`}
           >
             <ShoppingCart size={18} />
           </button>
         )}
       </div>
-
-      
     </div>
   );
 }

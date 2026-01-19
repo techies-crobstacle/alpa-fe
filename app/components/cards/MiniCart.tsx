@@ -489,12 +489,12 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
 
   const handleCheckout = () => {
     onClose();
-    router.push("/cart"); // Changed from /shop/cart/checkout to /cart
+    router.push("shop/cart/checkout"); // Changed from /shop/cart/checkout to /cart
   };
 
   const handleViewCart = () => {
     onClose();
-    router.push("/cart");
+    router.push("shop/cart");
   };
 
   return (

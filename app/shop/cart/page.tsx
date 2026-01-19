@@ -35,6 +35,7 @@ export default function Page() {
           ))
         )}
       </div>
+      {/* *************** remove this  */}
       {/* HERO SECTION */}
       <section>
         <div className="relative min-h-[35vh] bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center overflow-hidden">
@@ -59,14 +60,41 @@ export default function Page() {
 
       {/* CART TABLE - Reduced size */}
       <section className="py-15 max-w-screen-2xl m-auto">
+        {/* Header */}
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] items-center pb-3 border-b border-black/20 font-semibold">
-          <h2 className="text-left ">Product</h2>
+          <h2 className="text-left">Product</h2>
           <h2 className="text-center">Quantity</h2>
           <h2 className="text-center">Price</h2>
           <h2 className="text-center">Sub-Total</h2>
         </div>
 
-        {/* Rendering real items */}
+        {/* Cart Items */}
+        {cartItems.length === 0 ? (
+          <p className="py-6 text-center">Your cart is empty</p>
+        ) : (
+          cartItems.map((item) => (
+            <div
+              key={item.id}
+              className="grid grid-cols-[2fr_1fr_1fr_1fr] items-center py-4 border-b border-black/10"
+            >
+              {/* Product */}
+              <div className="text-left">
+                <p className="font-medium">{item.name}</p>
+              </div>
+
+              {/* Quantity */}
+              <div className="text-center">{item.qty}</div>
+
+              {/* Price */}
+              <div className="text-center">₹{item.price}</div>
+
+              {/* Sub Total */}
+              <div className="text-center font-semibold">
+                ₹{item.price * item.qty}
+              </div>
+            </div>
+          ))
+        )}
       </section>
 
       {/* CHECKOUT SECTION */}
