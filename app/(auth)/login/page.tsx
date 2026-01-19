@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-   const { setUserDirect } = useAuth(); // Use setUserDirect instead of fetchUser
+  const { setUserDirect } = useAuth(); // Use setUserDirect instead of fetchUser
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,51 +29,38 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-        credentials: "include",
       });
-
-      
 
       const data = await res.json();
 
-      // console.log("testing 1.0")
-      // console.log(data)
-
-      
-
-
-      // invalid credentials
       if (!res.ok) {
-        setError(data.message || "Login Failed");
+        setError(data.message || "Login failed");
         return;
       }
-      // token for session
-      localStorage.setItem("token", data.token);
 
-      // Use setUserDirect with the user data from login response
-      // Assuming your backend returns user object in response
-      if (data.user) {
-        setUserDirect(data.user);
-      } else if (data.id && data.name && data.email) {
-        // If user data is at root level of response
-        setUserDirect({
-          id: data.id,
-          name: data.name,
-          email: data.email
-        });
-      } else {
-        // If backend returns different structure, adjust accordingly
-        console.log("Login response:", data); // 
-        setUserDirect({
-          id: data.id || data._id || "user-id",
-          name: data.name || data.username || "User",
-          email: data.email || email
-        });
+      /**
+       * CASE 1: OTP REQUIRED
+       */
+      if (data.requiresVerification) {
+        router.push(`/login-verify-otp?email=${data.email || email}`);
+        return;
       }
-      
-      router.push("/");
-    } catch (error) {
-      console.error("Login error:", error);
+
+      /**
+       * CASE 2: TOKEN ALREADY VALID (NO OTP)
+       */
+      if (data.token && data.user) {
+        localStorage.setItem("token", data.token);
+        setUserDirect(data.user);
+        router.push("/");
+        return;
+      }
+
+      console.log("LOGIN RESPONSE:", data);
+
+      // fallback safety
+      setError("Unexpected login response");
+    } catch (err) {
       setError("Something went wrong");
     } finally {
       setLoading(false);

@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { ShoppingCart, Menu, X, User, LogOut, Package, Settings } from "lucide-react";
-import MiniCart from "../cards/MiniCart";
+import MiniCart  from "../cards/MiniCart"
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "@/app/context/CartContext";
 
@@ -28,45 +28,73 @@ export default function Header() {
   const cartRef = useRef<HTMLDivElement>(null);
   const cartButtonRef = useRef<HTMLButtonElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const { user, logout, fetchUser, loading } = useAuth();
+  const { cartItems, fetchCartFromBackend } = useCart();
   const router = useRouter();
 
   // Get cart items and calculate total count
-  const { cartItems } = useCart();
   const cartItemCount = cartItems.reduce((total, item) => total + item.qty, 0);
 
-  // Fetch user profile on mount and when auth state changes
+  // Initialize user and cart
   useEffect(() => {
-    fetchUser();
+    const init = async () => {
+      await fetchUser();
+      // Sync cart when user loads or logs in
+      if (user) {
+        await fetchCartFromBackend();
+      }
+    };
+    init();
   }, []);
+
+  // Sync cart when user state changes
+  useEffect(() => {
+    if (user) {
+      fetchCartFromBackend();
+    }
+  }, [user]);
 
   // Close cart when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Check if click is outside cart panel and cart button
-      const isOutsideCartPanel =
-        cartRef.current && !cartRef.current.contains(event.target as Node);
-      const isOutsideCartButton =
+      const target = event.target as Node;
+      
+      // Close cart if clicked outside
+      if (
+        cartOpen &&
+        cartRef.current &&
+        !cartRef.current.contains(target) &&
         cartButtonRef.current &&
-        !cartButtonRef.current.contains(event.target as Node);
-
-      if (isOutsideCartPanel && isOutsideCartButton) {
+        !cartButtonRef.current.contains(target)
+      ) {
         setCartOpen(false);
       }
 
-      // Check if click is outside user menu
+      // Close user menu if clicked outside
       if (
+        userMenuOpen &&
         userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
+        !userMenuRef.current.contains(target)
       ) {
         setUserMenuOpen(false);
+      }
+
+      // Close mobile menu if clicked outside
+      if (
+        mobileMenuOpen &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(target) &&
+        !(target as Element).closest('button[aria-label*="menu"]')
+      ) {
+        setMobileMenuOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
 
-    if (cartOpen) {
+    if (cartOpen || mobileMenuOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
@@ -76,9 +104,9 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
       document.body.style.overflow = "unset";
     };
-  }, [cartOpen, userMenuOpen]);
+  }, [cartOpen, userMenuOpen, mobileMenuOpen]);
 
-  // Scroll effect for header
+  // Scroll effect for header (desktop only)
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -93,6 +121,7 @@ export default function Header() {
       if (event.key === "Escape") {
         setCartOpen(false);
         setUserMenuOpen(false);
+        setMobileMenuOpen(false);
       }
     };
 
@@ -116,6 +145,8 @@ export default function Header() {
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
     await logout();
+    // After logout, cart should automatically sync to guest cart
+    // because token will be removed and CartContext will handle it
   };
 
   const handleNavigation = (href: string) => {
@@ -134,10 +165,34 @@ export default function Header() {
         />
       )}
 
-      {/* Main Header */}
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-40 md:hidden animate-fadeIn"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* MOBILE/Tablet: Only show menu button */}
+      <div className="md:hidden fixed top-4 right-4 z-50">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-3 rounded-full bg-[#5A1E12] text-white shadow-lg hover:bg-[#4a180f] transition-colors"
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
+        </button>
+      </div>
+
+      {/* DESKTOP: Full Header (hidden on mobile/tablet) */}
       <header
-        className={`fixed -top-2 left-4 right-4 lg:left-10 lg:right-10 rounded-full px-6 md:px-12 py-3
-          flex items-center justify-between shadow-xl transition-all duration-500 z-50
+        className={`hidden md:flex fixed -top-3 left-10 right-10 rounded-4xl px-8 lg:px-12 py-3
+          items-center justify-between shadow-xl transition-all duration-500 z-50
           ${scrolled ? "bg-[#EAD7B7]/95 backdrop-blur-md shadow-lg" : "bg-[#EAD7B7]"}
         `}
       >
@@ -157,7 +212,7 @@ export default function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex gap-4 lg:gap-6">
+        <nav className="flex gap-4 lg:gap-6">
           {NAV_LINKS.map(({ label, href }) => (
             <Link
               key={href}
@@ -189,7 +244,7 @@ export default function Header() {
         </nav>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-3 md:gap-6">
+        <div className="flex items-center gap-6">
           {/* Cart Button */}
           <div className="relative">
             <button
@@ -200,7 +255,7 @@ export default function Header() {
               aria-expanded={cartOpen}
             >
               <ShoppingCart
-                className={`h-5 w-5 md:h-6 md:w-6 text-gray-800 transition-transform duration-300 ${
+                className={`h-6 w-6 text-gray-800 transition-transform duration-300 ${
                   cartOpen ? "rotate-12 scale-110" : "group-hover:scale-110"
                 }`}
               />
@@ -225,7 +280,7 @@ export default function Header() {
             <div
               ref={cartRef}
               className={`
-                fixed top-0 right-0 bg-[#ead7b7] h-screen w-96 max-w-[90vw] rounded-2xl
+                fixed top-0 right-0 bg-[#ead7b7] h-screen w-96 max-w-[90vw] 
                 transform transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
                 z-50
                 ${
@@ -241,18 +296,18 @@ export default function Header() {
 
           {/* User Authentication */}
           {loading ? (
-            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+            <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse"></div>
           ) : !user ? (
             <div className="flex items-center gap-3">
               <Link
                 href="/login"
-                className="hidden md:block font-medium text-gray-800 text-sm hover:text-[#5A1E12] transition-colors px-3 py-1.5 rounded-full hover:bg-white/30"
+                className="font-medium text-gray-800 text-sm hover:text-[#5A1E12] transition-colors px-3 py-1.5 rounded-full hover:bg-white/30"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
-                className="hidden md:block font-medium bg-[#5A1E12] text-white text-sm hover:bg-[#4a180f] transition-colors px-4 py-1.5 rounded-full"
+                className="font-medium bg-[#5A1E12] text-white text-sm hover:bg-[#4a180f] transition-colors px-4 py-1.5 rounded-full"
               >
                 Sign Up
               </Link>
@@ -267,7 +322,7 @@ export default function Header() {
               >
                 <div className="relative">
                   {user.profileImage ? (
-                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                    <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
                       <Image
                         src={user.profileImage}
                         alt={user.name || "User"}
@@ -277,12 +332,12 @@ export default function Header() {
                       />
                     </div>
                   ) : (
-                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
                       <User className="w-4 h-4 text-white" />
                     </div>
                   )}
                 </div>
-                <span className="hidden md:inline font-medium text-gray-800 text-sm">
+                <span className="font-medium text-gray-800 text-sm">
                   {user.name?.split(" ")[0] || "User"}
                 </span>
                 <svg
@@ -350,33 +405,14 @@ export default function Header() {
               )}
             </div>
           )}
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-full hover:bg-white/30 transition-colors"
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-          >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 md:hidden animate-fadeIn"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
       {/* Mobile Menu Panel */}
       <div
-        className={`fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-[#EAD7B7] z-40
+        ref={mobileMenuRef}
+        className={`
+          fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-[#EAD7B7] z-40
           transform transition-transform duration-300 ease-out md:hidden
           ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"}
         `}
@@ -384,40 +420,38 @@ export default function Header() {
         {/* Mobile Header */}
         <div className="p-6 border-b border-white/30 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {user ? (
-              <>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center">
-                  {user.profileImage ? (
-                    <Image
-                      src={user.profileImage}
-                      alt={user.name || "User"}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <User className="w-5 h-5 text-white" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">{user.name?.split(" ")[0] || "User"}</p>
-                  <p className="text-xs text-gray-600 truncate">{user.email}</p>
-                </div>
-              </>
-            ) : (
-              <h3 className="font-bold text-lg text-gray-800">Menu</h3>
+            <Link 
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="font-bold transition-transform hover:scale-105"
+            >
+              <Image
+                src="/images/navbarLogo.png"
+                width={500}
+                height={500}
+                alt="Logo"
+                className="w-10"
+                priority
+              />
+            </Link>
+            {user && (
+              <div>
+                <p className="font-semibold text-gray-900 text-sm truncate">{user.name?.split(" ")[0] || "User"}</p>
+                <p className="text-xs text-gray-600 truncate max-w-[120px]">{user.email}</p>
+              </div>
             )}
           </div>
           <button
             onClick={() => setMobileMenuOpen(false)}
             className="p-2 rounded-full hover:bg-white/30"
+            aria-label="Close menu"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Mobile Navigation */}
-        <nav className="flex flex-col p-4 space-y-1">
+        <nav className="flex flex-col p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-120px)]">
           {NAV_LINKS.map(({ label, href }) => (
             <Link
               key={href}
@@ -436,6 +470,18 @@ export default function Header() {
             </Link>
           ))}
 
+          {/* Mobile Cart Button */}
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              setCartOpen(true);
+            }}
+            className="px-4 py-3 rounded-xl text-base font-medium text-gray-700 hover:bg-white/50 transition-all flex items-center gap-3"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            <span>Cart ({cartItemCount})</span>
+          </button>
+
           {/* Mobile Auth Buttons */}
           <div className="pt-4 mt-4 border-t border-white/30">
             {!user ? (
@@ -443,14 +489,14 @@ export default function Header() {
                 <Link
                   href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-center"
+                  className="px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-center text-sm"
                 >
                   Login
                 </Link>
                 <Link
                   href="/signup"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-3 rounded-xl bg-[#5A1E12] text-white hover:bg-[#4a180f] transition-colors text-center"
+                  className="px-4 py-3 rounded-xl bg-[#5A1E12] text-white hover:bg-[#4a180f] transition-colors text-center text-sm"
                 >
                   Sign Up
                 </Link>
@@ -460,7 +506,7 @@ export default function Header() {
                 <Link
                   href="/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-sm"
                 >
                   <User className="w-4 h-4" />
                   <span>My Profile</span>
@@ -468,14 +514,24 @@ export default function Header() {
                 <Link
                   href="/orders"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-sm"
                 >
                   <Package className="w-4 h-4" />
                   <span>My Orders</span>
                 </Link>
+                {user.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-sm"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span>Admin Dashboard</span>
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>

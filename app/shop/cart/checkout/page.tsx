@@ -58,7 +58,7 @@ export default function CheckOutPage() {
               </div>
 
               {/* STEP CONTENT */}
-              <div className="min-h-[300px]">
+              <div className="min-h-75">
                 {step === 1 && <EmailCart />}
                 {step === 2 && <AddressCart />}
                 {step === 3 && <PaymentCart />}

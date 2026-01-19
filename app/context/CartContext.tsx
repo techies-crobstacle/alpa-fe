@@ -1,13 +1,12 @@
-// app/context/CartContext.tsx
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 /* =======================
    TYPES
 ======================= */
 export type CartItem = {
-  id: string;
+  id: string; // ✅ productId ONLY
   name: string;
   price: number;
   image: string;
@@ -18,140 +17,197 @@ export type CartItem = {
 
 type CartContextType = {
   cartItems: CartItem[];
-  addToCart: (item: Omit<CartItem, "qty"> & { stock?: number }) => void;
-  updateQty: (id: string, change: number) => void;
-  removeFromCart: (id: string) => void;
+  addToCart: (item: Omit<CartItem, "qty">) => Promise<void>;
+  updateQty: (productId: string, change: number) => Promise<void>;
+  removeFromCart: (productId: string) => Promise<void>;
   clearCart: () => void;
   subtotal: number;
   itemCount: number;
-  getItemQuantity: (id: string) => number;
-  isHydrated: boolean; // Add this to track hydration state
+  getItemQuantity: (productId: string) => number;
+  isHydrated: boolean;
+  fetchCartFromBackend: () => Promise<void>;
 };
 
 /* =======================
    CONTEXT
 ======================= */
 const CartContext = createContext<CartContextType | null>(null);
+const baseUrl = "https://alpa-be-1.onrender.com";
 
 /* =======================
    PROVIDER
 ======================= */
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [isHydrated, setIsHydrated] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
 
-  // Load cart from localStorage ONLY on client side
+  /* ---------- LOAD TOKEN ---------- */
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    try {
-      setCartItems(savedCart ? JSON.parse(savedCart) : []);
-    } catch (error) {
-      console.error('Error parsing cart from localStorage:', error);
-      setCartItems([]);
-    } finally {
-      setIsHydrated(true);
-    }
+    setToken(localStorage.getItem("token"));
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  /* ---------- FETCH CART FROM BACKEND ---------- */
+  const fetchCartFromBackend = async () => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${baseUrl}/api/cart/my-cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      // 🔥 MAP BACKEND → FRONTEND SHAPE
+      const items: CartItem[] = data.cart.map((item: any) => ({
+        id: item.productId,
+        name: item.product.title,
+        price: Number(item.product.price),
+        image: item.product.images?.[0] || "/images/placeholder.png",
+        qty: item.quantity,
+        stock: item.product.stock,
+        slug: item.product.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-"),
+      }));
+
+      setCartItems(items);
+      localStorage.setItem("cart", JSON.stringify(items));
+    } catch (err) {
+      console.error("Fetch cart failed", err);
+    }
+  };
+
+  /* ---------- INIT CART ---------- */
+  useEffect(() => {
+    const init = async () => {
+      const local = localStorage.getItem("cart");
+      setCartItems(local ? JSON.parse(local) : []);
+
+      if (token) await fetchCartFromBackend();
+
+      setIsHydrated(true);
+    };
+
+    init();
+  }, [token]);
+
+  /* ---------- SYNC LOCAL STORAGE ---------- */
   useEffect(() => {
     if (isHydrated) {
-      try {
-        localStorage.setItem('cart', JSON.stringify(cartItems));
-      } catch (error) {
-        console.error('Error saving cart to localStorage:', error);
-      }
+      localStorage.setItem("cart", JSON.stringify(cartItems));
     }
   }, [cartItems, isHydrated]);
 
   /* ---------- ADD TO CART ---------- */
-  const addToCart = (item: Omit<CartItem, "qty"> & { stock?: number }) => {
-    if (!isHydrated) return;
-    
+  const addToCart = async (item: Omit<CartItem, "qty">) => {
+    if (token) {
+      await fetch(`${baseUrl}/api/cart/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId: item.id,
+          quantity: 1,
+        }),
+      });
+
+      await fetchCartFromBackend();
+      return;
+    }
+
+    // guest fallback
     setCartItems((prev) => {
-      const existingItem = prev.find((p) => p.id === item.id);
-      
-      if (existingItem) {
-        const newQty = existingItem.qty + 1;
-        if (item.stock && newQty > item.stock) {
-          alert(`Only ${item.stock} items available in stock`);
-          return prev;
-        }
-        return prev.map((p) =>
-          p.id === item.id ? { ...p, qty: newQty } : p
-        );
-      }
-      
-      if (item.stock && 1 > item.stock) {
-        alert(`Only ${item.stock} items available in stock`);
-        return prev;
-      }
-      
-      return [...prev, { ...item, qty: 1 }];
+      const found = prev.find((p) => p.id === item.id);
+      return found
+        ? prev.map((p) =>
+            p.id === item.id ? { ...p, qty: p.qty + 1 } : p
+          )
+        : [...prev, { ...item, qty: 1 }];
     });
   };
 
   /* ---------- UPDATE QTY ---------- */
-const updateQty = (id: string, change: number) => {
-  if (!isHydrated) return;
-
-  setCartItems((prev) => {
-    const item = prev.find((i) => i.id === id);
-    if (!item) return prev;
+  const updateQty = async (productId: string, change: number) => {
+    const item = cartItems.find((i) => i.id === productId);
+    if (!item) return;
 
     const newQty = item.qty + change;
 
-    // ✅ If user clicks "-" at qty = 1 → remove item
-    if (newQty <= 0) {
-      return prev.filter((i) => i.id !== id);
+    if (token) {
+      if (newQty <= 0) {
+        await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await fetch(`${baseUrl}/api/cart/update`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            productId,
+            quantity: newQty,
+          }),
+        });
+      }
+
+      await fetchCartFromBackend();
+      return;
     }
 
-    // ✅ Stock check
-    if (item.stock && newQty > item.stock) {
-      alert(`Only ${item.stock} items available in stock`);
-      return prev;
-    }
-
-    //  Normal update
-    return prev.map((i) =>
-      i.id === id ? { ...i, qty: newQty } : i
+    // guest fallback
+    setCartItems((prev) =>
+      newQty <= 0
+        ? prev.filter((i) => i.id !== productId)
+        : prev.map((i) =>
+            i.id === productId ? { ...i, qty: newQty } : i
+          )
     );
-  });
-};
-
-
-  /* ---------- GET ITEM QUANTITY ---------- */
-  const getItemQuantity = (id: string) => {
-    if (!isHydrated) return 0;
-    const item = cartItems.find(item => item.id === id);
-    return item ? item.qty : 0;
   };
 
   /* ---------- REMOVE ---------- */
-  const removeFromCart = (id: string) => {
-    if (!isHydrated) return;
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = async (productId: string) => {
+    if (token) {
+      await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      await fetchCartFromBackend();
+      return;
+    }
+
+    setCartItems((prev) => prev.filter((i) => i.id !== productId));
   };
 
-  /* ---------- CLEAR CART ---------- */
+  /* ---------- CLEAR ---------- */
   const clearCart = () => {
-    if (!isHydrated) return;
     setCartItems([]);
+    localStorage.removeItem("cart");
   };
 
-  /* ---------- SUBTOTAL ---------- */
-  const subtotal = isHydrated ? cartItems.reduce(
-    (sum, item) => sum + item.price * item.qty,
+  /* ---------- HELPERS ---------- */
+  const subtotal = cartItems.reduce(
+    (sum, i) => sum + i.price * i.qty,
     0
-  ) : 0;
+  );
 
-  /* ---------- TOTAL ITEM COUNT ---------- */
-  const itemCount = isHydrated ? cartItems.reduce((total, item) => total + item.qty, 0) : 0;
+  const itemCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
+
+  const getItemQuantity = (productId: string) =>
+    cartItems.find((i) => i.id === productId)?.qty || 0;
 
   return (
     <CartContext.Provider
       value={{
-        cartItems: isHydrated ? cartItems : [],
+        cartItems,
         addToCart,
         updateQty,
         removeFromCart,
@@ -160,6 +216,7 @@ const updateQty = (id: string, change: number) => {
         itemCount,
         getItemQuantity,
         isHydrated,
+        fetchCartFromBackend,
       }}
     >
       {children}
