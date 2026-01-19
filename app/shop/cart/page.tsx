@@ -43,7 +43,7 @@ export default function Page() {
       </section>
 
       {/* CART TABLE - Reduced size */}
-      <section className="py-15 max-w-screen-2xl m-auto">
+      <section className="py-15 px-14 max-w-screen-2xl m-auto">
         {/* Header */}
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] items-center pb-3 border-b border-black/20 font-semibold">
           <h2 className="text-left">Product</h2>
