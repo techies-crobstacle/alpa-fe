@@ -332,7 +332,7 @@ export default function Header() {
                       />
                     </div>
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
                       <User className="w-4 h-4 text-white" />
                     </div>
                   )}
@@ -358,7 +358,7 @@ export default function Header() {
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn">
                   {/* User Info */}
-                  <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-[#EAD7B7]/10 to-transparent">
+                  <div className="px-4 py-3 border-b border-gray-100 bg-linear-to-r from-[#EAD7B7]/10 to-transparent">
                     <p className="font-semibold text-gray-900 truncate">{user.name}</p>
                     <p className="text-sm text-gray-500 truncate">{user.email}</p>
                   </div>
@@ -420,25 +420,28 @@ export default function Header() {
         {/* Mobile Header */}
         <div className="p-6 border-b border-white/30 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link 
-              href="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="font-bold transition-transform hover:scale-105"
-            >
-              <Image
-                src="/images/navbarLogo.png"
-                width={500}
-                height={500}
-                alt="Logo"
-                className="w-10"
-                priority
-              />
-            </Link>
-            {user && (
-              <div>
-                <p className="font-semibold text-gray-900 text-sm truncate">{user.name?.split(" ")[0] || "User"}</p>
-                <p className="text-xs text-gray-600 truncate max-w-[120px]">{user.email}</p>
-              </div>
+            {user ? (
+              <>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center">
+                  {user.profileImage ? (
+                    <Image
+                      src={user.profileImage}
+                      alt={user.name || "User"}
+                      width={40}
+                      height={40}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <User className="w-5 h-5 text-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{user.name?.split(" ")[0] || "User"}</p>
+                  <p className="text-xs text-gray-600 truncate">{user.email}</p>
+                </div>
+              </>
+            ) : (
+              <h3 className="font-bold text-lg text-gray-800">Menu</h3>
             )}
           </div>
           <button
