@@ -1,8 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function PaymentCart() {
+interface PaymentCartProps {
+  onPaymentMethodChange: (method: string) => void;
+}
+
+export default function PaymentCart({ onPaymentMethodChange }: PaymentCartProps) {
   const [paymentMethod, setPaymentMethod] = useState("card");
+
+  // Update parent component whenever payment method changes
+  useEffect(() => {
+    onPaymentMethodChange(paymentMethod);
+  }, [paymentMethod, onPaymentMethodChange]);
+
+  const handlePaymentMethodChange = (method: string) => {
+    setPaymentMethod(method);
+  };
 
   return (
     <section className="p-10 flex flex-col gap-6">
@@ -19,7 +32,7 @@ export default function PaymentCart() {
             name="paymentMethod"
             value="card"
             checked={paymentMethod === "card"}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+            onChange={(e) => handlePaymentMethodChange(e.target.value)}
           />
           Pay with Card
         </label>
@@ -30,7 +43,7 @@ export default function PaymentCart() {
             name="paymentMethod"
             value="paypal"
             checked={paymentMethod === "paypal"}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+            onChange={(e) => handlePaymentMethodChange(e.target.value)}
           />
           Pay with PayPal
         </label>
@@ -41,10 +54,23 @@ export default function PaymentCart() {
             name="paymentMethod"
             value="gift"
             checked={paymentMethod === "gift"}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+            onChange={(e) => handlePaymentMethodChange(e.target.value)}
           />
           Use Gift Card
         </label>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="cod"
+            checked={paymentMethod === "cod"}
+            onChange={(e) => handlePaymentMethodChange(e.target.value)}
+          />
+          Cash on Delivery (COD)
+        </label>
+
+        
       </div>
 
       {/* Card Details (ONLY if card selected) */}
@@ -129,6 +155,18 @@ export default function PaymentCart() {
             placeholder="XXXX-XXXX"
             className="border-b px-2 py-1 outline-none"
           />
+        </div>
+      )}
+
+      {/* COD message */}
+      {paymentMethod === "cod" && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800 font-medium mb-1">
+            Cash on Delivery Selected
+          </p>
+          <p className="text-sm text-yellow-700">
+            You will pay in cash when your order is delivered to your address.
+          </p>
         </div>
       )}
 

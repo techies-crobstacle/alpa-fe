@@ -282,7 +282,9 @@ export default function OTPVerificationPage() {
                 {otp.map((digit, index) => (
                   <input
                     key={index}
-                    ref={(el) => (otpRefs.current[index] = el)}
+                    ref={el => {
+                      otpRefs.current[index] = el;
+                    }}
                     type="text"
                     inputMode="numeric"
                     pattern="\d*"
@@ -399,7 +401,7 @@ export default function OTPVerificationPage() {
         </div>
 
         {/* Gradient blend */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#9B3F1A] via-[#9B3F1A]/40 to-transparent"></div>
+        <div className="absolute inset-0 bg-linear-to-r from-[#9B3F1A] via-[#9B3F1A]/40 to-transparent"></div>
 
         {/* Overlay Content */}
         <div className="absolute bottom-12 left-12 right-12 text-white">

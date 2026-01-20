@@ -6,7 +6,7 @@ const Page = () => {
     <main className="min-h-screen bg-[url('/images/main-bg.png')] bg-repeat bg-center">
       {/* ================= HERO ================= */}
       <section>
-        <div className="relative min-h-screen overflow-hidden bg-[url('/images/dislaimerbg.jpg')] bg-cover bg-center">
+        <div className="relative min-h-screen overflow-hidden bg-[url('/images/main.jpg')] bg-cover bg-center">
           <div className="absolute inset-0 bg-amber-900/30"></div>
           <div className="absolute inset-0 bg-black/30"></div>
 

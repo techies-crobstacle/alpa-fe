@@ -32,26 +32,18 @@ export default function ProductCard({
   // Find the cart item by product ID
   const cartItem = cartItems.find((item) => item.id === id);
   const qty = cartItem?.qty || 0;
-  const cartId = cartItem?.cartId;
 
   // Calculate remaining stock
   const remainingStock = Math.max(0, (stock || 0) - qty);
   const isInCart = qty > 0;
   const isOutOfStock = remainingStock === 0;
 
-  // Helper function to get item identifier
-  const getItemIdentifier = () => {
-    if (cartItem) {
-      return cartItem.cartId || cartItem.id;
-    }
-    return id;
-  };
-
   /* ---------- ADD ---------- */
   const handleAdd = async () => {
     if (isOutOfStock) return;
 
     await addToCart({
+      cartId: "",
       id,
       name,
       price: amount,
@@ -67,24 +59,7 @@ export default function ProductCard({
   const handleIncrease = async () => {
     if (isOutOfStock || !cartItem) return;
     
-    // Get the identifier for this cart item
-    const identifier = getItemIdentifier();
-    
-    // Use updateQty if we have cartId, otherwise add again
-    if (cartId) {
-      await updateQty(identifier, 1);
-    } else {
-      // For guest cart without cartId, add another item
-      await addToCart({
-        id,
-        name,
-        price: amount,
-        image: photo,
-        stock,
-        slug,
-      });
-    }
-    
+    await updateQty(id, 1);
     animate();
   };
 
@@ -92,14 +67,12 @@ export default function ProductCard({
   const handleDecrease = async () => {
     if (!cartItem || qty === 0) return;
 
-    const identifier = getItemIdentifier();
-    
     if (qty === 1) {
       // Remove item completely
-      await removeFromCart(identifier);
+      await removeFromCart(id);
     } else {
       // Decrease quantity
-      await updateQty(identifier, -1);
+      await updateQty(id, -1);
     }
 
     animate();
@@ -119,7 +92,7 @@ export default function ProductCard({
   return (
     <div className="group bg-white p-4 sm:p-6 py-6 sm:py-8 rounded-xl border shadow-sm hover:shadow-lg transition relative flex flex-col h-full">
       {/* IMAGE CONTAINER */}
-      <div className="relative mb-4 sm:mb-6 rounded-lg overflow-hidden bg-gray-50 grow flex items-center justify-center min-h-[200px] sm:min-h-[220px] md:min-h-[240px] lg:min-h-[260px]">
+      <div className="relative mb-4 sm:mb-6 rounded-lg overflow-hidden bg-gray-50 grow flex items-center justify-center min-h-50 sm:min-h-55 md:min-h-60 lg:min-h-65">
         {slug ? (
           <Link href={`/shop/${slug}`} className="w-full h-full flex items-center justify-center p-2 sm:p-4">
             <div className="relative w-full h-full">
