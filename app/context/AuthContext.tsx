@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile using token
   const fetchUser = async () => {
-    const currentToken = token || localStorage.getItem("token");
+    const currentToken = localStorage.getItem("token");
     
     if (!currentToken) {
       setUser(null);
