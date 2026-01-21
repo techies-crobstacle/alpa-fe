@@ -143,7 +143,7 @@ function SignupOTPForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#7A2F12] to-[#9B3F1A] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-[#7A2F12] to-[#9B3F1A] flex items-center justify-center p-4">
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full border border-white/20">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
@@ -164,7 +164,6 @@ function SignupOTPForm() {
             {otp.map((digit, index) => (
               <input
                 key={index}
-                ref={(el) => (otpRefs.current[index] = el)}
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -252,7 +251,7 @@ function SignupOTPForm() {
 export default function SignupOTPPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-[#7A2F12] to-[#9B3F1A] flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-[#7A2F12] to-[#9B3F1A] flex items-center justify-center">
         <div className="text-white">Loading OTP verification...</div>
       </div>
     }>
