@@ -737,14 +737,14 @@ export default function Page() {
   }
 
   return (
-    <section className="min-h-screen bg-[#EBE3D5] p-3">
+    <section className="min-h-screen bg-[#EBE3D5]">
       {/* HERO SECTION */}
 <section className="bg-[#e6e6e6]">
     {/* OUTER FRAME */}
-    <div className="max-w-full mx-auto rounded-2xl overflow-hidden">
+    <div className="max-w-full mx-auto overflow-hidden">
       {/* FULL IMAGE */}
       <div
-        className="relative h-[30vh] sm:h-[35vh] md:h-[40vh] lg:h-[45vh]
+        className="relative h-[30vh] sm:h-[35vh] md:h-[40vh] lg:h-[60vh]
                    bg-[url('/images/shop-banner.jpg')] bg-cover bg-center"
       >
         {/* Overlay */}

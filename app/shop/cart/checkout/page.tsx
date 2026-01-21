@@ -3,16 +3,22 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/app/context/CartContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 import EmailCart from "../../../components/checkout/emailCart";
 import AddressCart from "../../../components/checkout/addressCart";
 import PaymentCart from "../../../components/checkout/paymentCart";
 
 export default function CheckOutPage() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // Start from Email step (optional)
   const [promoCode, setPromoCode] = useState("");
+  const [email, setEmail] = useState(""); // Optional email
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const { cartItems, subtotal } = useCart();
+  const { token } = useAuth();
 
   /* ---------------- PRICE LOGIC ---------------- */
   const shipping = subtotal > 100 ? 0 : 20;
@@ -25,6 +31,44 @@ export default function CheckOutPage() {
 
   const handlePromoSubmit = () => {
     console.log("Promo applied:", promoCode);
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!shippingAddress.trim() || !paymentMethod) {
+      alert("Please complete all required fields");
+      return;
+    }
+
+    setIsPlacingOrder(true);
+    
+    try {
+      const response = await fetch("https://alpa-be-1.onrender.com/api/orders/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          shippingAddress,
+          paymentMethod: paymentMethod.toUpperCase(),
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert("Order placed successfully!");
+        // Redirect to order confirmation or clear cart
+        window.location.href = "/";
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to place order");
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   return (
@@ -59,9 +103,9 @@ export default function CheckOutPage() {
 
               {/* STEP CONTENT */}
               <div className="min-h-75">
-                {step === 1 && <EmailCart />}
-                {step === 2 && <AddressCart />}
-                {step === 3 && <PaymentCart />}
+                {step === 1 && <EmailCart onEmailChange={setEmail} />}
+                {step === 2 && <AddressCart onAddressChange={setShippingAddress} />}
+                {step === 3 && <PaymentCart onPaymentMethodChange={setPaymentMethod} />}
               </div>
 
               {/* NAV BUTTONS */}
@@ -81,17 +125,18 @@ export default function CheckOutPage() {
                 {step < 3 ? (
                   <button
                     onClick={handleNext}
-                    disabled={cartItems.length === 0}
+                    disabled={cartItems.length === 0 || (step === 2 && !shippingAddress.trim())}
                     className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
                   >
                     Continue
                   </button>
                 ) : (
                   <button
-                    onClick={() => console.log("Place order")}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    onClick={handlePlaceOrder}
+                    disabled={isPlacingOrder || !paymentMethod}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                   >
-                    Place Order
+                    {isPlacingOrder ? "Placing Order..." : "Place Order"}
                   </button>
                 )}
               </div>

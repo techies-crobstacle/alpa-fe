@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function MiniCart({ onClose }: { onClose: () => void }) {
-  const { cartItems, updateQty, removeFromCart, subtotal, isLoading } = useCart();
+  const { cartItems, updateQty, removeFromCart, subtotal } = useCart();
   const router = useRouter();
 
   useEffect(() => {
@@ -20,11 +20,6 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
   const navigate = (path: string) => {
     onClose();
     router.push(path);
-  };
-
-  // Function to get identifier (cartId for logged-in users, id for guests)
-  const getItemIdentifier = (item: any) => {
-    return item.cartId || item.id;
   };
 
   return (
@@ -55,7 +50,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
 
       {/* CONTENT */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
-        {isLoading ? (
+        {false ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#440C03] mx-auto"></div>
@@ -73,7 +68,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
             </p>
             <button
               onClick={() => navigate("/shop")}
-              className="px-8 py-3.5 bg-gradient-to-r from-[#440C03] to-[#6F433A] text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200 font-medium"
+              className="px-8 py-3.5 bg-linear-to-r from-[#440C03] to-[#6F433A] text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200 font-medium"
             >
               Explore Products
             </button>
@@ -117,21 +112,21 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                         <button
-                          onClick={() => updateQty(getItemIdentifier(item), -1)}
-                          disabled={item.qty <= 1 || isLoading}
+                          onClick={() => updateQty(item.id, -1)}
+                          disabled={item.qty <= 1}
                           className="px-3 py-2 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                           aria-label="Decrease quantity"
                         >
                           <Minus size={16} />
                         </button>
 
-                        <span className="px-4 py-2 text-sm font-semibold min-w-[48px] text-center bg-white">
+                        <span className="px-4 py-2 text-sm font-semibold min-w-12 text-center bg-white">
                           {item.qty}
                         </span>
 
                         <button
-                          onClick={() => updateQty(getItemIdentifier(item), 1)}
-                          disabled={(item.stock ? item.qty >= item.stock : false) || isLoading}
+                          onClick={() => updateQty(item.id, 1)}
+                          disabled={(item.stock ? item.qty >= item.stock : false)}
                           className="px-3 py-2 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                           aria-label="Increase quantity"
                         >
@@ -150,8 +145,8 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
 
                 {/* REMOVE BUTTON */}
                 <button
-                  onClick={() => removeFromCart(getItemIdentifier(item))}
-                  disabled={isLoading}
+                  onClick={() => removeFromCart(item.id)}
+                  disabled={false}
                   className="absolute top-3 right-3 p-1.5 rounded-full bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100 disabled:opacity-50"
                   aria-label="Remove item"
                 >
@@ -164,7 +159,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* FOOTER */}
-      {cartItems.length > 0 && !isLoading && (
+      {cartItems.length > 0 && (
         <div className="border-t bg-white px-6 py-6 space-y-4">
           {/* Shipping Progress */}
           {subtotal < 100 && (
@@ -176,7 +171,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
               </div>
               <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-300"
+                  className="h-full bg-linear-to-r from-green-400 to-green-500 transition-all duration-300"
                   style={{ width: `${Math.min((subtotal / 100) * 100, 100)}%` }}
                 />
               </div>
@@ -192,12 +187,12 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Checkout Button */}
-          <button
+          {/* <button
             onClick={() => navigate("/shop/cart/checkout")}
-            className="w-full bg-gradient-to-r from-[#440C03] to-[#6F433A] text-white py-4 rounded-xl font-semibold hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 text-lg"
+            className="w-full bg-linear-to-r from-[#440C03] to-[#6F433A] text-white py-4 rounded-xl font-semibold hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 text-lg"
           >
             Proceed to Checkout
-          </button>
+          </button> */}
 
           {/* Secondary Actions */}
           <div className="grid grid-cols-2 gap-3">

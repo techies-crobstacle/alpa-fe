@@ -1,6 +1,34 @@
 "use client";
 
-export default function AddressCart() {
+import { useState, useEffect } from "react";
+
+interface AddressCartProps {
+  onAddressChange: (address: string) => void;
+}
+
+export default function AddressCart({ onAddressChange }: AddressCartProps) {
+  const [formData, setFormData] = useState({
+    country: "",
+    address: "",
+    city: "",
+    zip: "",
+    state: "",
+    countryCode: "",
+    phone: "",
+  });
+
+  // Update parent component whenever address fields change
+  useEffect(() => {
+    const fullAddress = `${formData.address}, ${formData.city}, ${formData.state}, ${formData.country}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '');
+    onAddressChange(fullAddress);
+  }, [formData, onAddressChange]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
   return (
     <section className="p-10 flex flex-col gap-6">
 
@@ -17,7 +45,9 @@ export default function AddressCart() {
           id="country"
           name="country"
           type="text"
-          placeholder="India"
+          value={formData.country}
+          onChange={(e) => handleInputChange("country", e.target.value)}
+          placeholder="Australia"
           className="border-b px-2 py-1 outline-none"
         />
       </div>
@@ -25,14 +55,17 @@ export default function AddressCart() {
       {/* Address */}
       <div className="flex flex-col gap-1">
         <label htmlFor="address" className="text-sm font-medium">
-          Address
+          Address <span className="text-red-500">*</span>
         </label>
         <input
           id="address"
           name="address"
           type="text"
+          value={formData.address}
+          onChange={(e) => handleInputChange("address", e.target.value)}
           placeholder="Street address"
           className="border-b px-2 py-1 outline-none"
+          required
         />
       </div>
 
@@ -46,7 +79,9 @@ export default function AddressCart() {
             id="city"
             name="city"
             type="text"
-            placeholder="Dehradun"
+            value={formData.city}
+            onChange={(e) => handleInputChange("city", e.target.value)}
+            placeholder="Sydney"
             className="border-b px-2 py-1 outline-none"
           />
         </div>
@@ -59,7 +94,9 @@ export default function AddressCart() {
             id="zip"
             name="zip"
             type="text"
-            placeholder="248001"
+            value={formData.zip}
+            onChange={(e) => handleInputChange("zip", e.target.value)}
+            placeholder="2000"
             className="border-b px-2 py-1 outline-none"
           />
         </div>
@@ -74,7 +111,9 @@ export default function AddressCart() {
           id="state"
           name="state"
           type="text"
-          placeholder="Uttarakhand"
+          value={formData.state}
+          onChange={(e) => handleInputChange("state", e.target.value)}
+          placeholder="New South Wales"
           className="border-b px-2 py-1 outline-none"
         />
       </div>
@@ -89,7 +128,9 @@ export default function AddressCart() {
             id="countryCode"
             name="countryCode"
             type="text"
-            placeholder="+91"
+            value={formData.countryCode}
+            onChange={(e) => handleInputChange("countryCode", e.target.value)}
+            placeholder="+61"
             className="border-b px-2 py-1 outline-none"
           />
         </div>
@@ -102,6 +143,8 @@ export default function AddressCart() {
             id="phone"
             name="phone"
             type="tel"
+            value={formData.phone}
+            onChange={(e) => handleInputChange("phone", e.target.value)}
             placeholder="9876543210"
             className="border-b px-2 py-1 outline-none"
           />

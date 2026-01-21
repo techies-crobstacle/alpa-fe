@@ -1,6 +1,8 @@
+
+
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,8 +16,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 
-
-export default function OTPVerificationPage() {
+// Separate component that uses useSearchParams
+function OTPVerificationForm() {
   const { setUserDirect } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -282,7 +284,9 @@ export default function OTPVerificationPage() {
                 {otp.map((digit, index) => (
                   <input
                     key={index}
-                    ref={(el) => (otpRefs.current[index] = el)}
+                    ref={el => {
+                      otpRefs.current[index] = el;
+                    }}
                     type="text"
                     inputMode="numeric"
                     pattern="\d*"
@@ -399,7 +403,7 @@ export default function OTPVerificationPage() {
         </div>
 
         {/* Gradient blend */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#9B3F1A] via-[#9B3F1A]/40 to-transparent"></div>
+        <div className="absolute inset-0 bg-linear-to-r from-[#9B3F1A] via-[#9B3F1A]/40 to-transparent"></div>
 
         {/* Overlay Content */}
         <div className="absolute bottom-12 left-12 right-12 text-white">
@@ -418,5 +422,26 @@ export default function OTPVerificationPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+// Loading fallback component
+function OTPLoadingFallback() {
+  return (
+    <main className="min-h-screen w-full flex items-center justify-center bg-linear-to-r from-[#7A2F12] via-[#8E3A18] to-[#9B3F1A]">
+      <div className="text-white text-center">
+        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p>Loading verification page...</p>
+      </div>
+    </main>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function OTPVerificationPage() {
+  return (
+    <Suspense fallback={<OTPLoadingFallback />}>
+      <OTPVerificationForm />
+    </Suspense>
   );
 }

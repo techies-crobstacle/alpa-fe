@@ -72,7 +72,7 @@ export default function LoginPage() {
       {/* LEFT PANEL */}
       <section
         className="relative w-1/2 flex flex-col justify-center px-20 text-white
-        bg-linear-to-r from-[#7A2F12] via-[#8E3A18] to-[#9B3F1A]"
+        bg-linear-to-r from-[#440C03] via-[#440C03] to-[#440C03]"
       >
         {/* Logo */}
         <div className="absolute top-8 left-8">
@@ -108,7 +108,7 @@ export default function LoginPage() {
               type="email"
               placeholder="Email"
               value={email}
-              className="w-full rounded-full px-5 py-3 bg-black/20 placeholder-white/70 outline-none"
+              className="w-120 rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
               onChange={(e) => setEmail(e.target.value)}
               required
             />
@@ -116,7 +116,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               placeholder="Password"
-              className="w-full rounded-full px-5 py-3 bg-black/20 placeholder-white/70 outline-none"
+              className="w-120 rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none" 
               onChange={(e) => setPassword(e.target.value)}
               required
             />
@@ -126,7 +126,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-6 bg-white text-[#7A2F12] font-semibold
+              className="w-120 mt-6 bg-white text-[#7A2F12] font-semibold
               rounded-full py-3 flex items-center justify-center gap-2"
             >
               {loading ? "Logging in..." : "Login →"}
@@ -148,7 +148,7 @@ export default function LoginPage() {
         {/* Gradient blend */}
         <div
           className="absolute inset-0 bg-linear-to-r
-          from-[#9B3F1A] via-[#9B3F1A]/40 to-transparent"
+          from-[#440C03] via-[#440C03]/40 to-transparent"
         ></div>
       </section>
     </main>

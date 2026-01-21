@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
    TYPES
 ======================= */
 export type CartItem = {
+  cartId: string;
   id: string; // ✅ productId ONLY
   name: string;
   price: number;
@@ -62,6 +63,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       // 🔥 MAP BACKEND → FRONTEND SHAPE
       const items: CartItem[] = data.cart.map((item: any) => ({
+        cartId: item.id || item.cartId || "",
         id: item.productId,
         name: item.product.title,
         price: Number(item.product.price),
@@ -104,19 +106,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* ---------- ADD TO CART ---------- */
   const addToCart = async (item: Omit<CartItem, "qty">) => {
     if (token) {
-      await fetch(`${baseUrl}/api/cart/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          productId: item.id,
-          quantity: 1,
-        }),
-      });
+      try {
+        const response = await fetch(`${baseUrl}/api/cart/add`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            productId: item.id,
+            quantity: 1,
+          }),
+        });
 
-      await fetchCartFromBackend();
+        if (response.ok) {
+          await fetchCartFromBackend();
+        } else {
+          console.error("Failed to add item to cart:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error adding to cart:", error);
+      }
       return;
     }
 
@@ -127,7 +137,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ? prev.map((p) =>
             p.id === item.id ? { ...p, qty: p.qty + 1 } : p
           )
-        : [...prev, { ...item, qty: 1 }];
+        : [...prev, { ...item, qty: 1, cartId: "" }];
     });
   };
 
@@ -139,26 +149,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const newQty = item.qty + change;
 
     if (token) {
-      if (newQty <= 0) {
-        await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } else {
-        await fetch(`${baseUrl}/api/cart/update`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            productId,
-            quantity: newQty,
-          }),
-        });
-      }
+      try {
+        if (newQty <= 0) {
+          const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          });
 
-      await fetchCartFromBackend();
+          if (response.ok) {
+            await fetchCartFromBackend();
+          } else {
+            console.error("Failed to remove item from cart:", response.statusText);
+          }
+        } else {
+          const response = await fetch(`${baseUrl}/api/cart/update`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              productId,
+              quantity: newQty,
+            }),
+          });
+
+          if (response.ok) {
+            await fetchCartFromBackend();
+          } else {
+            console.error("Failed to update cart:", response.statusText);
+          }
+        }
+      } catch (error) {
+        console.error("Error updating cart:", error);
+      }
       return;
     }
 
@@ -175,12 +199,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* ---------- REMOVE ---------- */
   const removeFromCart = async (productId: string) => {
     if (token) {
-      await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      try {
+        const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      await fetchCartFromBackend();
+        if (response.ok) {
+          await fetchCartFromBackend();
+        } else {
+          console.error("Failed to remove item from cart:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error removing from cart:", error);
+      }
       return;
     }
 
