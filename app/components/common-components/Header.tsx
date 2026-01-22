@@ -1247,7 +1247,7 @@ export default function Header() {
                   {/* Menu Items */}
                   <div className="py-2">
                     <button
-                      onClick={() => handleNavigation("/profile")}
+                      onClick={() => handleNavigation("https://alpa-dashboard.vercel.app/dashboard/customer/profile")}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"
                     >
                       <User className="w-4 h-4" />
@@ -1255,7 +1255,7 @@ export default function Header() {
                     </button>
 
                     <button
-                      onClick={() => handleNavigation("/orders")}
+                      onClick={() => handleNavigation("https://alpa-dashboard.vercel.app/dashboard/customer/orders")}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"
                     >
                       <Package className="w-4 h-4" />
