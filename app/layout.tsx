@@ -4,6 +4,7 @@ import FooterWrapper from "./FooterWrapper";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
+import QueryProvider from "./providers/QueryProvider";
 
 export const metadata = {
   title: "Arnhem  ",
@@ -17,13 +18,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-[#ECE4D6]">
-        <CartProvider>
-          <AuthProvider>
-            <NavbarWrapper />
-            {children}
-            <FooterWrapper />
-          </AuthProvider>
-        </CartProvider>
+        <QueryProvider>
+          <CartProvider>
+            <AuthProvider>
+              <NavbarWrapper />
+              {children}
+              <FooterWrapper />
+            </AuthProvider>
+          </CartProvider>
+        </QueryProvider>
       </body>
     </html>
   );

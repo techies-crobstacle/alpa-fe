@@ -3,33 +3,23 @@ import React, { useEffect, useMemo, useState } from "react";
 import { HiViewGrid } from "react-icons/hi";
 import ProductCard from "../components/cards/productCard";
 import { useCart } from "../context/CartContext";
+import { useProducts, Product } from "../hooks/useProducts";
 
 
 /* =======================
    TYPES
 ======================= */
-type Product = {
-  id: string;
-  title: string;
-  description: string;
-  price: string;
-  category: string;
-  stock: number;
-  images: string[];
-  brand?: string;
-  slug?: string;
-};
+// Product type moved to useProducts.ts hook
 
 /* =======================
    PAGE
 ======================= */
 
 export default function Page() {
-  const baseURL = "https://alpa-be-1.onrender.com";
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use React Query hook instead of manual fetch
+  const { data: products = [], isLoading: loading, error: queryError } = useProducts();
+  
+  const error = queryError?.message || null;
   const [sort, setSort] = useState("");
   const [view, setView] = useState<3 | 4>(3);
 
@@ -49,36 +39,6 @@ export default function Page() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const { addToCart, getItemQuantity } = useCart();
-
-  /* ---------- DATA FETCH ---------- */
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${baseURL}/api/products/all`);
-        if (!response.ok) throw new Error("Failed to fetch products");
-        const data = await response.json();
-
-        // Extract brand from title if not provided
-        const productsWithBrand = data.products.map((product: Product) => ({
-          ...product,
-          stock: product.stock ?? 0, // Ensure stock is always present
-          brand: product.brand || product.title.split(" ")[0],
-          slug: product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        }));
-
-        setProducts(productsWithBrand);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setError("Failed to load products. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
 
   /* ---------- TOGGLE FILTER ---------- */
   const toggleFilter = (
