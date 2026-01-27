@@ -14,7 +14,7 @@ export function useWishlistQuery() {
     queryFn: async () => {
       const data = await wishlistApi.getWishlist();
       // Ensure we always return an array
-      return Array.isArray(data) ? data : Array.isArray(data?.wishlist) ? data.wishlist : [];
+      return Array.isArray(data) ? data : Array.isArray((data as any)?.wishlist) ? (data as any).wishlist : [];
     },
     enabled: typeof window !== "undefined" && !!localStorage.getItem("token"),
     staleTime: 1000 * 60 * 5, // 5 minutes
