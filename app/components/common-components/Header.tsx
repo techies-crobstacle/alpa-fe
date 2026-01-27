@@ -699,6 +699,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { ShoppingCart, Menu, X, User, LogOut, Package, Settings } from "lucide-react";
 import MiniCart from "../cards/MiniCart";
+import OptimisticMiniCart from "../cards/OptimisticMiniCart";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "@/app/context/CartContext";
 import { CouponDropdownIcon } from "./CouponDropdown";
@@ -978,7 +979,7 @@ export default function Header() {
             <div
               ref={cartRef}
               className={`
-                fixed -top-2 right-0 bttom-0 bg-[#ead7b7] h-screen 
+                fixed -top-6 right-0 bottom-0 bg-[#ead7b7] h-screen 
                 transform transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
                 z-50
                 ${
@@ -988,7 +989,7 @@ export default function Header() {
                 }
               `}
             >
-              <MiniCart onClose={() => setCartOpen(false)} />
+              <OptimisticMiniCart onClose={() => setCartOpen(false)} />
             </div>
           </div>
 

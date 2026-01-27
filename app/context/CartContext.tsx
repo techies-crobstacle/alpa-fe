@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
 
 /* =======================
    TYPES
@@ -103,34 +103,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [cartItems, isHydrated]);
 
-  /* ---------- ADD TO CART ---------- */
+  // Debounce helpers for API sync
+  const addToCartTimeout = useRef<NodeJS.Timeout | null>(null);
+  const updateQtyTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // ADD TO CART: UI updates instantly, API sync is debounced
   const addToCart = async (item: Omit<CartItem, "qty">) => {
-    if (token) {
-      try {
-        const response = await fetch(`${baseUrl}/api/cart/add`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            productId: item.id,
-            quantity: 1,
-          }),
-        });
-
-        if (response.ok) {
-          await fetchCartFromBackend();
-        } else {
-          console.error("Failed to add item to cart:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error adding to cart:", error);
-      }
-      return;
-    }
-
-    // guest fallback
     setCartItems((prev) => {
       const found = prev.find((p) => p.id === item.id);
       return found
@@ -139,6 +117,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
           )
         : [...prev, { ...item, qty: 1, cartId: "" }];
     });
+
+    if (token) {
+      if (addToCartTimeout.current) clearTimeout(addToCartTimeout.current);
+      addToCartTimeout.current = setTimeout(async () => {
+        try {
+          const response = await fetch(`${baseUrl}/api/cart/add`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              productId: item.id,
+              quantity: 1,
+            }),
+          });
+          if (response.ok) {
+            await fetchCartFromBackend();
+          } else {
+            console.error("Failed to add item to cart:", response.statusText);
+          }
+        } catch (error) {
+          console.error("Error adding to cart:", error);
+        }
+      }, 2000); // 2 seconds debounce
+    }
   };
 
   /* ---------- UPDATE QTY ---------- */
@@ -148,45 +152,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const newQty = item.qty + change;
 
-    if (token) {
-      try {
-        if (newQty <= 0) {
-          const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            await fetchCartFromBackend();
-          } else {
-            console.error("Failed to remove item from cart:", response.statusText);
-          }
-        } else {
-          const response = await fetch(`${baseUrl}/api/cart/update`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              productId,
-              quantity: newQty,
-            }),
-          });
-
-          if (response.ok) {
-            await fetchCartFromBackend();
-          } else {
-            console.error("Failed to update cart:", response.statusText);
-          }
-        }
-      } catch (error) {
-        console.error("Error updating cart:", error);
-      }
-      return;
-    }
-
-    // guest fallback
+    // UI update instantly
     setCartItems((prev) =>
       newQty <= 0
         ? prev.filter((i) => i.id !== productId)
@@ -194,6 +160,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
             i.id === productId ? { ...i, qty: newQty } : i
           )
     );
+
+    if (token) {
+      // Debounce per product
+      if (updateQtyTimeouts.current[productId]) {
+        clearTimeout(updateQtyTimeouts.current[productId]);
+      }
+      updateQtyTimeouts.current[productId] = setTimeout(async () => {
+        try {
+          if (newQty <= 0) {
+            const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (response.ok) {
+              await fetchCartFromBackend();
+            } else {
+              console.error("Failed to remove item from cart:", response.statusText);
+            }
+          } else {
+            const response = await fetch(`${baseUrl}/api/cart/update`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                productId,
+                quantity: newQty,
+              }),
+            });
+            if (response.ok) {
+              await fetchCartFromBackend();
+            } else {
+              console.error("Failed to update cart:", response.statusText);
+            }
+          }
+        } catch (error) {
+          console.error("Error updating cart:", error);
+        }
+      }, 2000); // 2 seconds debounce
+    }
   };
 
   /* ---------- REMOVE ---------- */

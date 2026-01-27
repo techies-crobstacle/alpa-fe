@@ -23,7 +23,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 -top-5 pb-5 w-full sm:w-110 bg-linear-to-b from-white to-gray-50 z-50 flex flex-col shadow-2xl">
+    <div className="fixed inset-y-0 right-0 -top-5 pb-5 w-full sm:w-110 bg-linear-to-b from-white to-gray-50 z-50 flex flex-col shadow-2xl overflow-x-hidden">
       
       {/* HEADER */}
       <div className="relative bg-linear-to-r from-[#440C03] to-[#6F433A] px-6 py-6">
@@ -49,7 +49,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6">
         {false ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
@@ -74,16 +74,16 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-x-hidden">
             {cartItems.map((item) => (
               <div
                 key={item.cartId || item.id}
                 className="group relative bg-white p-4 rounded-2xl border border-gray-200 hover:border-[#A48068] hover:shadow-md transition-all duration-200"
               >
-                <div className="flex gap-4">
+                <div className="flex gap-3 overflow-x-hidden w-full items-center">
                   {/* IMAGE */}
                   <div 
-                    className="relative w-24 h-28 rounded-xl overflow-hidden bg-gray-50 shrink-0 cursor-pointer group-hover:scale-[1.02] transition-transform"
+                    className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-50 shrink-0 cursor-pointer group-hover:scale-[1.02] transition-transform"
                     onClick={() => navigate(`/shop/${item.slug || item.id}`)}
                   >
                     <Image
@@ -91,51 +91,52 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                       alt={item.name}
                       fill
                       className="object-cover"
-                      sizes="96px"
+                      sizes="64px"
                     />
                   </div>
 
                   {/* INFO */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <h3
-                      className="font-semibold text-gray-800 line-clamp-2 cursor-pointer hover:text-[#440C03] transition-colors mb-2"
+                      className="font-semibold text-gray-800 line-clamp-2 cursor-pointer hover:text-[#440C03] transition-colors mb-1 wrap-break-words max-w-full truncate"
+                      style={{ maxWidth: '120px', overflowWrap: 'break-word', wordBreak: 'break-word' }}
                       onClick={() => navigate(`/shop/${item.slug || item.id}`)}
                     >
                       {item.name}
                     </h3>
 
-                    <p className="text-sm text-gray-500 mb-4">
+                    <p className="text-xs text-gray-500 mb-2 wrap-break-words max-w-full truncate" style={{ maxWidth: '120px', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                       ${item.price.toFixed(2)} each
                     </p>
 
                     {/* QTY CONTROLS */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                         <button
                           onClick={() => updateQty(item.id, -1)}
                           disabled={item.qty <= 1}
-                          className="px-3 py-2 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                          className="px-2 py-1 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                           aria-label="Decrease quantity"
                         >
-                          <Minus size={16} />
+                          <Minus size={14} />
                         </button>
 
-                        <span className="px-4 py-2 text-sm font-semibold min-w-12 text-center bg-white">
+                        <span className="px-2 py-1 text-xs font-semibold min-w-8 text-center bg-white">
                           {item.qty}
                         </span>
 
                         <button
                           onClick={() => updateQty(item.id, 1)}
                           disabled={(item.stock ? item.qty >= item.stock : false)}
-                          className="px-3 py-2 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                          className="px-2 py-1 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                           aria-label="Increase quantity"
                         >
-                          <Plus size={16} />
+                          <Plus size={14} />
                         </button>
                       </div>
 
-                      <div className="text-right">
-                        <p className="font-bold text-lg text-[#440C03]">
+                      <div className="text-right ml-2">
+                        <p className="font-bold text-base text-[#440C03]">
                           ${(item.price * item.qty).toFixed(2)}
                         </p>
                       </div>

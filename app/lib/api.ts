@@ -35,12 +35,15 @@ export class ApiClient {
   }
 
   async post<T>(endpoint: string, data?: any): Promise<T> {
+    console.log(`API POST to ${endpoint}:`, data);
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "POST",
       headers: this.getAuthHeaders(),
       body: data ? JSON.stringify(data) : undefined,
     });
-    return this.handleResponse<T>(response);
+    const result = await this.handleResponse<T>(response);
+    console.log(`API POST ${endpoint} response:`, result);
+    return result;
   }
 
   async put<T>(endpoint: string, data?: any): Promise<T> {
@@ -105,7 +108,65 @@ export const couponsApi = {
 
 export const cartApi = {
   getCart: (): Promise<{ items: CartItem[] }> => apiClient.get("/cart"),
-  // Add more cart endpoints as needed
+  getMyCart: (): Promise<{ cart: any[] }> => apiClient.get("/cart/my-cart"),
+  addToCart: (data: { productId: string; quantity: number }): Promise<any> => 
+    apiClient.post("/cart/add", data),
+  updateCart: (data: { productId: string; quantity: number }): Promise<any> => 
+    apiClient.put("/cart/update", data),
+  removeFromCart: (productId: string): Promise<any> => 
+    apiClient.delete(`/cart/remove/${productId}`),
+};
+
+export const wishlistApi = {
+  getWishlist: (): Promise<any[]> => apiClient.get("/wishlist"),
+  addToWishlist: (data: { productId: string | number }): Promise<any> => {
+    console.log("API: Trying multiple wishlist endpoints for productId:", data.productId);
+    
+    // Try the most common patterns for wishlist APIs
+    const attempts = [
+      () => apiClient.post("/wishlist", { productId: data.productId }),
+      () => apiClient.put("/wishlist", { productId: data.productId }),
+      () => apiClient.post("/user/wishlist", { productId: data.productId }),
+      () => apiClient.post("/wishlist/items", { productId: data.productId }),
+      () => apiClient.put(`/wishlist/${data.productId}`, {}),
+      () => apiClient.post(`/wishlist/${data.productId}`, {}),
+      // Some APIs expect the product ID in the URL path
+      () => apiClient.get(`/wishlist/add/${data.productId}`),
+      // Or as query parameter
+      () => apiClient.post(`/wishlist/add?productId=${data.productId}`, {})
+    ];
+    
+    let lastError: unknown;
+    
+    const tryEndpoint = async (index = 0): Promise<any> => {
+      if (index >= attempts.length) {
+        console.error("All wishlist endpoints failed. Last error:", lastError);
+        let errorMsg = "";
+        if (lastError && typeof lastError === "object" && "message" in lastError) {
+          errorMsg = (lastError as any).message;
+        } else {
+          errorMsg = String(lastError);
+        }
+        throw new Error(`All wishlist endpoints failed. Available endpoints might be different. Last error: ${errorMsg}`);
+      }
+      
+      try {
+        console.log(`Trying wishlist endpoint ${index + 1}/${attempts.length}`);
+        const result = await attempts[index]();
+        console.log(`Wishlist endpoint ${index + 1} succeeded:`, result);
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.log(`Wishlist endpoint ${index + 1} failed:`, error);
+        return tryEndpoint(index + 1);
+      }
+    };
+    
+    return tryEndpoint();
+  },
+  removeFromWishlist: (productId: string): Promise<any> => 
+    apiClient.delete(`/wishlist/${productId}`)
+      .catch(() => apiClient.delete(`/wishlist/remove/${productId}`)),
 };
 
 export const productsApi = {

@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { HiViewGrid } from "react-icons/hi";
 import ProductCard from "../components/cards/productCard";
+import OptimisticProductCard from "../components/cards/OptimisticProductCard";
 import { useCart } from "../context/CartContext";
 import { useProducts, Product } from "../hooks/useProducts";
 
@@ -612,7 +613,7 @@ export default function Page() {
               >
                 {paginatedProducts.map((product) => (
                   <div key={product.id} className="h-full">
-                    <ProductCard
+                    <OptimisticProductCard
                       id={product.id}
                       photo={product.images?.[0] || "/images/placeholder.png"}
                       name={product.title}
