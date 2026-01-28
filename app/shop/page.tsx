@@ -1,10 +1,12 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback, Suspense } from "react";
 import { HiViewGrid } from "react-icons/hi";
+import { Search, X } from "lucide-react";
 import ProductCard from "../components/cards/productCard";
 import OptimisticProductCard from "../components/cards/OptimisticProductCard";
 import { useCart } from "../context/CartContext";
 import { useProducts, Product } from "../hooks/useProducts";
+import { useSearchParams } from "next/navigation";
 
 
 /* =======================
@@ -13,16 +15,18 @@ import { useProducts, Product } from "../hooks/useProducts";
 // Product type moved to useProducts.ts hook
 
 /* =======================
-   PAGE
+   SHOP CONTENT COMPONENT
 ======================= */
-
-export default function Page() {
+function ShopContent() {
   // Use React Query hook instead of manual fetch
   const { data: products = [], isLoading: loading, error: queryError } = useProducts();
+  const searchParams = useSearchParams();
   
   const error = queryError?.message || null;
   const [sort, setSort] = useState("");
   const [view, setView] = useState<3 | 4>(3);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -40,6 +44,32 @@ export default function Page() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const { addToCart, getItemQuantity } = useCart();
+
+  // Handle URL search parameters
+  useEffect(() => {
+    const urlSearchTerm = searchParams.get('search');
+    if (urlSearchTerm) {
+      setSearchTerm(urlSearchTerm);
+      setDebouncedSearchTerm(urlSearchTerm);
+    }
+  }, [searchParams]);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(1); // Reset to page 1 when search changes
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Clear search
+  const clearSearch = useCallback(() => {
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
+    setPage(1);
+  }, []);
 
   /* ---------- TOGGLE FILTER ---------- */
   const toggleFilter = (
@@ -75,9 +105,17 @@ export default function Page() {
         selectedCategories.length === 0 ||
         selectedCategories.includes(product.category);
 
-      return brandMatch && categoryMatch;
+      // Search match - check title, description, brand, and category
+      const searchMatch =
+        !debouncedSearchTerm ||
+        product.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (product.brand && product.brand.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+        product.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+
+      return brandMatch && categoryMatch && searchMatch;
     });
-  }, [sortedProducts, selectedBrands, selectedCategories]);
+  }, [sortedProducts, selectedBrands, selectedCategories, debouncedSearchTerm]);
 
   /* ---------- PAGINATION ---------- */
   const paginatedProducts = useMemo(() => {
@@ -138,6 +176,8 @@ export default function Page() {
   const clearAll = () => {
     setSelectedBrands([]);
     setSelectedCategories([]);
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
     setPage(1);
     setShowMobileFilters(false);
   };
@@ -149,7 +189,7 @@ export default function Page() {
   };
 
   const hasActiveFilters =
-    selectedBrands.length > 0 || selectedCategories.length > 0;
+    selectedBrands.length > 0 || selectedCategories.length > 0 || debouncedSearchTerm.trim().length > 0;
 
   const ThreeGridIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -159,7 +199,7 @@ export default function Page() {
     </svg>
   );
 
-  // Skeleton loader
+  // Skeleton loader for products
   const SkeletonLoader = () => (
     <div
       className={`grid gap-4 sm:gap-6 ${
@@ -169,13 +209,37 @@ export default function Page() {
       }`}
     >
       {[...Array(PRODUCTS_PER_PAGE)].map((_, i) => (
-        <div key={i} className="animate-pulse">
+        <div key={i} className="animate-pulse bg-white p-4 rounded-xl shadow-sm">
           <div className="bg-gray-300 h-48 sm:h-56 md:h-64 w-full rounded-lg mb-4"></div>
           <div className="bg-gray-300 h-4 rounded w-3/4 mb-2"></div>
           <div className="bg-gray-300 h-4 rounded w-1/2 mb-4"></div>
-          <div className="bg-gray-300 h-10 rounded"></div>
+          <div className="flex justify-between items-center">
+            <div className="bg-gray-300 h-6 rounded w-16"></div>
+            <div className="bg-gray-300 h-10 w-24 rounded"></div>
+          </div>
         </div>
       ))}
+    </div>
+  );
+
+  // Skeleton loader for filter sections
+  const FilterSkeleton = () => (
+    <div className="animate-pulse">
+      <div className="flex justify-between mb-3">
+        <div className="bg-gray-300 h-4 rounded w-16"></div>
+        <div className="bg-gray-300 h-4 rounded w-12"></div>
+      </div>
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex justify-between items-center">
+            <div className="flex gap-3 items-center">
+              <div className="bg-gray-300 h-4 w-4 rounded"></div>
+              <div className="bg-gray-300 h-4 rounded w-20"></div>
+            </div>
+            <div className="bg-gray-300 h-4 rounded w-6"></div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 
@@ -228,6 +292,35 @@ export default function Page() {
       </div>
     </div>
   </section>
+
+      {/* SEARCH BAR */}
+      {/* <div className="mx-auto px-4 md:px-4 py-3">
+        <div className="max-w-2xl mx-auto">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search products by name, brand, category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-12 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#441208] focus:border-[#441208] outline-none bg-white text-gray-900 placeholder-gray-500 shadow-sm transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          {debouncedSearchTerm && (
+            <p className="mt-2 text-sm text-gray-600 text-center">
+              Searching for: <span className="font-medium">"{debouncedSearchTerm}"</span>
+            </p>
+          )}
+        </div>
+      </div> */}
 
       {/* MOBILE FILTER BUTTON */}
       <div className="lg:hidden mx-auto px-4 md:px-8 py-4">
@@ -286,18 +379,22 @@ export default function Page() {
 
               {/* Brand Filter - Mobile */}
               <div className="mb-8">
-                <div className="flex justify-between mb-3 text-sm font-medium">
-                  <span>Brand</span>
-                  <button
-                    onClick={() => {
-                      setSelectedBrands([]);
-                      setShowAllBrands(false);
-                    }}
-                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
-                  >
-                    Reset
-                  </button>
-                </div>
+                {loading ? (
+                  <FilterSkeleton />
+                ) : (
+                  <>
+                    <div className="flex justify-between mb-3 text-sm font-medium">
+                      <span>Brand</span>
+                      <button
+                        onClick={() => {
+                          setSelectedBrands([]);
+                          setShowAllBrands(false);
+                        }}
+                        className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                      >
+                        Reset
+                      </button>
+                    </div>
                 <div className="max-h-48 overflow-y-auto pr-2">
                   {displayBrands.map((brand) => (
                     <label
@@ -334,23 +431,29 @@ export default function Page() {
                         : `Show More (${brandsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
                     </button>
                   )}
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Category Filter - Mobile */}
               <div className="mb-8">
-                <div className="flex justify-between mb-3 text-sm font-medium">
-                  <span>Category</span>
-                  <button
-                    onClick={() => {
-                      setSelectedCategories([]);
-                      setShowAllCategories(false);
-                    }}
-                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
-                  >
-                    Reset
-                  </button>
-                </div>
+                {loading ? (
+                  <FilterSkeleton />
+                ) : (
+                  <>
+                    <div className="flex justify-between mb-3 text-sm font-medium">
+                      <span>Category</span>
+                      <button
+                        onClick={() => {
+                          setSelectedCategories([]);
+                          setShowAllCategories(false);
+                        }}
+                        className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                      >
+                        Reset
+                      </button>
+                    </div>
                 <div className="max-h-48 overflow-y-auto pr-2">
                   <hr className="mb-3" />
                   {displayCategories.map((category) => (
@@ -388,7 +491,9 @@ export default function Page() {
                         : `Show More (${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
                     </button>
                   )}
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Apply Filters Button - Mobile */}
@@ -408,18 +513,22 @@ export default function Page() {
 
           {/* Brand Filter - Desktop */}
           <div className="mb-8">
-            <div className="flex justify-between mb-3 text-sm font-medium">
-              <span>Brand</span>
-              <button
-                onClick={() => {
-                  setSelectedBrands([]);
-                  setShowAllBrands(false);
-                }}
-                className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
-              >
-                Reset
-              </button>
-            </div>
+            {loading ? (
+              <FilterSkeleton />
+            ) : (
+              <>
+                <div className="flex justify-between mb-3 text-sm font-medium">
+                  <span>Brand</span>
+                  <button
+                    onClick={() => {
+                      setSelectedBrands([]);
+                      setShowAllBrands(false);
+                    }}
+                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                  >
+                    Reset
+                  </button>
+                </div>
             <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
               {displayBrands.map((brand) => (
                 <label
@@ -454,23 +563,29 @@ export default function Page() {
                     : `Show More (${brandsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
                 </button>
               )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Category Filter - Desktop */}
           <div className="mb-8">
-            <div className="flex justify-between mb-3 text-sm font-medium">
-              <span>Category</span>
-              <button
-                onClick={() => {
-                  setSelectedCategories([]);
-                  setShowAllCategories(false);
-                }}
-                className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
-              >
-                Reset
-              </button>
-            </div>
+            {loading ? (
+              <FilterSkeleton />
+            ) : (
+              <>
+                <div className="flex justify-between mb-3 text-sm font-medium">
+                  <span>Category</span>
+                  <button
+                    onClick={() => {
+                      setSelectedCategories([]);
+                      setShowAllCategories(false);
+                    }}
+                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                  >
+                    Reset
+                  </button>
+                </div>
             <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
               <hr className="mb-3" />
               {displayCategories.map((category) => (
@@ -508,7 +623,9 @@ export default function Page() {
                     : `Show More (${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
                 </button>
               )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         </aside>
 
@@ -566,6 +683,15 @@ export default function Page() {
               <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
                 Active filters:
               </span>
+              {debouncedSearchTerm && (
+                <span
+                  className="inline-flex items-center gap-1 bg-[#441208] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
+                  onClick={clearSearch}
+                >
+                  Search: "{debouncedSearchTerm}"
+                  <span className="ml-1">×</span>
+                </span>
+              )}
               {activeFilters.map((filter) => (
                 <span
                   key={filter}
@@ -679,5 +805,31 @@ export default function Page() {
         </section>
       </section>
     </section>
+  );
+}
+
+/* =======================
+   LOADING COMPONENT
+======================= */
+function ShopLoading() {
+  return (
+    <section className="min-h-screen bg-[url('/images/main-bg.png')] bg-repeat bg-center">
+      <section className="container mx-auto px-4 py-12 sm:py-16 lg:py-20">
+        <div className="flex justify-center items-center min-h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A1E12]"></div>
+        </div>
+      </section>
+    </section>
+  );
+}
+
+/* =======================
+   MAIN PAGE COMPONENT
+======================= */
+export default function Page() {
+  return (
+    <Suspense fallback={<ShopLoading />}>
+      <ShopContent />
+    </Suspense>
   );
 }

@@ -119,6 +119,8 @@ export const cartApi = {
 
 export const wishlistApi = {
   getWishlist: (): Promise<any[]> => apiClient.get("/wishlist"),
+  checkWishlist: (productId: string | number): Promise<{ inWishlist: boolean }> =>
+    apiClient.get(`/wishlist/check/${productId}`),
   addToWishlist: (data: { productId: string | number }): Promise<any> => {
     console.log("API: Trying multiple wishlist endpoints for productId:", data.productId);
     

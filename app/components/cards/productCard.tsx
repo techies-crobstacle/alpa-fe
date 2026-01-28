@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Minus, Plus, Heart, Star } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
+import { useWishlistCheck } from "@/app/hooks/useWishlist";
+import { useToggleWishlist } from "@/app/hooks/useWishlistMutations";
 
 interface ProductCardProps {
   id: string;
@@ -31,10 +33,14 @@ export default function ProductCard({
   rating = 4.5,
 }: ProductCardProps) {
   const { cartItems, addToCart, updateQty, removeFromCart } = useCart();
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
+  
+  // Use the new wishlist hooks
+  const { data: wishlistCheckData, isLoading: isCheckingWishlist } = useWishlistCheck(id);
+  const toggleWishlistMutation = useToggleWishlist();
+  
+  const isWishlisted = wishlistCheckData?.inWishlist || false;
+  const wishlistLoading = isCheckingWishlist || toggleWishlistMutation.isPending;
 
   // Find the cart item by product ID
   const cartItem = cartItems.find((item) => item.id === id);
@@ -45,67 +51,13 @@ export default function ProductCard({
   const isInCart = qty > 0;
   const isOutOfStock = remainingStock === 0;
 
-  /* ---------- CHECK WISHLIST STATUS ---------- */
-  useEffect(() => {
-    const checkWishlistStatus = async () => {
-      try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        if (!token) {
-          setIsWishlisted(false);
-          return;
-        }
 
-        const response = await fetch(`${baseURL}/api/wishlist/`, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Wishlist data:', data, 'Looking for product ID:', id);
-          // Check if current product is in the wishlist array
-          if (Array.isArray(data)) {
-            const isInWishlist = data.some((item: any) => {
-              console.log('Checking item:', item, 'against product id:', id);
-              return item.id === id || item.productId === id || item.product?.id === id;
-            });
-            console.log('Is in wishlist:', isInWishlist);
-            setIsWishlisted(isInWishlist);
-          } else if (data && data.wishlist && Array.isArray(data.wishlist)) {
-            const isInWishlist = data.wishlist.some((item: any) => {
-              console.log('Checking wishlist item:', item, 'against product id:', id);
-              return item.id === id || item.productId === id || item.product?.id === id;
-            });
-            console.log('Is in wishlist (nested):', isInWishlist);
-            setIsWishlisted(isInWishlist);
-          } else {
-            console.log('No valid wishlist data found');
-            setIsWishlisted(false);
-          }
-        } else {
-          setIsWishlisted(false);
-          let errorText = '';
-          try { errorText = await response.text(); } catch {}
-          console.error('Wishlist fetch failed:', response.status, errorText);
-        }
-      } catch (error) {
-        setIsWishlisted(false);
-        console.error("Error fetching wishlist:", error);
-      }
-    };
-
-    checkWishlistStatus();
-  }, [id]);
 
   /* ---------- ADD ---------- */
-  const handleAdd = async () => {
+  const handleAdd = () => {
     if (isOutOfStock) return;
 
-    await addToCart({
+    addToCart({
       cartId: "",
       id,
       name,
@@ -114,78 +66,44 @@ export default function ProductCard({
       stock,
       slug,
     });
-
-    animate();
   };
 
   /* ---------- INCREASE ---------- */
-  const handleIncrease = async () => {
+  const handleIncrease = () => {
     if (isOutOfStock || !cartItem) return;
 
-    await updateQty(id, 1);
-    animate();
+    updateQty(id, 1);
   };
 
   /* ---------- DECREASE ---------- */
-  const handleDecrease = async () => {
+  const handleDecrease = () => {
     if (!cartItem || qty === 0) return;
 
     if (qty === 1) {
       // Remove item completely
-      await removeFromCart(id);
+      removeFromCart(id);
     } else {
       // Decrease quantity
-      await updateQty(id, -1);
+      updateQty(id, -1);
     }
-
-    animate();
   };
 
   /* ---------- ADD TO WISHLIST ---------- */
   const handleWishlist = async () => {
     if (wishlistLoading || isWishlisted) return; // Don't allow if already in wishlist
     
-    setWishlistLoading(true);
     setIsHeartAnimating(true);
     
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
-
-      const response = await fetch(`${baseURL}/api/wishlist/${id}`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({}),
+      await toggleWishlistMutation.mutateAsync({ 
+        productId: id, 
+        isCurrentlyWishlisted: isWishlisted 
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setIsWishlisted(true);
-        }
-      } else {
-        let errorText = '';
-        try { errorText = await response.text(); } catch {}
-        console.error("Failed to add to wishlist", response.status, errorText);
-      }
     } catch (error) {
       console.error("Error adding to wishlist:", error);
     } finally {
-      setWishlistLoading(false);
       setTimeout(() => setIsHeartAnimating(false), 300);
     }
-  };
-
-  const animate = () => {
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 300);
   };
 
   const formatPrice = (price: number) =>
@@ -325,13 +243,11 @@ export default function ProductCard({
             {/* CART BUTTON/CONTROLS */}
             {isInCart ? (
               <div
-                className={`flex items-center gap-1 sm:gap-2 bg-amber-900 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full transition-all ${
-                  isAnimating ? "scale-105" : ""
-                }`}
+                className="flex items-center gap-1 sm:gap-2 bg-amber-900 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full"
               >
                 <button
                   onClick={handleDecrease}
-                  className="p-1 hover:bg-amber-800 rounded-full transition-colors"
+                  className="p-1 hover:bg-amber-800 rounded-full"
                   aria-label="Decrease quantity"
                 >
                   <Minus size={14} className="sm:w-4 sm:h-4" />
@@ -344,7 +260,7 @@ export default function ProductCard({
                 <button
                   onClick={handleIncrease}
                   disabled={isOutOfStock}
-                  className="p-1 hover:bg-amber-800 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1 hover:bg-amber-800 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Increase quantity"
                 >
                   <Plus size={14} className="sm:w-4 sm:h-4" />
@@ -354,10 +270,10 @@ export default function ProductCard({
               <button
                 onClick={handleAdd}
                 disabled={isOutOfStock}
-                className={`p-1.5 sm:p-2 rounded-full transition-all flex items-center justify-center ${
+                className={`p-1.5 sm:p-2 rounded-full flex items-center justify-center ${
                   isOutOfStock
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-amber-900 text-white hover:bg-amber-800 active:scale-95"
+                    : "bg-amber-900 text-white hover:bg-amber-800"
                 }`}
                 aria-label={isOutOfStock ? "Out of stock" : "Add to cart"}
               >

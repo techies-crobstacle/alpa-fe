@@ -3,10 +3,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { wishlistApi } from "@/app/lib/api";
-
-export const wishlistQueryKeys = {
-  wishlist: ["wishlist"] as const,
-};
+import { wishlistQueryKeys } from "./useWishlist";
 
 interface WishlistItem {
   id: string;
@@ -35,11 +32,13 @@ export function useToggleWishlist() {
     },
     // Optimistic update - immediately update UI
     onMutate: async ({ productId, isCurrentlyWishlisted }) => {
-      // Cancel any outgoing refetches
+      // Cancel any outgoing refetches for both main wishlist and product check
       await queryClient.cancelQueries({ queryKey: wishlistQueryKeys.wishlist });
+      await queryClient.cancelQueries({ queryKey: wishlistQueryKeys.wishlistCheck(productId) });
 
-      // Snapshot the previous value
+      // Snapshot the previous values
       const previousWishlistData = queryClient.getQueryData(wishlistQueryKeys.wishlist);
+      const previousCheckData = queryClient.getQueryData(wishlistQueryKeys.wishlistCheck(productId));
       
       // Handle different response formats - ensure we work with an array
       const previousWishlist = Array.isArray(previousWishlistData)
@@ -48,7 +47,7 @@ export function useToggleWishlist() {
           ? (previousWishlistData as any).wishlist
           : [];
 
-      // Optimistically update the cache (add-only)
+      // Optimistically update both caches (add-only)
       let optimisticWishlist: WishlistItem[];
       if (isCurrentlyWishlisted) {
         // If already wishlisted, keep current state
@@ -60,38 +59,37 @@ export function useToggleWishlist() {
           productId: productId,
         };
         optimisticWishlist = [...previousWishlist, newItem];
+        
+        // Update the individual product check cache
+        queryClient.setQueryData(wishlistQueryKeys.wishlistCheck(productId), { inWishlist: true });
       }
 
       queryClient.setQueryData(wishlistQueryKeys.wishlist, optimisticWishlist);
 
-      // Return a context object with the snapshotted value and new state
-      return { previousWishlist: previousWishlistData, newWishlistState: !isCurrentlyWishlisted };
+      // Return a context object with the snapshotted values
+      return { 
+        previousWishlist: previousWishlistData, 
+        previousCheckData,
+        newWishlistState: !isCurrentlyWishlisted,
+        productId 
+      };
     },
     // If the mutation fails, use the context returned from onMutate to roll back
     onError: (err, variables, context) => {
       if (context?.previousWishlist) {
         queryClient.setQueryData(wishlistQueryKeys.wishlist, context.previousWishlist);
       }
+      if (context?.previousCheckData && context?.productId) {
+        queryClient.setQueryData(wishlistQueryKeys.wishlistCheck(context.productId), context.previousCheckData);
+      }
     },
     // Always refetch after error or success to ensure consistency
-    onSettled: (data) => {
-      // Handle the response data format
-      if (data) {
-        let serverData: WishlistItem[] = [];
-        if (Array.isArray(data)) {
-          serverData = data;
-        } else if (
-          typeof data === "object" &&
-          data !== null &&
-          "wishlist" in data &&
-          Array.isArray((data as any).wishlist)
-        ) {
-          serverData = (data as any).wishlist;
-        }
-        queryClient.setQueryData(wishlistQueryKeys.wishlist, serverData);
-      } else {
-        queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.wishlist });
-      }
+    onSettled: (data, error, variables) => {
+      const { productId } = variables;
+      
+      // Invalidate both the main wishlist and the specific product check
+      queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.wishlist });
+      queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.wishlistCheck(productId) });
     },
   });
 }

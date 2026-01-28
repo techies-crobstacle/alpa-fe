@@ -237,7 +237,7 @@ export default function OptimisticMiniCart({ onClose }: { onClose: () => void })
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 top-0 w-full sm:w-96 bg-linear-to-b from-white to-gray-50 z-50 flex flex-col shadow-2xl overflow-hidden">
+    <div className="relative w-full h-full bg-linear-to-b from-white to-gray-50 flex flex-col shadow-2xl overflow-hidden">
       
       {/* HEADER */}
       <div className="relative bg-linear-to-r from-[#440C03] to-[#6F433A] px-6 py-6 shrink-0">
