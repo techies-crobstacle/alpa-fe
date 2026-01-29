@@ -42,7 +42,7 @@ export default function CheckOutPage() {
     setIsPlacingOrder(true);
     
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/orders/create", {
+      const response = await fetch("https://alpa-be-1.onrender.com/api/orders/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
