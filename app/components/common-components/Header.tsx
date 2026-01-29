@@ -996,7 +996,7 @@ export default function Header() {
                     placeholder="Search products..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-60 pl-10 pr-4 py-2.5 border border-gray-300 rounded-full focus:ring-2 focus:ring-[#5A1E12] focus:border-[#5A1E12] outline-none bg-white/90 backdrop-blur-sm text-gray-900 placeholder-gray-500 shadow-sm transition-all text-sm"
+                    className="w-60 pl-6 pr-4 py-2.5 border border-gray-300 rounded-full focus:ring-1 focus:ring-[#5A1E12] focus:border-white outline-none bg-white/90 backdrop-blur-sm text-gray-900 placeholder-gray-500 shadow-sm transition-all text-sm"
                   />
                 </div>
               </form>

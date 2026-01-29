@@ -33,7 +33,7 @@ type CartContextType = {
    CONTEXT
 ======================= */
 const CartContext = createContext<CartContextType | null>(null);
-const baseUrl = "https://alpa-be-1.onrender.com";
+const baseUrl = "http://127.0.0.1:5000";
 
 /* =======================
    PROVIDER

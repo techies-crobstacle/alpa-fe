@@ -66,7 +66,7 @@ export default function OptimisticProductCard({
 
   // Loading states for specific buttons
   const isAddToCartLoading = addToCartMutation.isPending;
-  const isUpdateCartLoading = updateCartMutation.isPending;
+  // const isUpdateCartLoading = updateCartMutation.isPending;
   const isWishlistLoading = toggleWishlistMutation.isPending;
 
   /* ---------- INSTANT ADD TO CART ---------- */
@@ -269,15 +269,10 @@ export default function OptimisticProductCard({
               >
                 <button
                   onClick={handleDecrease}
-                  disabled={isUpdateCartLoading}
-                  className="p-1 hover:bg-amber-800 rounded-full transition-colors disabled:opacity-70"
+                  className="p-1 hover:bg-amber-800 rounded-full transition-colors"
                   aria-label="Decrease quantity"
                 >
-                  {isUpdateCartLoading ? (
-                    <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" />
-                  ) : (
-                    <Minus size={14} className="sm:w-4 sm:h-4" />
-                  )}
+                  <Minus size={14} className="sm:w-4 sm:h-4" />
                 </button>
 
                 <span className="min-w-4 sm:min-w-5 text-center font-bold text-sm sm:text-base">
@@ -286,15 +281,11 @@ export default function OptimisticProductCard({
 
                 <button
                   onClick={handleIncrease}
-                  disabled={isOutOfStock || isUpdateCartLoading}
+                  disabled={isOutOfStock}
                   className="p-1 hover:bg-amber-800 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Increase quantity"
                 >
-                  {isUpdateCartLoading ? (
-                    <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" />
-                  ) : (
-                    <Plus size={14} className="sm:w-4 sm:h-4" />
-                  )}
+                  <Plus size={14} className="sm:w-4 sm:h-4" />
                 </button>
               </div>
             ) : (

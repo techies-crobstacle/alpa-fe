@@ -21,7 +21,7 @@ function OTPVerificationForm() {
   const { setUserDirect } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const url = "https://alpa-be-1.onrender.com";
+  const url = "http://127.0.0.1:5000";
 
   // Get email from URL query params (from your router.push)
   const emailFromParams = searchParams.get("email") || "";
@@ -115,59 +115,83 @@ function OTPVerificationForm() {
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ // Handle form submission
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!email) {
-      setError("Email is required");
+  if (!email) {
+    setError("Email is required");
+    return;
+  }
+
+  if (!otp.every((d) => d !== "")) {
+    setError("Please enter complete OTP");
+    return;
+  }
+
+  const otpString = otp.join("");
+
+  setLoading(true);
+  setError("");
+  setSuccess("");
+
+  try {
+    // Generate client fingerprint (same as login page)
+    const generateClientFingerprint = () => {
+      const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const language = navigator.language;
+      const platform = navigator.platform;
+      const userAgent = navigator.userAgent;
+      
+      return btoa(`${screenInfo}|${timezone}|${language}|${platform}|${userAgent}`);
+    };
+
+    const clientFingerprint = generateClientFingerprint();
+
+    const res = await fetch(`${url}/api/auth/verify-login-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        otp: otpString,
+        clientFingerprint, // Add this
+      }),
+    });
+
+    const data = await res.json();
+
+    // Log backend response for debugging
+    console.log("VERIFY OTP RESPONSE:", data);
+
+    if (!res.ok) {
+      setError(data.message || "Invalid OTP");
       return;
     }
 
-    if (!otp.every((d) => d !== "")) {
-      setError("Please enter complete OTP");
-      return;
+    //  REAL LOGIN HAPPENS HERE
+    localStorage.setItem("token", data.token);
+    
+    // Store trusted device token if provided
+    if (data.trustedDeviceToken) {
+      localStorage.setItem("trustedDeviceToken", data.trustedDeviceToken);
     }
+    
+    setUserDirect(data.user);
 
-    const otpString = otp.join("");
+    setSuccess("Verification successful! Redirecting...");
 
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const res = await fetch(`${url}/api/auth/verify-login-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          otp: otpString,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Invalid OTP");
-        return;
-      }
-
-      //  REAL LOGIN HAPPENS HERE
-      localStorage.setItem("token", data.token);
-      setUserDirect(data.user);
-
-      setSuccess("Verification successful! Redirecting...");
-
-      setTimeout(() => {
-        router.push("/");
-      }, 1000);
-    } catch (err) {
-      setError("OTP verification failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setTimeout(() => {
+      router.push("/");
+    }, 1000);
+  } catch (err) {
+    setError("OTP verification failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Handle resend OTP
   const handleResendOTP = async () => {

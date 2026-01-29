@@ -20,7 +20,7 @@ interface ProductCardProps {
 }
 
 const baseURL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://alpa-be-1.onrender.com";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:5000";
 
 export default function ProductCard({
   id,
@@ -583,7 +583,7 @@ export default function ProductCard({
 // }
 
 // const baseURL =
-//   process.env.NEXT_PUBLIC_API_BASE_URL || "https://alpa-be-1.onrender.com";
+//   process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:5000";
 
 // export default function ProductCard({
 //   id,
