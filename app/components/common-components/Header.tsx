@@ -1092,15 +1092,15 @@ export default function Header() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/login"
-                  className="font-medium text-gray-800 text-sm hover:text-[#5A1E12] transition-colors px-3 py-1.5 rounded-full hover:bg-white/30"
+                  className="font-medium border text-gray-800 text-sm hover:text-[#5A1E12] transition-colors px-3 py-1.5 rounded-full hover:bg-white/30"
                 >
                   Login
                 </Link>
                 <Link
-                  href="/signup"
+                  href="/sellerOnboarding"
                   className="font-medium bg-[#5A1E12] text-white text-sm hover:bg-[#4a180f] transition-colors px-4 py-1.5 rounded-full"
                 >
-                  Sign Up
+                  Seller
                 </Link>
               </div>
             ) : (

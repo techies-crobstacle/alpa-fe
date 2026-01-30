@@ -5,17 +5,49 @@ import Image from "next/image";
 import { X, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import confetti from "canvas-confetti";
 
 export default function MiniCart({ onClose }: { onClose: () => void }) {
   const { cartItems, updateQty, removeFromCart, subtotal } = useCart();
   const router = useRouter();
+  const confettiTriggered = useRef(false);
 
   useEffect(() => {
     const handlePopState = () => onClose();
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [onClose]);
+
+  // Trigger confetti when reaching $100 free shipping
+  useEffect(() => {
+    if (subtotal >= 100 && !confettiTriggered.current) {
+      confettiTriggered.current = true;
+      // Use setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        try {
+          confetti({
+            particleCount: 150, 
+            spread: 90,
+            origin: { x: 0.5, y: 0.5 },
+            colors: ["#440C03", "#6F433A", "#A48068", "#FFD700", "#FFA500"]
+          });
+          // Second burst for more effect
+          confetti({
+            particleCount: 100,
+            spread: 100,
+            origin: { x: 0.5, y: 0.3 },
+            colors: ["#FFD700", "#FFA500", "#440C03"]
+          });
+        } catch (error) {
+          console.error("Confetti error:", error);
+        }
+      }, 100);
+    } else if (subtotal < 100) {
+      // Reset the trigger when subtotal drops below $100
+      confettiTriggered.current = false;
+    }
+  }, [subtotal]);
 
   const navigate = (path: string) => {
     onClose();
@@ -176,6 +208,17 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                   style={{ width: `${Math.min((subtotal / 100) * 100, 100)}%` }}
                 />
               </div>
+            </div>
+          )}
+
+          {/* Free Shipping Unlocked */}
+          {subtotal >= 100 && (
+            <div className="bg-green-100 border-2 border-green-400 text-green-800 px-4 py-3 rounded-xl text-sm flex items-center gap-3 animate-pulse">
+              <span className="text-2xl">🎉</span>
+              <span className="flex-1">
+                <span className="font-bold block">Congratulations!</span>
+                <span className="text-xs block mt-0.5">You've unlocked free shipping! 🚚</span>
+              </span>
             </div>
           )}
 

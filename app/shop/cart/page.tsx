@@ -324,7 +324,33 @@ export default function Page() {
 
             <div className="flex items-center gap-4 w-full max-w-xl">
               <span className="flex-1 h-px bg-[#E6CFAF]" />
-              <TruckElectric className="h-8 w-8 text-white/80 shrink-0" />
+              {/* <TruckElectric className="h-8 w-8 text-white/80 shrink-0" /> */}
+              {subtotal < 100 && (
+              <div className="relative mb-6">
+                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                  <span className="flex-1">
+                    <span className="font-semibold">${(100 - subtotal).toFixed(2)}</span> away from free shipping! 🎉
+                  </span>
+                </div>
+                <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-linear-to-r from-green-400 to-green-500 transition-all duration-300"
+                    style={{ width: `${Math.min((subtotal / 100) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+{subtotal >= 100 && (
+              <div className="bg-green-100 border-2 border-green-400 text-green-800 px-4 py-3 rounded-xl text-sm flex items-center gap-3 mb-6 animate-pulse">
+                <span className="text-2xl">🎉</span>
+                <span className="flex-1">
+                  <span className="font-bold block">Congratulations!</span>
+                  <span className="text-xs block mt-0.5">You've unlocked free shipping! 🚚</span>
+                </span>
+              </div>
+            )}
+
               <span className="flex-1 h-px bg-white/60" />
             </div>
           </div>
@@ -455,6 +481,34 @@ export default function Page() {
           {/* RIGHT – SUMMARY */}
           <div className="bg-[#EFE7DA] rounded-2xl border border-white p-8 w-full">
             <h2 className="text-2xl font-bold mb-6">Cart Summary</h2>
+
+            {/* Shipping Progress */}
+            {/* {subtotal < 100 && (
+              <div className="relative mb-6">
+                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                  <span className="flex-1">
+                    <span className="font-semibold">${(100 - subtotal).toFixed(2)}</span> away from free shipping! 🎉
+                  </span>
+                </div>
+                <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-linear-to-r from-green-400 to-green-500 transition-all duration-300"
+                    style={{ width: `${Math.min((subtotal / 100) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )} */}
+
+            {/* Free Shipping Unlocked */}
+            {/* {subtotal >= 100 && (
+              <div className="bg-green-100 border-2 border-green-400 text-green-800 px-4 py-3 rounded-xl text-sm flex items-center gap-3 mb-6 animate-pulse">
+                <span className="text-2xl">🎉</span>
+                <span className="flex-1">
+                  <span className="font-bold block">Congratulations!</span>
+                  <span className="text-xs block mt-0.5">You've unlocked free shipping! 🚚</span>
+                </span>
+              </div>
+            )} */}
 
             {/* Shipping Options */}
             <div className="space-y-4">

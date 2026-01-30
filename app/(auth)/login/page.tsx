@@ -75,14 +75,14 @@ export default function LoginPage() {
         bg-linear-to-r from-[#440C03] via-[#440C03] to-[#440C03]"
       >
         {/* Logo */}
-        <div className="absolute top-8 left-8">
+        <Link href="/" className="absolute top-8 left-8">
           <Image
             src="/images/navbarLogo.png"
             alt="Logo"
             width={90}
             height={90}
           />
-        </div>
+        </Link>
 
         {/* Content */}
         <div className="max-w-md">

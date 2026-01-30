@@ -10,7 +10,7 @@ export default function NavbarWrapper() {
   const hideNavbar =
     pathname === "/login" ||
     pathname === "/signup" ||
-    // pathname === "/shop/cart" || 
+    pathname === "/sellerOnboarding" || 
     pathname === "/login-verify-otp"
 
     ;
