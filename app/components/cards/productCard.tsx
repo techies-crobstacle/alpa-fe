@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Minus, Plus, Heart, Star } from "lucide-react";
@@ -38,9 +38,16 @@ export default function ProductCard({
   // Use the new wishlist hooks
   const { data: wishlistCheckData, isLoading: isCheckingWishlist } = useWishlistCheck(id);
   const toggleWishlistMutation = useToggleWishlist();
-  
-  const isWishlisted = wishlistCheckData?.inWishlist || false;
-  const wishlistLoading = isCheckingWishlist || toggleWishlistMutation.isPending;
+  // Debounce ref for wishlist
+  const wishlistTimeout = useRef<NodeJS.Timeout | null>(null);
+  // Local state for instant UI update
+  const [optimisticWishlisted, setOptimisticWishlisted] = useState<boolean>(false);
+  const [wishlistPending, setWishlistPending] = useState(false);
+
+  // Compute wishlisted state: use optimistic update as priority
+  const isWishlisted = optimisticWishlisted || wishlistCheckData?.inWishlist || false;
+  // Never show loading state to user - API runs silently in background
+  const wishlistLoading = false;
 
   // Find the cart item by product ID
   const cartItem = cartItems.find((item) => item.id === id);
@@ -89,21 +96,32 @@ export default function ProductCard({
   };
 
   /* ---------- ADD TO WISHLIST ---------- */
-  const handleWishlist = async () => {
-    if (wishlistLoading || isWishlisted) return; // Don't allow if already in wishlist
+  const handleWishlist = () => {
+    // Only allow if not already wishlisted and not pending
+    if (isWishlisted || wishlistPending) return;
     
     setIsHeartAnimating(true);
-    
-    try {
-      await toggleWishlistMutation.mutateAsync({ 
-        productId: id, 
-        isCurrentlyWishlisted: isWishlisted 
-      });
-    } catch (error) {
-      console.error("Error adding to wishlist:", error);
-    } finally {
-      setTimeout(() => setIsHeartAnimating(false), 300);
-    }
+    setOptimisticWishlisted(true); // Heart fills instantly
+    setWishlistPending(true); // Button becomes unclickable instantly
+
+    // Silently call API after 2 seconds - no loading state shown
+    if (wishlistTimeout.current) clearTimeout(wishlistTimeout.current);
+    wishlistTimeout.current = setTimeout(async () => {
+      try {
+        await toggleWishlistMutation.mutateAsync({ 
+          productId: id, 
+          isCurrentlyWishlisted: false
+        });
+      } catch (error) {
+        // Only rollback on error
+        setOptimisticWishlisted(false);
+        setWishlistPending(false);
+        console.error("Error adding to wishlist:", error);
+      } finally {
+        // Keep button unclickable and heart filled on success
+        setTimeout(() => setIsHeartAnimating(false), 300);
+      }
+    }, 2000); // 2 seconds silent API call
   };
 
   const formatPrice = (price: number) =>
@@ -111,6 +129,13 @@ export default function ProductCard({
       style: "currency",
       currency: "AUD",
     }).format(price);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (wishlistTimeout.current) clearTimeout(wishlistTimeout.current);
+    };
+  }, []);
 
   /* ---------- RENDER STARS ---------- */
   const renderStars = () => {
@@ -225,18 +250,18 @@ export default function ProductCard({
             {/* WISHLIST BUTTON */}
             <button
               onClick={handleWishlist}
-              disabled={isWishlisted || wishlistLoading}
+              disabled={isWishlisted || wishlistPending}
               className={`p-1.5 sm:p-2 rounded-full transition-all flex items-center justify-center ${
-                isWishlisted 
-                  ? "bg-gray-400 cursor-not-allowed" 
+                isWishlisted || wishlistPending
+                  ? "bg-gray-400 cursor-not-allowed"
                   : "bg-amber-900 hover:bg-amber-800"
               } ${isHeartAnimating ? "scale-125" : ""}`}
               aria-label={isWishlisted ? "Already in wishlist" : "Add to wishlist"}
             >
               <Heart
                 size={16}
-                className={`sm:w-5 sm:h-5 transition-all ${isWishlisted ? "fill-[#e74c3c] text-[#e74c3c]" : "fill-none text-[#e7d0b0]"}`}
-                strokeWidth={isWishlisted ? 0 : 2}
+                className={`sm:w-5 sm:h-5 transition-all ${isWishlisted || wishlistPending ? "fill-[#e74c3c] text-[#e74c3c]" : "fill-none text-[#e7d0b0]"}`}
+                strokeWidth={isWishlisted || wishlistPending ? 0 : 2}
               />
             </button>
 

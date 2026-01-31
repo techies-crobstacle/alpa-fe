@@ -11,9 +11,18 @@ import PaymentCart from "../../../components/checkout/paymentCart";
 
 export default function CheckOutPage() {
   const [step, setStep] = useState(1); // Start from Email step (optional)
+  const [showGuestForm, setShowGuestForm] = useState(false);
   const [promoCode, setPromoCode] = useState("");
-  const [email, setEmail] = useState(""); // Optional email
+  // Guest checkout required fields
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestFirstName, setGuestFirstName] = useState("");
+  const [guestLastName, setGuestLastName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingStreet, setShippingStreet] = useState("");
+  const [shippingSuburb, setShippingSuburb] = useState("");
+  const [shippingPostcode, setShippingPostcode] = useState("");
+  const [shippingFullAddress, setShippingFullAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
@@ -34,30 +43,64 @@ export default function CheckOutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!shippingAddress.trim() || !paymentMethod) {
-      alert("Please complete all required fields");
-      return;
+    // If not logged in, require guest checkout fields
+    if (!token) {
+      if (!guestEmail.trim() || !guestFirstName.trim() || !guestLastName.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingSuburb.trim() || !shippingPostcode.trim() || !shippingFullAddress.trim() || !paymentMethod) {
+        alert("Please complete all required guest checkout fields");
+        return;
+      }
+    } else {
+      if (!shippingAddress.trim() || !paymentMethod) {
+        alert("Please complete all required fields");
+        return;
+      }
     }
 
     setIsPlacingOrder(true);
-    
     try {
-      const response = await fetch("https://alpa-be-1.onrender.com/api/orders/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          shippingAddress,
-          paymentMethod: paymentMethod.toUpperCase(),
-        }),
-      });
+      let response;
+      if (!token) {
+        // Guest checkout API call
+        response = await fetch("https://alpa-be-1.onrender.com/api/orders/guest/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            items: cartItems.map((item) => ({
+              productId: item.id,
+              quantity: item.qty,
+            })),
+            customerName: `${guestFirstName} ${guestLastName}`.trim(),
+            customerEmail: guestEmail,
+            customerPhone: guestPhone,
+            shippingAddress: {
+              street: shippingStreet,
+              suburb: shippingSuburb,
+              postcode: shippingPostcode,
+              fullAddress: shippingFullAddress,
+            },
+            paymentMethod,
+          }),
+        });
+      } else {
+        // Authenticated user order
+        response = await fetch("https://alpa-be-1.onrender.com/api/orders/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            shippingAddress,
+            paymentMethod: paymentMethod.toUpperCase(),
+          }),
+        });
+      }
 
       if (response.ok) {
         const data = await response.json();
         alert("Order placed successfully!");
-        // Redirect to order confirmation or clear cart
         window.location.href = "/";
       } else {
         const errorData = await response.json();
@@ -71,6 +114,7 @@ export default function CheckOutPage() {
     }
   };
 
+
   return (
     <section className="min-h-screen py-20 px-4 sm:px-6 lg:px-8 bg-[#f5f5f5]">
       <div className="max-w-7xl mx-auto">
@@ -80,66 +124,193 @@ export default function CheckOutPage() {
           {/* ================= LEFT: STEPS ================= */}
           <div className="lg:w-2/3">
             <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
-              {/* STEP INDICATORS */}
-              <div className="flex justify-between mb-8 relative">
-                <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-10" />
-                {[1, 2, 3].map((n) => (
-                  <div key={n} className="flex flex-col items-center">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        step >= n
-                          ? "bg-black text-white"
-                          : "bg-gray-200 text-gray-600"
+              {/* Guest Checkout Option and Form only if not logged in */}
+              {(!token) && !showGuestForm && step === 1 && (
+                <div className="mb-8">
+                  <button
+                    className="px-6 py-3 bg-yellow-400 text-black rounded-lg font-bold hover:bg-yellow-500"
+                    onClick={() => setShowGuestForm(true)}
+                  >
+                    Continue as Guest (Guest Checkout)
+                  </button>
+                  <p className="mt-2 text-sm text-gray-600">No account? Use guest checkout to place your order without logging in.</p>
+                </div>
+              )}
+
+              {(!token) && showGuestForm && step === 1 && (
+                <div className="space-y-4 bg-yellow-50 p-4 rounded mb-8">
+                  <h3 className="font-semibold">Guest Checkout Details (Required)</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">First Name</label>
+                      <input
+                        type="text"
+                        value={guestFirstName}
+                        onChange={e => setGuestFirstName(e.target.value)}
+                        className="border-b px-2 py-1 outline-none w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Last Name</label>
+                      <input
+                        type="text"
+                        value={guestLastName}
+                        onChange={e => setGuestLastName(e.target.value)}
+                        className="border-b px-2 py-1 outline-none w-full"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Email</label>
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={e => setGuestEmail(e.target.value)}
+                      className="border-b px-2 py-1 outline-none w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Phone</label>
+                    <input
+                      type="tel"
+                      value={guestPhone}
+                      onChange={e => setGuestPhone(e.target.value)}
+                      className="border-b px-2 py-1 outline-none w-full"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">Street</label>
+                      <input
+                        type="text"
+                        value={shippingStreet}
+                        onChange={e => setShippingStreet(e.target.value)}
+                        className="border-b px-2 py-1 outline-none w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Suburb</label>
+                      <input
+                        type="text"
+                        value={shippingSuburb}
+                        onChange={e => setShippingSuburb(e.target.value)}
+                        className="border-b px-2 py-1 outline-none w-full"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">Postcode</label>
+                      <input
+                        type="text"
+                        value={shippingPostcode}
+                        onChange={e => setShippingPostcode(e.target.value)}
+                        className="border-b px-2 py-1 outline-none w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Full Address</label>
+                      <input
+                        type="text"
+                        value={shippingFullAddress}
+                        onChange={e => setShippingFullAddress(e.target.value)}
+                        className="border-b px-2 py-1 outline-none w-full"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button
+                    className="mt-4 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800"
+                    onClick={() => {
+                      // Validate guest fields before proceeding
+                      if (!guestFirstName.trim() || !guestLastName.trim() || !guestEmail.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingSuburb.trim() || !shippingPostcode.trim() || !shippingFullAddress.trim()) {
+                        alert("Please fill all guest checkout fields");
+                        return;
+                      }
+                      setStep(3); // Go directly to payment step
+                    }}
+                  >
+                    Continue to Payment
+                  </button>
+                </div>
+              )}
+
+              {/* Stepper and payment for guest or normal for logged in */}
+              {(token || (showGuestForm && step === 3)) && (
+                <>
+                  {/* STEP INDICATORS */}
+                  <div className="flex justify-between mb-8 relative">
+                    <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-10" />
+                    {[1, 2, 3].map((n) => (
+                      <div key={n} className="flex flex-col items-center">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            step >= n
+                              ? "bg-black text-white"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          {n}
+                        </div>
+                        <span className="text-sm mt-2">
+                          {n === 1 ? "Email" : n === 2 ? "Address" : "Payment"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* STEP CONTENT */}
+                  <div className="min-h-75">
+                    {step === 1 && token && (
+                      <EmailCart onEmailChange={() => {}} />
+                    )}
+                    {step === 2 && token && (
+                      <AddressCart onAddressChange={setShippingAddress} />
+                    )}
+                    {step === 3 && <PaymentCart onPaymentMethodChange={setPaymentMethod} />}
+                  </div>
+
+                  {/* NAV BUTTONS */}
+                  <div className="flex justify-between mt-8 pt-6">
+                    <button
+                      onClick={handleBack}
+                      disabled={step === 1}
+                      className={`px-6 py-3 border rounded-lg ${
+                        step === 1
+                          ? "opacity-0 pointer-events-none"
+                          : "hover:bg-gray-50"
                       }`}
                     >
-                      {n}
-                    </div>
-                    <span className="text-sm mt-2">
-                      {n === 1 ? "Email" : n === 2 ? "Address" : "Payment"}
-                    </span>
+                      Back
+                    </button>
+
+                    {step < 3 ? (
+                      <button
+                        onClick={handleNext}
+                        disabled={cartItems.length === 0 || (step === 2 && !shippingAddress.trim())}
+                        className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                      >
+                        Continue
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handlePlaceOrder}
+                        disabled={isPlacingOrder || !paymentMethod}
+                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {isPlacingOrder ? "Placing Order..." : "Place Order"}
+                      </button>
+                    )}
                   </div>
-                ))}
-              </div>
-
-              {/* STEP CONTENT */}
-              <div className="min-h-75">
-                {step === 1 && <EmailCart onEmailChange={setEmail} />}
-                {step === 2 && <AddressCart onAddressChange={setShippingAddress} />}
-                {step === 3 && <PaymentCart onPaymentMethodChange={setPaymentMethod} />}
-              </div>
-
-              {/* NAV BUTTONS */}
-              <div className="flex justify-between mt-8 pt-6">
-                <button
-                  onClick={handleBack}
-                  disabled={step === 1}
-                  className={`px-6 py-3 border rounded-lg ${
-                    step === 1
-                      ? "opacity-0 pointer-events-none"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  Back
-                </button>
-
-                {step < 3 ? (
-                  <button
-                    onClick={handleNext}
-                    disabled={cartItems.length === 0 || (step === 2 && !shippingAddress.trim())}
-                    className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-                  >
-                    Continue
-                  </button>
-                ) : (
-                  <button
-                    onClick={handlePlaceOrder}
-                    disabled={isPlacingOrder || !paymentMethod}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {isPlacingOrder ? "Placing Order..." : "Place Order"}
-                  </button>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </div>
 
