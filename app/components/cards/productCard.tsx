@@ -174,23 +174,8 @@ export default function ProductCard({
     <div className="group bg-white p-1 rounded-xl shadow-sm hover:shadow-lg transition relative flex flex-col h-full">
       {/* IMAGE CONTAINER */}
 
-      <div className="relative mb-4 sm:mb-6 rounded-lg overflow-hidden bg-gray-50 grow flex items-center justify-center min-h-50 sm:min-h-55 md:min-h-60 lg:min-h-65">
-        {slug ? (
-          <Link
-            href={`/shop/${slug}`}
-            className="w-full h-full flex items-center justify-center sm:p-4"
-          >
-            <div className="relative w-full h-full">
-              <Image
-                src={photo || "/images/placeholder.png"}
-                alt={name}
-                fill
-                className="object-contain group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              />
-            </div>
-          </Link>
-        ) : (
+      <Link href={`/shop/${id}`} className="w-full h-full">
+        <div className="relative mb-4 sm:mb-6 rounded-lg overflow-hidden bg-gray-50 grow flex items-center justify-center min-h-50 sm:min-h-55 md:min-h-60 lg:min-h-65 cursor-pointer">
           <div className="relative w-full h-full">
             <Image
               src={photo || "/images/placeholder.png"}
@@ -200,8 +185,8 @@ export default function ProductCard({
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           </div>
-        )}
-      </div>
+        </div>
+      </Link>
 
       {/* INFO SECTION */}
       <div className="flex flex-col grow p-3">
@@ -213,16 +198,12 @@ export default function ProductCard({
           alt=""
         />
         <h2 className="font-bold text-base sm:text-lg text-gray-800 mb-1 line-clamp-1">
-          {slug ? (
-            <Link
-              href={`/shop/${slug}`}
-              className="hover:text-amber-900 transition-colors"
-            >
-              {name}
-            </Link>
-          ) : (
-            name
-          )}
+          <Link
+            href={`/shop/${id}`}
+            className="hover:text-amber-900 transition-colors"
+          >
+            {name}
+          </Link>
         </h2>
 
         <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2 grow">
