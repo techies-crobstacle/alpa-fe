@@ -19,8 +19,9 @@ interface OptimisticProductCardProps {
   stock?: number;
   slug?: string;
   rating?: number;
+  tags?: string[];
+  featured?: boolean;
 }
-
 export default function OptimisticProductCard({
   id,
   photo,
@@ -30,6 +31,8 @@ export default function OptimisticProductCard({
   stock = 50,
   slug,
   rating = 4.5,
+  tags = [],
+  featured = false,
 }: OptimisticProductCardProps) {
   const { getItemQuantity } = useCart();
   const [isAnimating, setIsAnimating] = useState(false);
@@ -98,28 +101,21 @@ export default function OptimisticProductCard({
   };
 
   /* ---------- INSTANT WISHLIST TOGGLE ---------- */
-  const handleWishlist = async () => {
-    // Don't allow removing from wishlist once added
-    if (isWishlistLoading || isWishlisted) return;
+  const handleWishlist = () => {
+    // Don't allow if already wishlisted
+    if (isWishlisted) return;
 
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 300);
 
-    // Immediate UI update - only for adding
+    // Immediate UI update - instantly fill the heart
     setOptimisticWishlist(true);
 
-    try {
-      await toggleWishlistMutation.mutateAsync({
-        productId: id,
-        isCurrentlyWishlisted: isWishlisted,
-      });
-      // Reset optimistic state on success
-      setOptimisticWishlist(null);
-    } catch (error) {
-      // Revert on error
-      setOptimisticWishlist(null);
-      console.error("Error adding to wishlist:", error);
-    }
+    // Use debounced mutation in background without blocking UI
+    toggleWishlistMutation.debouncedMutate({
+      productId: id,
+      isCurrentlyWishlisted: false,
+    });
   };
 
   const formatPrice = (price: number) =>
@@ -129,7 +125,7 @@ export default function OptimisticProductCard({
     }).format(price);
 
   /* ---------- RENDER STARS ---------- */
-  const renderStars = () => {
+  const renderStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
@@ -164,7 +160,13 @@ export default function OptimisticProductCard({
   return (
     <div className="group bg-white p-1 rounded-xl shadow-sm hover:shadow-lg transition relative flex flex-col h-full">
       {/* IMAGE CONTAINER */}
-      <div className="relative mb-4 sm:mb-6 rounded-lg overflow-hidden bg-gray-50 grow flex items-center justify-center min-h-50 sm:min-h-55 md:min-h-60 lg:min-h-65">
+      <div className="relative mb-2 sm:mb-3 rounded-lg overflow-hidden bg-gray-50 grow flex items-center justify-center min-h-50 sm:min-h-55 md:min-h-60 lg:min-h-65">
+        {/* Featured Badge */}
+        {featured && (
+          <div className="absolute top-2 right-2 bg-linear-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10 shadow-lg">
+            ⭐ Featured
+          </div>
+        )}
         <Link
           href={`/shop/${id}`}
           className="w-full h-full flex items-center justify-center sm:p-4"
@@ -203,10 +205,27 @@ export default function OptimisticProductCard({
           {description}
         </p>
 
+        {/* TAGS */}
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {tags.slice(0, 2).map((tag, index) => (
+              <span
+                key={index}
+                className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full font-medium"
+              >
+                {tag}
+              </span>
+            ))}
+            {tags.length > 2 && (
+              <span className="text-gray-500 text-xs self-center">+{tags.length - 2}</span>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-row justify-between items-center mb-1">
           {/* RATING STARS */}
           <div className="flex items-center gap-1 ">
-            {renderStars()}
+            {renderStars(rating)}
             <span className="text-xs sm:text-sm text-gray-600 ml-1">
               ({rating.toFixed(1)})
             </span>
@@ -224,24 +243,20 @@ export default function OptimisticProductCard({
             {/* WISHLIST BUTTON */}
             <button
               onClick={handleWishlist}
-              disabled={isWishlistLoading || isWishlisted}
+              disabled={isWishlisted}
               className={`p-1.5 sm:p-2 rounded-full transition-all flex items-center justify-center ${
                 isWishlisted 
                   ? "bg-gray-400 cursor-not-allowed opacity-70" 
-                  : "bg-amber-900 hover:bg-amber-800"
+                  : "bg-amber-900 hover:bg-amber-800 active:scale-95"
               } ${isHeartAnimating ? "scale-125" : ""}`}
               aria-label={isWishlisted ? "Already in wishlist" : "Add to wishlist"}
               title={isWishlisted ? "Item is already in your wishlist" : "Add to wishlist"}
             >
-              {isWishlistLoading ? (
-                <Loader2 size={16} className="sm:w-5 sm:h-5 animate-spin text-[#e7d0b0]" />
-              ) : (
-                <Heart
-                  size={16}
-                  className={`sm:w-5 sm:h-5 transition-all ${isWishlisted ? "fill-[#e74c3c] text-[#e74c3c]" : "fill-none text-[#e7d0b0]"}`}
-                  strokeWidth={isWishlisted ? 0 : 2}
-                />
-              )}
+              <Heart
+                size={16}
+                className={`sm:w-5 sm:h-5 transition-all ${isWishlisted ? "fill-[#e74c3c] text-[#e74c3c]" : "fill-none text-[#e7d0b0]"}`}
+                strokeWidth={isWishlisted ? 0 : 2}
+              />
             </button>
 
             {/* CART BUTTON/CONTROLS */}

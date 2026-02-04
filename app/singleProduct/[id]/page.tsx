@@ -22,6 +22,8 @@ interface Product {
   rating?: number;
   reviews?: number;
   discount?: number;
+  tags?: string[];
+  featured?: boolean;
 }
 
 interface ProductResponse {
@@ -165,6 +167,12 @@ export default function SingleProductPage() {
                   -{discountPercentage}%
                 </div>
               )}
+
+              {product.featured && (
+                <div className="absolute top-4 left-4 bg-linear-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg flex items-center gap-1">
+                  ⭐ Featured
+                </div>
+              )}
             </div>
 
             {/* Thumbnail Gallery */}
@@ -233,6 +241,23 @@ export default function SingleProductPage() {
                   </span>
                 )}
               </div>
+
+              {/* Tags */}
+              {product.tags && product.tags.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tags:</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {product.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-sm px-3 py-1 rounded-full font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Stock Status */}
               <div className="flex items-center gap-2 mb-6">

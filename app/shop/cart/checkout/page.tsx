@@ -27,7 +27,7 @@ export default function CheckOutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const { cartItems, subtotal } = useCart();
-  const { token } = useAuth();
+  const { token, loading } = useAuth();
 
   /* ---------------- PRICE LOGIC ---------------- */
   const shipping = subtotal > 100 ? 0 : 20;
@@ -43,8 +43,8 @@ export default function CheckOutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    // If not logged in, require guest checkout fields
-    if (!token) {
+    // Check if using guest checkout
+    if (showGuestForm) {
       if (!guestEmail.trim() || !guestFirstName.trim() || !guestLastName.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingSuburb.trim() || !shippingPostcode.trim() || !shippingFullAddress.trim() || !paymentMethod) {
         alert("Please complete all required guest checkout fields");
         return;
@@ -59,7 +59,7 @@ export default function CheckOutPage() {
     setIsPlacingOrder(true);
     try {
       let response;
-      if (!token) {
+      if (showGuestForm) {
         // Guest checkout API call
         response = await fetch("https://alpa-be-1.onrender.com/api/orders/guest/checkout", {
           method: "POST",
@@ -116,30 +116,45 @@ export default function CheckOutPage() {
 
 
   return (
-    <section className="min-h-screen py-20 px-4 sm:px-6 lg:px-8 bg-[#f5f5f5]">
+    <section className="min-h-screen py-20  px-4 sm:px-6 lg:px-8 bg-[#f5f5f5]">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+        <h1 className="text-3xl font-bold mb-12"></h1>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8 ">
           {/* ================= LEFT: STEPS ================= */}
           <div className="lg:w-2/3">
             <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
-              {/* Guest Checkout Option and Form only if not logged in */}
-              {(!token) && !showGuestForm && step === 1 && (
-                <div className="mb-8">
-                  <button
-                    className="px-6 py-3 bg-yellow-400 text-black rounded-lg font-bold hover:bg-yellow-500"
-                    onClick={() => setShowGuestForm(true)}
-                  >
-                    Continue as Guest (Guest Checkout)
-                  </button>
-                  <p className="mt-2 text-sm text-gray-600">No account? Use guest checkout to place your order without logging in.</p>
+              {/* Continue as Guest Option */}
+              {!showGuestForm && (
+                <div className="mb-6 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      {/* <h3 className="font-medium text-gray-900">Guest Checkout Available</h3> */}
+                      <p className="text-sm text-gray-600">Don't have account? </p>
+                    </div>
+                    <button
+                      className="px-4 py-2 text-blue-500 rounded-lg font-medium hover:underline transition-colors"
+                      onClick={() => setShowGuestForm(true)}
+                    >
+                      Continue as Guest
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {(!token) && showGuestForm && step === 1 && (
-                <div className="space-y-4 bg-yellow-50 p-4 rounded mb-8">
-                  <h3 className="font-semibold">Guest Checkout Details (Required)</h3>
+              {/* Guest Checkout Form */}
+              {/* Guest Checkout Form */}
+              {showGuestForm ? (
+                <div className="space-y-4 bg-amber-50 p-6 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Guest Checkout Details</h3>
+                    <button
+                      className="text-sm text-gray-600 hover:text-gray-800 underline"
+                      onClick={() => setShowGuestForm(false)}
+                    >
+                      Back to Normal Checkout
+                    </button>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium">First Name</label>
@@ -240,10 +255,8 @@ export default function CheckOutPage() {
                     Continue to Payment
                   </button>
                 </div>
-              )}
-
-              {/* Stepper and payment for guest or normal for logged in */}
-              {(token || (showGuestForm && step === 3)) && (
+              ) : (
+                // Normal 3-step checkout form
                 <>
                   {/* STEP INDICATORS */}
                   <div className="flex justify-between mb-8 relative">
@@ -268,10 +281,10 @@ export default function CheckOutPage() {
 
                   {/* STEP CONTENT */}
                   <div className="min-h-75">
-                    {step === 1 && token && (
+                    {step === 1 && (
                       <EmailCart onEmailChange={() => {}} />
                     )}
-                    {step === 2 && token && (
+                    {step === 2 && (
                       <AddressCart onAddressChange={setShippingAddress} />
                     )}
                     {step === 3 && <PaymentCart onPaymentMethodChange={setPaymentMethod} />}
@@ -310,6 +323,28 @@ export default function CheckOutPage() {
                     )}
                   </div>
                 </>
+              )}
+
+              {/* Guest Payment Step */}
+              {showGuestForm && step === 3 && (
+                <div className="border-t pt-8">
+                  <PaymentCart onPaymentMethodChange={setPaymentMethod} />
+                  <div className="flex justify-between mt-8 gap-4">
+                    <button
+                      onClick={() => setStep(1)}
+                      className="px-6 py-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      Back  
+                    </button>
+                    <button
+                      onClick={handlePlaceOrder}
+                      disabled={isPlacingOrder || !paymentMethod}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {isPlacingOrder ? "Placing Order..." : "Place Order"}
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

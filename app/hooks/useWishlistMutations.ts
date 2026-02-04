@@ -2,6 +2,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef, useCallback } from "react";
 import { wishlistApi } from "@/app/lib/api";
 import { wishlistQueryKeys } from "./useWishlist";
 
@@ -11,11 +12,12 @@ interface WishlistItem {
   product?: { id: string };
 }
 
-// Add to wishlist with optimistic update (ADD-ONLY: once added, items cannot be removed)
+// Add to wishlist with debouncing and optimistic update
 export function useToggleWishlist() {
   const queryClient = useQueryClient();
+  const timeout = useRef<NodeJS.Timeout | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async ({ productId, isCurrentlyWishlisted }: { productId: string; isCurrentlyWishlisted: boolean }) => {
       // Only allow adding to wishlist, not removing
       if (!isCurrentlyWishlisted) {
@@ -92,4 +94,14 @@ export function useToggleWishlist() {
       queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.wishlistCheck(productId) });
     },
   });
+
+  // Debounced version of mutate
+  const debouncedMutate = useCallback((variables: { productId: string; isCurrentlyWishlisted: boolean }) => {
+    if (timeout.current) clearTimeout(timeout.current);
+    timeout.current = setTimeout(() => {
+      mutation.mutate(variables);
+    }, 300); // 300ms debounce for wishlist
+  }, [mutation]);
+
+  return { ...mutation, debouncedMutate };
 }

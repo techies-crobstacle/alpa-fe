@@ -1,13 +1,18 @@
 "use client";
-import React, { useEffect, useMemo, useState, useCallback, Suspense } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  Suspense,
+} from "react";
 import { HiViewGrid } from "react-icons/hi";
 import { Search, X } from "lucide-react";
-import ProductCard from "../components/cards/productCard";
+// import ProductCard from "../components/cards/productCard";
 import OptimisticProductCard from "../components/cards/OptimisticProductCard";
 import { useCart } from "../context/CartContext";
 import { useProducts, Product } from "../hooks/useProducts";
 import { useSearchParams } from "next/navigation";
-
 
 /* =======================
    TYPES
@@ -19,9 +24,13 @@ import { useSearchParams } from "next/navigation";
 ======================= */
 function ShopContent() {
   // Use React Query hook instead of manual fetch
-  const { data: products = [], isLoading: loading, error: queryError } = useProducts();
+  const {
+    data: products = [],
+    isLoading: loading,
+    error: queryError,
+  } = useProducts();
   const searchParams = useSearchParams();
-  
+
   const error = queryError?.message || null;
   const [sort, setSort] = useState("");
   const [view, setView] = useState<3 | 4>(3);
@@ -30,6 +39,7 @@ function ShopContent() {
 
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("all");
 
   const [page, setPage] = useState(1);
   const PRODUCTS_PER_PAGE = 8;
@@ -47,7 +57,7 @@ function ShopContent() {
 
   // Handle URL search parameters
   useEffect(() => {
-    const urlSearchTerm = searchParams.get('search');
+    const urlSearchTerm = searchParams.get("search");
     if (urlSearchTerm) {
       setSearchTerm(urlSearchTerm);
       setDebouncedSearchTerm(urlSearchTerm);
@@ -77,6 +87,7 @@ function ShopContent() {
     setState: React.Dispatch<React.SetStateAction<string[]>>,
   ) => {
     setPage(1);
+    setActiveTab("all"); // Reset tab when applying manual filters
     setState((prev) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
     );
@@ -96,7 +107,39 @@ function ShopContent() {
 
   /* ---------- FILTER ---------- */
   const filteredProducts = useMemo(() => {
-    return sortedProducts.filter((product) => {
+    let filtered = sortedProducts;
+
+    // Apply tab filter first
+    switch (activeTab) {
+      case "featured":
+        filtered = filtered.filter((product) => product.featured === true);
+        break;
+      case "sale":
+        // Filter products that are on sale - either have discount: true or "Sale" in tags
+        filtered = filtered.filter(
+          (product) =>
+            product.discount === true || 
+            product.tags?.some(tag => tag.toLowerCase().includes("sale"))
+        );
+        break;
+      case "limited-edition":
+        filtered = filtered.filter((product) =>
+          product.tags?.includes("Limited Edition"),
+        );
+        break;
+      case "new-arrivals":
+        filtered = filtered.filter((product) =>
+          product.tags?.includes("New Arrival"),
+        );
+        break;
+      case "all":
+      default:
+        // No additional filtering
+        break;
+    }
+
+    // Then apply other filters
+    return filtered.filter((product) => {
       const brandMatch =
         selectedBrands.length === 0 ||
         (product.brand && selectedBrands.includes(product.brand));
@@ -108,14 +151,29 @@ function ShopContent() {
       // Search match - check title, description, brand, and category
       const searchMatch =
         !debouncedSearchTerm ||
-        product.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        (product.brand && product.brand.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
-        product.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+        product.title
+          .toLowerCase()
+          .includes(debouncedSearchTerm.toLowerCase()) ||
+        product.description
+          .toLowerCase()
+          .includes(debouncedSearchTerm.toLowerCase()) ||
+        (product.brand &&
+          product.brand
+            .toLowerCase()
+            .includes(debouncedSearchTerm.toLowerCase())) ||
+        product.category
+          .toLowerCase()
+          .includes(debouncedSearchTerm.toLowerCase());
 
       return brandMatch && categoryMatch && searchMatch;
     });
-  }, [sortedProducts, selectedBrands, selectedCategories, debouncedSearchTerm]);
+  }, [
+    sortedProducts,
+    selectedBrands,
+    selectedCategories,
+    debouncedSearchTerm,
+    activeTab,
+  ]);
 
   /* ---------- PAGINATION ---------- */
   const paginatedProducts = useMemo(() => {
@@ -189,7 +247,9 @@ function ShopContent() {
   };
 
   const hasActiveFilters =
-    selectedBrands.length > 0 || selectedCategories.length > 0 || debouncedSearchTerm.trim().length > 0;
+    selectedBrands.length > 0 ||
+    selectedCategories.length > 0 ||
+    debouncedSearchTerm.trim().length > 0;
 
   const ThreeGridIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -209,7 +269,10 @@ function ShopContent() {
       }`}
     >
       {[...Array(PRODUCTS_PER_PAGE)].map((_, i) => (
-        <div key={i} className="animate-pulse bg-white p-4 rounded-xl shadow-sm">
+        <div
+          key={i}
+          className="animate-pulse bg-white p-4 rounded-xl shadow-sm"
+        >
           <div className="bg-gray-300 h-48 sm:h-56 md:h-64 w-full rounded-lg mb-4"></div>
           <div className="bg-gray-300 h-4 rounded w-3/4 mb-2"></div>
           <div className="bg-gray-300 h-4 rounded w-1/2 mb-4"></div>
@@ -252,46 +315,105 @@ function ShopContent() {
     ? categoriesWithCounts
     : categoriesWithCounts.slice(0, INITIAL_ITEMS_TO_SHOW);
 
+  // Show error state without early return to maintain hook order
   if (error) {
     return (
-      <div className="min-h-screen bg-[#EBE3D5] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
-          <p className="text-gray-700">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Retry
-          </button>
+      <section className="bg-[#EBE3D5]">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
+            <p className="text-gray-700">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <section className="min-h-screen bg-[#EBE3D5]">
+    <section className=" bg-[#EBE3D5]">
       {/* HERO SECTION */}
-<section className="bg-[#e6e6e6]">
-    {/* OUTER FRAME */}
-    <div className="max-w-full mx-auto overflow-hidden">
-      {/* FULL IMAGE */}
-      <div
-        className="relative h-[30vh] sm:h-[35vh] md:h-[40vh] lg:h-[60vh]
+      <section className="bg-[#e6e6e6]">
+        {/* OUTER FRAME */}
+        <div className="max-w-full mx-auto overflow-hidden">
+          {/* FULL IMAGE */}
+          <div
+            className="relative h-[30vh] sm:h-[35vh] md:h-[50vh] lg:h-[65vh]
                    bg-[url('/images/shop-banner.jpg')] bg-cover bg-center"
-      >
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/30" />
+          >
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black/30" />
 
-        {/* Center Text */}
-        <div className="relative z-10 h-full flex items-center justify-center text-white text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">
-            Shop
-          </h1>
+            {/* Center Text */}
+            <div className="relative z-10 pt-6 h-full flex flex-col items-center justify-center text-white text-center">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">
+                Shop
+              </h1>
+               {/* TAB CAROUSEL */}
+          <div className="mt-4">
+            <div className="flex items-center justify-center overflow-x-auto scrollbar-hide pb-1">
+              <div className="flex bg-amber-50 rounded-full p-1.5 border border-amber-200 shadow-lg min-w-fit">
+                {[
+                  { key: "all", label: "All" },
+                  { key: "featured", label: "Featured" },
+                  { key: "sale", label: "Sale" },
+                  // { key: "limited-edition", label: "Limited Edition", },
+                  { key: "new-arrivals", label: "New Arrivals" },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => {
+                      setActiveTab(tab.key);
+                      setPage(1);
+                    }}
+                    className={`relative px-3 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap flex items-center gap-1.5 transform hover:scale-105 ${
+                      activeTab === tab.key
+                        ? "bg-linear-to-r from-amber-500 to-amber-600 text-white shadow-lg scale-105"
+                        : "text-amber-700 hover:bg-amber-100 hover:text-amber-800 hover:shadow-md"
+                    }`}
+                  >
+                    {/* <span className="text-sm">{tab.icon}</span> */}
+                    <span className="hidden sm:inline font-semibold">
+                      {tab.label}
+                    </span>
+                    <span className="sm:hidden font-semibold">
+                      {tab.key === "limited-edition"
+                        ? "Limited"
+                        : tab.key === "new-arrivals"
+                          ? "New"
+                          : tab.label}
+                    </span>
+                    {activeTab === tab.key && (
+                      <div className="absolute inset-0 rounded-full bg-linear-to-r from-amber-400 to-orange-400 opacity-20 animate-pulse" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab description */}
+            <div className="text-center mt-3">
+              <p className="text-sm text-gray-100">
+                {activeTab === "all" && "Browse all available products"}
+                {activeTab === "featured" && "Handpicked premium products"}
+                {activeTab === "sale" && "Special offers and discounted items"}
+                {activeTab === "limited-edition" &&
+                  "Exclusive limited quantity items"}
+                {activeTab === "new-arrivals" &&
+                  "Latest additions to our collection"}
+              </p>
+            </div>
+          </div>
+            </div>
+            
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
       {/* SEARCH BAR */}
       {/* <div className="mx-auto px-4 md:px-4 py-3">
@@ -395,42 +517,42 @@ function ShopContent() {
                         Reset
                       </button>
                     </div>
-                <div className="max-h-48 overflow-y-auto pr-2">
-                  {displayBrands.map((brand) => (
-                    <label
-                      key={brand.name}
-                      className="flex justify-between items-center mb-3 cursor-pointer group"
-                    >
-                      <div className="flex gap-3 items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand.name)}
-                          onChange={() =>
-                            toggleFilter(brand.name, setSelectedBrands)
-                          }
-                          className="accent-[#441208] w-4 h-4"
-                        />
-                        <span className="group-hover:text-[#441208] transition-colors">
-                          {brand.name}
-                        </span>
-                      </div>
-                      <span className="text-gray-500 text-sm">
-                        {brand.count}
-                      </span>
-                    </label>
-                  ))}
+                    <div className="max-h-48 overflow-y-auto pr-2">
+                      {displayBrands.map((brand) => (
+                        <label
+                          key={brand.name}
+                          className="flex justify-between items-center mb-3 cursor-pointer group"
+                        >
+                          <div className="flex gap-3 items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedBrands.includes(brand.name)}
+                              onChange={() =>
+                                toggleFilter(brand.name, setSelectedBrands)
+                              }
+                              className="accent-[#441208] w-4 h-4"
+                            />
+                            <span className="group-hover:text-[#441208] transition-colors">
+                              {brand.name}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 text-sm">
+                            {brand.count}
+                          </span>
+                        </label>
+                      ))}
 
-                  {/* Show More/Less Button */}
-                  {brandsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                    <button
-                      onClick={() => setShowAllBrands(!showAllBrands)}
-                      className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
-                    >
-                      {showAllBrands
-                        ? "Show Less"
-                        : `Show More (${brandsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
-                    </button>
-                  )}
+                      {/* Show More/Less Button */}
+                      {brandsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                        <button
+                          onClick={() => setShowAllBrands(!showAllBrands)}
+                          className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
+                        >
+                          {showAllBrands
+                            ? "Show Less"
+                            : `Show More (${brandsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
+                        </button>
+                      )}
                     </div>
                   </>
                 )}
@@ -454,43 +576,50 @@ function ShopContent() {
                         Reset
                       </button>
                     </div>
-                <div className="max-h-48 overflow-y-auto pr-2">
-                  <hr className="mb-3" />
-                  {displayCategories.map((category) => (
-                    <label
-                      key={category.name}
-                      className="flex justify-between items-center mb-3 cursor-pointer group"
-                    >
-                      <div className="flex gap-3 items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(category.name)}
-                          onChange={() =>
-                            toggleFilter(category.name, setSelectedCategories)
-                          }
-                          className="accent-[#441208] w-4 h-4"
-                        />
-                        <span className="group-hover:text-[#441208] transition-colors">
-                          {category.name}
-                        </span>
-                      </div>
-                      <span className="text-gray-500 text-sm">
-                        {category.count}
-                      </span>
-                    </label>
-                  ))}
+                    <div className="max-h-48 overflow-y-auto pr-2">
+                      <hr className="mb-3" />
+                      {displayCategories.map((category) => (
+                        <label
+                          key={category.name}
+                          className="flex justify-between items-center mb-3 cursor-pointer group"
+                        >
+                          <div className="flex gap-3 items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedCategories.includes(
+                                category.name,
+                              )}
+                              onChange={() =>
+                                toggleFilter(
+                                  category.name,
+                                  setSelectedCategories,
+                                )
+                              }
+                              className="accent-[#441208] w-4 h-4"
+                            />
+                            <span className="group-hover:text-[#441208] transition-colors">
+                              {category.name}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 text-sm">
+                            {category.count}
+                          </span>
+                        </label>
+                      ))}
 
-                  {/* Show More/Less Button */}
-                  {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                    <button
-                      onClick={() => setShowAllCategories(!showAllCategories)}
-                      className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
-                    >
-                      {showAllCategories
-                        ? "Show Less"
-                        : `Show More (${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
-                    </button>
-                  )}
+                      {/* Show More/Less Button */}
+                      {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                        <button
+                          onClick={() =>
+                            setShowAllCategories(!showAllCategories)
+                          }
+                          className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
+                        >
+                          {showAllCategories
+                            ? "Show Less"
+                            : `Show More (${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
+                        </button>
+                      )}
                     </div>
                   </>
                 )}
@@ -529,40 +658,42 @@ function ShopContent() {
                     Reset
                   </button>
                 </div>
-            <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-              {displayBrands.map((brand) => (
-                <label
-                  key={brand.name}
-                  className="flex justify-between items-center mb-3 cursor-pointer group"
-                >
-                  <div className="flex gap-3 items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedBrands.includes(brand.name)}
-                      onChange={() =>
-                        toggleFilter(brand.name, setSelectedBrands)
-                      }
-                      className="accent-[#441208] w-4 h-4"
-                    />
-                    <span className="group-hover:text-[#441208] transition-colors">
-                      {brand.name}
-                    </span>
-                  </div>
-                  <span className="text-gray-500 text-sm">{brand.count}</span>
-                </label>
-              ))}
+                <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  {displayBrands.map((brand) => (
+                    <label
+                      key={brand.name}
+                      className="flex justify-between items-center mb-3 cursor-pointer group"
+                    >
+                      <div className="flex gap-3 items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedBrands.includes(brand.name)}
+                          onChange={() =>
+                            toggleFilter(brand.name, setSelectedBrands)
+                          }
+                          className="accent-[#441208] w-4 h-4"
+                        />
+                        <span className="group-hover:text-[#441208] transition-colors">
+                          {brand.name}
+                        </span>
+                      </div>
+                      <span className="text-gray-500 text-sm">
+                        {brand.count}
+                      </span>
+                    </label>
+                  ))}
 
-              {/* Show More/Less Button */}
-              {brandsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                <button
-                  onClick={() => setShowAllBrands(!showAllBrands)}
-                  className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
-                >
-                  {showAllBrands
-                    ? "Show Less"
-                    : `Show More (${brandsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
-                </button>
-              )}
+                  {/* Show More/Less Button */}
+                  {brandsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                    <button
+                      onClick={() => setShowAllBrands(!showAllBrands)}
+                      className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
+                    >
+                      {showAllBrands
+                        ? "Show Less"
+                        : `Show More (${brandsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -586,43 +717,43 @@ function ShopContent() {
                     Reset
                   </button>
                 </div>
-            <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-              <hr className="mb-3" />
-              {displayCategories.map((category) => (
-                <label
-                  key={category.name}
-                  className="flex justify-between items-center mb-3 cursor-pointer group"
-                >
-                  <div className="flex gap-3 items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(category.name)}
-                      onChange={() =>
-                        toggleFilter(category.name, setSelectedCategories)
-                      }
-                      className="accent-[#441208] w-4 h-4"
-                    />
-                    <span className="group-hover:text-[#441208] transition-colors">
-                      {category.name}
-                    </span>
-                  </div>
-                  <span className="text-gray-500 text-sm">
-                    {category.count}
-                  </span>
-                </label>
-              ))}
+                <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  <hr className="mb-3" />
+                  {displayCategories.map((category) => (
+                    <label
+                      key={category.name}
+                      className="flex justify-between items-center mb-3 cursor-pointer group"
+                    >
+                      <div className="flex gap-3 items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(category.name)}
+                          onChange={() =>
+                            toggleFilter(category.name, setSelectedCategories)
+                          }
+                          className="accent-[#441208] w-4 h-4"
+                        />
+                        <span className="group-hover:text-[#441208] transition-colors">
+                          {category.name}
+                        </span>
+                      </div>
+                      <span className="text-gray-500 text-sm">
+                        {category.count}
+                      </span>
+                    </label>
+                  ))}
 
-              {/* Show More/Less Button */}
-              {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                <button
-                  onClick={() => setShowAllCategories(!showAllCategories)}
-                  className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
-                >
-                  {showAllCategories
-                    ? "Show Less"
-                    : `Show More (${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
-                </button>
-              )}
+                  {/* Show More/Less Button */}
+                  {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                    <button
+                      onClick={() => setShowAllCategories(!showAllCategories)}
+                      className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
+                    >
+                      {showAllCategories
+                        ? "Show Less"
+                        : `Show More (${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -688,8 +819,7 @@ function ShopContent() {
                   className="inline-flex items-center gap-1 bg-[#441208] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
                   onClick={clearSearch}
                 >
-                  Search: "{debouncedSearchTerm}"
-                  <span className="ml-1">×</span>
+                  Search: "{debouncedSearchTerm}"<span className="ml-1">×</span>
                 </span>
               )}
               {activeFilters.map((filter) => (
@@ -710,6 +840,8 @@ function ShopContent() {
               </button>
             </div>
           )}
+
+        
 
           {/* PRODUCTS */}
           {loading ? (
@@ -738,17 +870,18 @@ function ShopContent() {
                 }`}
               >
                 {paginatedProducts.map((product) => (
-                  <div key={product.id} className="h-full">
-                    <OptimisticProductCard
-                      id={product.id}
-                      photo={product.images?.[0] || "/images/placeholder.png"}
-                      name={product.title}
-                      description={product.description}
-                      amount={parseFloat(product.price)}
-                      stock={product.stock}
-                      slug={product.slug}
-                    />
-                  </div>
+                  <OptimisticProductCard
+                    key={product.id}
+                    id={product.id}
+                    photo={product.images?.[0] || "/images/placeholder.png"}
+                    name={product.title}
+                    description={product.description}
+                    amount={parseFloat(product.price)}
+                    stock={product.stock}
+                    slug={product.slug}
+                    tags={product.tags}
+                    featured={product.featured}
+                  />
                 ))}
               </div>
 

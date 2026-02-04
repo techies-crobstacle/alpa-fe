@@ -723,7 +723,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ShoppingCart,
   Heart,
@@ -740,6 +740,8 @@ import { apiClient } from "@/app/lib/api";
 import { useCart } from "@/app/context/CartContext";
 import { useToggleWishlist } from "@/app/hooks/useWishlistMutations";
 import { useWishlistCheck } from "@/app/hooks/useWishlist";
+import { useSingleProduct } from "@/app/hooks/useSingleProduct";
+import { useOptimisticUpdateCart } from "@/app/hooks/useCartMutations";
 
 interface Product {
   id: string;
@@ -753,17 +755,14 @@ interface Product {
   sellerName?: string;
   rating?: number;
   reviews?: number;
-  discount?: number;
+  discount?: number | boolean;
+  tags?: string[];
+  featured?: boolean;
   seller?: {
     id: string;
     name: string;
     email: string;
   };
-}
-
-interface ProductResponse {
-  success: boolean;
-  product: Product;
 }
 
 const baseURL =
@@ -772,13 +771,15 @@ const baseURL =
 
 export default function ShopSlugPage() {
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params?.slug as string; // Using 'slug' param name but it's actually the ID now
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use React Query hook for single product data
+  const { data: product, isLoading: loading, error: queryError } = useSingleProduct(id);
+  const error = queryError?.message || null;
+
   const [selectedImage, setSelectedImage] = useState(0);
-  const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [ratingScore, setRatingScore] = useState(0);
   const [review, setReview] = useState("");
@@ -791,36 +792,8 @@ export default function ShopSlugPage() {
   const { addToCart, getItemQuantity } = useCart();
   const { data: wishlistData } = useWishlistCheck(product?.id || "");
   const toggleWishlistMutation = useToggleWishlist();
+  const updateCartMutation = useOptimisticUpdateCart();
   const [isWishlisted, setIsWishlisted] = useState(false);
-
-  // Fetch single product by ID
-  useEffect(() => {
-    const fetchProductById = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get<ProductResponse>(
-          `/products/${id}`,
-        );
-
-        if (response.success && response.product) {
-          setProduct(response.product);
-          setError(null);
-        } else {
-          setError("Product not found");
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch product",
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchProductById();
-    }
-  }, [id]);
 
   // Fetch all ratings for this product
   useEffect(() => {
@@ -856,12 +829,27 @@ export default function ShopSlugPage() {
     setIsWishlisted(wishlistData?.inWishlist || false);
   }, [wishlistData]);
 
+  // Navigation helpers
+  const handleBackToShop = () => {
+    const search = searchParams.get('search');
+    const filters = searchParams.get('filters');
+    const tab = searchParams.get('tab');
+    
+    const queryParams = new URLSearchParams();
+    if (search) queryParams.set('search', search);
+    if (filters) queryParams.set('filters', filters);
+    if (tab) queryParams.set('tab', tab);
+    
+    const queryString = queryParams.toString();
+    router.push(queryString ? `/shop?${queryString}` : '/shop');
+  };
+
   const currentQtyInCart = getItemQuantity(product?.id || "");
   const remainingStock = Math.max(
     0,
-    (product?.stock || 0) - quantity - currentQtyInCart,
+    (product?.stock || 0) - currentQtyInCart,
   );
-  const isOutOfStock = remainingStock < 0 || (product?.stock || 0) === 0;
+  const isOutOfStock = remainingStock === 0;
 
   const handleAddToCart = async () => {
     if (!product || isOutOfStock) return;
@@ -886,10 +874,21 @@ export default function ShopSlugPage() {
 
   const handleWishlist = () => {
     setIsWishlisted(!isWishlisted);
-    toggleWishlistMutation.mutate({
+    // Use debounced mutation for better performance
+    toggleWishlistMutation.debouncedMutate({
       productId: product?.id || "",
       isCurrentlyWishlisted: isWishlisted,
     });
+  };
+
+  /* ---------- INSTANT QUANTITY CHANGES ---------- */
+  const handleIncreaseQuantity = () => {
+    if (isOutOfStock) return;
+    updateCartMutation.mutate({ productId: product?.id || "", change: 1 });
+  };
+
+  const handleDecreaseQuantity = () => {
+    updateCartMutation.mutate({ productId: product?.id || "", change: -1 });
   };
 
   const handleSubmitRating = async () => {
@@ -1033,25 +1032,43 @@ export default function ShopSlugPage() {
     );
   }
 
-  const discountPercentage = product.discount || 0;
+  const discountPercentage = typeof product.discount === "number" ? product.discount : 0;
   const originalPrice =
     parseFloat(product.price) / (1 - discountPercentage / 100);
 
   return (
     <div className="min-h-screen bg-linear-to-b from-amber-50 to-white py-8 pt-36">
       <div className="container mx-auto px-4 max-w-7xl">
-        {/* Breadcrumb */}
-        <nav className="mb-6 text-sm text-amber-700">
-          <span className="hover:text-amber-900 cursor-pointer transition">
-            Home
-          </span>
-          <span className="mx-2">/</span>
-          <span className="hover:text-amber-900 cursor-pointer transition">
-            Shop
-          </span>
-          <span className="mx-2">/</span>
-          <span className="font-medium text-amber-900">{product.title}</span>
-        </nav>
+        {/* Breadcrumb with Navigation */}
+        <div className="flex justify-between items-center mb-6">
+          <nav className="text-sm text-amber-700">
+            <span 
+              className="hover:text-amber-900 cursor-pointer transition"
+              onClick={() => router.push('/')}
+            >
+              Home
+            </span>
+            <span className="mx-2">/</span>
+            <span 
+              className="hover:text-amber-900 cursor-pointer transition"
+              onClick={handleBackToShop}
+            >
+              Shop
+            </span>
+            <span className="mx-2">/</span>
+            <span className="font-medium text-amber-900">{product.title}</span>
+          </nav>
+
+          {/* Navigation Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleBackToShop}
+              className="px-4 py-2 text-sm font-medium text-amber-700 hover:text-amber-900 border border-amber-300 rounded-lg hover:bg-amber-50 transition-colors"
+            >
+              ← Back to Shop
+            </button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Image Section - Now on LEFT */}
@@ -1074,6 +1091,12 @@ export default function ShopSlugPage() {
               {discountPercentage > 0 && (
                 <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md">
                   -{discountPercentage}%
+                </div>
+              )}
+
+              {product.featured && (
+                <div className="absolute top-4 left-4 bg-linear-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md flex items-center gap-1">
+                  ⭐ Featured
                 </div>
               )}
             </div>
@@ -1146,6 +1169,23 @@ export default function ShopSlugPage() {
               )}
             </div>
 
+            {/* Tags */}
+            {product.tags && product.tags.length > 0 && (
+              <div>
+                {/* <h3 className="text-lg font-semibold text-amber-900 mb-2">Tags:</h3> */}
+                <div className="flex flex-wrap gap-2">
+                  {product.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="bg-amber-100 text-amber-800 text-sm px-3 py-1 rounded-full font-medium border border-amber-200"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Stock Status */}
             <div className="flex items-center gap-2">
               {product.stock > 0 ? (
@@ -1200,20 +1240,18 @@ export default function ShopSlugPage() {
               <span className="text-amber-900 font-medium">Quantity:</span>
               <div className="flex items-center border-2 border-amber-300 rounded-lg overflow-hidden bg-white shadow-sm">
                 <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity === 1 || isOutOfStock}
+                  onClick={handleDecreaseQuantity}
+                  disabled={currentQtyInCart === 0}
                   className="p-2 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition text-amber-900"
                 >
                   <Minus className="w-5 h-5" />
                 </button>
                 <span className="px-6 py-2 font-semibold text-amber-900 min-w-15 text-center">
-                  {quantity}
+                  {currentQtyInCart}
                 </span>
                 <button
-                  onClick={() =>
-                    setQuantity(Math.min(remainingStock, quantity + 1))
-                  }
-                  disabled={isOutOfStock || remainingStock <= 0}
+                  onClick={handleIncreaseQuantity}
+                  disabled={isOutOfStock}
                   className="p-2 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition text-amber-900"
                 >
                   <Plus className="w-5 h-5" />

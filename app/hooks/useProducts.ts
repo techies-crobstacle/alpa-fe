@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/app/lib/api";
 
 export interface Product {
+  discount: boolean;
   id: string;
   title: string;
   description: string;
@@ -14,6 +15,8 @@ export interface Product {
   images: string[];
   brand?: string;
   slug?: string;
+  tags?: string[];
+  featured?: boolean;
 }
 
 export const productQueryKeys = {
