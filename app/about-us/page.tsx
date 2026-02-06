@@ -237,7 +237,7 @@ export default function Page() {
 
           <div className="flex flex-col justify-center items-center  -mt-25 ml-20 p-12">
             <Image
-              src="/images/group-images.png"
+              src="/images/about2.png"
               alt="Image"
               width={500}
               height={500}
@@ -248,7 +248,7 @@ export default function Page() {
       </section>
 
       {/* Challenges Section */}
-      <section className="flex flex-col lg:flex-row bg-[#F2F2F2] items-start px-6 md:px-24 py-12 md:py-15 gap-8 lg:gap-32 max-w-screen-2xl mx-auto">
+      <section className="flex flex-col lg:flex-row bg-[#F2F2F2] items-start px-6 md:px-24 py-12 md:py-15 gap-8 lg:gap-32 mx-auto">
         {/* LEFT CONTENT */}
         <div className="w-full lg:w-1/2">
           <p className="text-sm mb-4 md:mb-6">The Challenge</p>

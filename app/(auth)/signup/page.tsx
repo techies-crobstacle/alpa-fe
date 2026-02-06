@@ -111,22 +111,22 @@ export default function SignupPage() {
           </Link>
         </div>
 
-        <div className="max-w-7xl mt-30">
-          <p className="text-sm text-white/80 mb-1">START FOR FREE</p>
+        <div className="max-w-7xl mt-20">
+          {/* <p className="text-sm text-white/80 mb-1">START FOR FREE</p> */}
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">
             Create new Account
           </h1>
           <div className="pt-4 border-t border-white/10">
-              <p className="text-center text-white/80 text-sm">
-                Already have an account?{" "}
-                <Link
-                  href="/login"
-                  className="text-white font-semibold hover:text-gray-200 hover:underline transition-colors"
-                >
-                  Login here
-                </Link>
-              </p>
-            </div>
+            <p className="text-center text-white/80 text-sm">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="text-white font-semibold hover:text-gray-200 hover:underline transition-colors"
+              >
+                Login here
+              </Link>
+            </p>
+          </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1">
@@ -137,7 +137,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 placeholder="Enter your full name"
                 required
-                className="w-120 rounded-2xl px-4 py-4 bg-[#873007] text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
+                className="w-120 rounded-full px-4 py-3 bg-[#873007] text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
               />
             </div>
 
@@ -150,7 +150,7 @@ export default function SignupPage() {
                 placeholder="Enter your email address"
                 type="email"
                 required
-                className="w-120 rounded-2xl px-4 py-4 bg-[#873007] text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
+                className="w-120 rounded-full px-4 py-3 bg-[#873007] text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
               />
             </div>
 
@@ -165,7 +165,7 @@ export default function SignupPage() {
                 pattern="[0-9]{10}"
                 maxLength={10}
                 required
-                className="w-120 rounded-2xl px-4 py-4 bg-[#873007] text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
+                className="w-120 rounded-full px-4 py-3 bg-[#873007] text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
               />
             </div>
 
@@ -179,7 +179,7 @@ export default function SignupPage() {
                 type="password"
                 required
                 minLength={6}
-                className="w-120 rounded-2xl px-4 py-4 bg-[#873007]  text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
+                className="w-120 rounded-full px-4 py-3 bg-[#873007]  text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
               />
             </div>
 
@@ -194,7 +194,7 @@ export default function SignupPage() {
                 placeholder="Confirm your password"
                 type="password"
                 required
-                className="w-120 rounded-2xl px-4 py-4 bg-[#873007]  text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
+                className="w-120 rounded-full px-4 py-3 bg-[#873007]  text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
               />
             </div>
 
@@ -266,8 +266,6 @@ export default function SignupPage() {
                 </span>
               )}
             </button>
-
-            
           </form>
         </div>
       </section>
