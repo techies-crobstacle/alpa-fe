@@ -839,24 +839,14 @@ export default function ArtistOnboardingForm() {
       if (data.sellerId) {
         setFormData(prev => ({ ...prev, sellerId: data.sellerId }));
       }
-      setShowVerificationInput(true);
       setErrors({});
+      // Automatically advance to next step
+      setTimeout(() => setCurrentStep(2), 500);
     } catch (error) {
       console.error('Error:', error);
       setErrors(prev => ({ ...prev, submit: 'An error occurred. Please try again.' }));
     } finally {
       setLoading(false);
-    }
-  };
-
-  // STEP 1: Verify
-  const handleVerify = () => {
-    if (formData.verificationCode === '123456') {
-      setIsVerified(true);
-      setErrors(prev => ({ ...prev, verificationCode: '' }));
-      setTimeout(() => setCurrentStep(2), 500);
-    } else {
-      setErrors(prev => ({ ...prev, verificationCode: 'Invalid verification code' }));
     }
   };
 
@@ -873,7 +863,7 @@ export default function ArtistOnboardingForm() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${baseURL}/api/sellers/otp-verify`, {
+      const response = await fetch(`${baseURL}/api/sellers/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -896,6 +886,39 @@ export default function ArtistOnboardingForm() {
       }
       setErrors({});
       setCurrentStep(3);
+    } catch (error) {
+      console.error('Error:', error);
+      setErrors(prev => ({ ...prev, submit: 'An error occurred. Please try again.' }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend OTP
+  const handleResendOTP = async () => {
+    if (!formData.sellerId) {
+      setErrors(prev => ({ ...prev, submit: 'Seller ID is missing' }));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${baseURL}/api/sellers/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sellerId: formData.sellerId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to resend OTP' }));
+        setErrors(prev => ({ ...prev, submit: errorData.message || 'Failed to resend OTP' }));
+        return;
+      }
+
+      setErrors(prev => ({ ...prev, submit: '' }));
+      alert('OTP has been resent to your email and phone');
     } catch (error) {
       console.error('Error:', error);
       setErrors(prev => ({ ...prev, submit: 'An error occurred. Please try again.' }));
@@ -964,6 +987,13 @@ export default function ArtistOnboardingForm() {
       return;
     }
 
+    // Basic ABN format validation (11 digits)
+    const abnDigits = formData.abn.replace(/\s/g, '');
+    if (abnDigits.length !== 11 || !/^\d+$/.test(abnDigits)) {
+      setErrors(prev => ({ ...prev, abn: 'ABN must be 11 digits' }));
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch(`${baseURL}/api/sellers/validate-abn`, {
@@ -981,11 +1011,47 @@ export default function ArtistOnboardingForm() {
         return;
       }
 
-      setAbnVerified(true);
-      setErrors(prev => ({ ...prev, abn: '' }));
+      const data = await response.json();
+      console.log('ABN Validation Response:', data);
+
+      // Check if validation was successful
+      if (data.success && data.abnValidation?.isValid) {
+        setAbnVerified(true);
+        setErrors(prev => ({ ...prev, abn: '' }));
+        
+        // Auto-fill business details if available
+        const abnData = data.abnValidation.data;
+        if (abnData) {
+          const updatedFormData: any = {};
+          
+          // Auto-fill business name (prefer businessName over entityName)
+          if (abnData.businessName) {
+            updatedFormData.businessName = abnData.businessName;
+          } else if (abnData.entityName) {
+            updatedFormData.businessName = abnData.entityName;
+          }
+          
+          // Auto-fill business type
+          if (abnData.entityType) {
+            updatedFormData.businessType = abnData.entityType;
+          }
+          
+          // Update form data with auto-filled values
+          if (Object.keys(updatedFormData).length > 0) {
+            setFormData(prev => ({ ...prev, ...updatedFormData }));
+            console.log('Auto-filled business details:', updatedFormData);
+          }
+        }
+      } else {
+        // Handle validation failure
+        const errorMessage = data.abnValidation?.message || 'ABN validation failed - Business not found or invalid';
+        setErrors(prev => ({ ...prev, abn: errorMessage }));
+        setAbnVerified(false);
+      }
     } catch (error) {
       console.error('Error:', error);
-      setErrors(prev => ({ ...prev, abn: 'ABN validation failed' }));
+      setErrors(prev => ({ ...prev, abn: 'ABN validation failed - Please check your connection' }));
+      setAbnVerified(false);
     } finally {
       setLoading(false);
     }
@@ -1191,10 +1257,8 @@ export default function ArtistOnboardingForm() {
 
   const handleNext = () => {
     if (currentStep === 1) {
-      if (!isVerified) {
-        handleApplyStep1();
-        return;
-      }
+      handleApplyStep1();
+      return;
     } else if (currentStep === 2) {
       handleStep2Submit();
       return;
@@ -1336,44 +1400,6 @@ export default function ArtistOnboardingForm() {
                   <p className="text-sm text-red-800">{errors.submit}</p>
                 </div>
               )}
-              {formData.email && formData.phone && !isVerified && showVerificationInput && (
-                <div className="bg-[#EFE7DA] border border-[#E6CFAF] rounded-xl p-4">
-                  <p className="text-sm text-[#6F433A] mb-3">
-                    A verification code has been sent to your email and phone.
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      name="verificationCode"
-                      value={formData.verificationCode}
-                      onChange={handleInputChange}
-                      className="flex-1 px-4 py-2 border border-[#E6CFAF] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#A48068] bg-[#FFF8F3] text-[#440C03] placeholder-[#A48068]"
-                      placeholder="Enter 6-digit code"
-                      maxLength={6}
-                    />
-                    <button
-                      onClick={handleVerify}
-                      className="px-6 py-3 bg-linear-to-r from-[#440C03] to-[#A48068] text-white rounded-xl font-semibold shadow hover:from-[#6F433A] hover:to-[#A48068] transition-all"
-                    >
-                      Verify
-                    </button>
-                  </div>
-                  {errors.verificationCode && (
-                    <p className="mt-2 text-sm text-red-600">{errors.verificationCode}</p>
-                  )}
-                  <p className="mt-2 text-xs text-[#A48068]">
-                    Demo code: 123456
-                  </p>
-                </div>
-              )}
-              {isVerified && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                  <p className="text-sm text-green-800 flex items-center">
-                    <span className="mr-2">✓</span>
-                    Verification successful!
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
@@ -1386,7 +1412,17 @@ export default function ArtistOnboardingForm() {
                 <input type="text" value={formData.sellerId} readOnly className="w-full px-4 py-2 border border-[#E6CFAF] rounded-xl bg-[#F3E7DF] text-[#440C03] opacity-80 cursor-not-allowed" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#6F433A] mb-2">OTP *</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-semibold text-[#6F433A]">OTP *</label>
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={loading}
+                    className="text-sm font-semibold text-[#440C03] hover:text-[#6F433A] underline disabled:opacity-50"
+                  >
+                    {loading ? 'Sending...' : 'Resend OTP'}
+                  </button>
+                </div>
                 <input type="text" name="otp" value={formData.otp} onChange={handleInputChange} placeholder="Enter OTP received" className={`w-full px-4 py-2 border border-[#E6CFAF] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#A48068] bg-[#FFF8F3] text-[#440C03] placeholder-[#A48068] ${errors.otp ? 'border-red-500' : ''}`} />
                 {errors.otp && <p className="mt-1 text-sm text-red-600">{errors.otp}</p>}
               </div>
