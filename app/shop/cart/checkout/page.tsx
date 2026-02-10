@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext";
@@ -25,81 +25,9 @@ export default function CheckOutPage() {
   const [shippingFullAddress, setShippingFullAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [isAddressValidated, setIsAddressValidated] = useState(false);
 
   const { cartItems, subtotal } = useCart();
   const { token, loading } = useAuth();
-
-  // Load checkout data from localStorage on mount
-  useEffect(() => {
-    const savedStep = localStorage.getItem("checkoutStep");
-    const savedGuestForm = localStorage.getItem("showGuestForm");
-    const savedGuestData = localStorage.getItem("guestCheckoutData");
-    const savedPromoCode = localStorage.getItem("promoCode");
-    const savedPaymentMethod = localStorage.getItem("paymentMethod");
-    const savedAddressValidated = localStorage.getItem("addressValidated");
-
-    if (savedStep) {
-      setStep(parseInt(savedStep, 10));
-    }
-    if (savedGuestForm) {
-      setShowGuestForm(JSON.parse(savedGuestForm));
-    }
-    if (savedGuestData) {
-      try {
-        const guestData = JSON.parse(savedGuestData);
-        setGuestEmail(guestData.guestEmail || "");
-        setGuestFirstName(guestData.guestFirstName || "");
-        setGuestLastName(guestData.guestLastName || "");
-        setGuestPhone(guestData.guestPhone || "");
-        setShippingStreet(guestData.shippingStreet || "");
-        setShippingSuburb(guestData.shippingSuburb || "");
-        setShippingPostcode(guestData.shippingPostcode || "");
-        setShippingFullAddress(guestData.shippingFullAddress || "");
-      } catch (error) {
-        console.error("Failed to load guest data:", error);
-      }
-    }
-    if (savedPromoCode) {
-      setPromoCode(savedPromoCode);
-    }
-    if (savedPaymentMethod) {
-      setPaymentMethod(savedPaymentMethod);
-    }
-    if (savedAddressValidated === "true") {
-      setIsAddressValidated(true);
-    }
-  }, []);
-
-  // Save checkout data to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("checkoutStep", step.toString());
-  }, [step]);
-
-  useEffect(() => {
-    localStorage.setItem("showGuestForm", JSON.stringify(showGuestForm));
-  }, [showGuestForm]);
-
-  useEffect(() => {
-    localStorage.setItem("guestCheckoutData", JSON.stringify({
-      guestEmail,
-      guestFirstName,
-      guestLastName,
-      guestPhone,
-      shippingStreet,
-      shippingSuburb,
-      shippingPostcode,
-      shippingFullAddress,
-    }));
-  }, [guestEmail, guestFirstName, guestLastName, guestPhone, shippingStreet, shippingSuburb, shippingPostcode, shippingFullAddress]);
-
-  useEffect(() => {
-    localStorage.setItem("promoCode", promoCode);
-  }, [promoCode]);
-
-  useEffect(() => {
-    localStorage.setItem("paymentMethod", paymentMethod);
-  }, [paymentMethod]);
 
   /* ---------------- PRICE LOGIC ---------------- */
   const shipping = subtotal > 100 ? 0 : 20;
@@ -107,14 +35,7 @@ export default function CheckOutPage() {
   const total = subtotal + shipping + tax;
 
   /* ---------------- STEP HANDLERS ---------------- */
-  const handleNext = () => {
-    // When on step 2 (address), require validation before proceeding
-    if (step === 2 && !isAddressValidated) {
-      alert("Please validate your address before proceeding");
-      return;
-    }
-    setStep((s) => Math.min(3, s + 1));
-  };
+  const handleNext = () => setStep((s) => Math.min(3, s + 1));
   const handleBack = () => setStep((s) => Math.max(1, s - 1));
 
   const handlePromoSubmit = () => {
@@ -180,15 +101,6 @@ export default function CheckOutPage() {
       if (response.ok) {
         const data = await response.json();
         alert("Order placed successfully!");
-        // Clear checkout data from localStorage
-        localStorage.removeItem("checkoutStep");
-        localStorage.removeItem("showGuestForm");
-        localStorage.removeItem("guestCheckoutData");
-        localStorage.removeItem("promoCode");
-        localStorage.removeItem("paymentMethod");
-        localStorage.removeItem("addressCartData");
-        localStorage.removeItem("addressPlaceId");
-        localStorage.removeItem("addressValidated");
         window.location.href = "/";
       } else {
         const errorData = await response.json();
@@ -373,20 +285,7 @@ export default function CheckOutPage() {
                       <EmailCart onEmailChange={() => {}} />
                     )}
                     {step === 2 && (
-                      <>
-                        {!isAddressValidated && (
-                          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                            <p className="text-sm text-amber-800 font-medium">
-                              ⚠️ Address validation is required to proceed. Please validate your address using the "Validate" button.
-                            </p>
-                          </div>
-                        )}
-                        <AddressCart 
-                          key="address-cart-step2" 
-                          onAddressChange={setShippingAddress} 
-                          onValidationChange={setIsAddressValidated} 
-                        />
-                      </>
+                      <AddressCart onAddressChange={setShippingAddress} />
                     )}
                     {step === 3 && <PaymentCart onPaymentMethodChange={setPaymentMethod} />}
                   </div>
@@ -408,9 +307,8 @@ export default function CheckOutPage() {
                     {step < 3 ? (
                       <button
                         onClick={handleNext}
-                        disabled={cartItems.length === 0 || (step === 2 && !shippingAddress.trim()) || (step === 2 && !isAddressValidated)}
+                        disabled={cartItems.length === 0 || (step === 2 && !shippingAddress.trim())}
                         className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-                        title={step === 2 && !isAddressValidated ? "Please validate your address to continue" : ""}
                       >
                         Continue
                       </button>

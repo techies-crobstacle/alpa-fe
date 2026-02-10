@@ -924,7 +924,7 @@ export default function ShopSlugPage() {
 
   // Skeleton Loading Component
   const SkeletonLoader = () => (
-    <div className="min-h-screen bg-[#ebe3d5] py-8 pt-36">
+    <div className="min-h-screen bg-linear-to-b from-amber-50 to-white py-8 pt-36">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Breadcrumb Skeleton */}
         <div className="mb-6">
@@ -1037,7 +1037,7 @@ export default function ShopSlugPage() {
     parseFloat(product.price) / (1 - discountPercentage / 100);
 
   return (
-    <div className="min-h-screen bg-[#ebe3d5] py-8 pt-36">
+    <div className="min-h-screen bg-linear-to-b from-amber-50 to-white py-8 pt-36">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Breadcrumb with Navigation */}
         <div className="flex justify-between items-center mb-6">
