@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function LoginPage() {
-  const url = "https://alpa-be-1.onrender.com";
+  const url = "http://127.0.0.1:5000";
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -283,7 +283,7 @@ export default function LoginPage() {
 // }
 
 // export default function LoginPage() {
-//   const url = "https://alpa-be-1.onrender.com";
+//   const url = "http://127.0.0.1:5000";
 //   const router = useRouter();
 
 //   const [email, setEmail] = useState("");

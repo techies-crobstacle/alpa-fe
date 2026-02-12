@@ -21,7 +21,7 @@ function OTPVerificationForm() {
   const { setUserDirect } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const url = "https://alpa-be-1.onrender.com";
+  const url = "http://127.0.0.1:5000";
 
   // Get email from URL query params (from your router.push)
   const emailFromParams = searchParams.get("email") || "";

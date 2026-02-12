@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { guestCartUtils, getShippingMethods } from '@/app/lib/guestCartUtils';
 
 export interface CartProduct {
   id: string;
@@ -68,7 +69,7 @@ export function useEnhancedCart() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const baseUrl = "https://alpa-be-1.onrender.com";
+  const baseUrl = "http://127.0.0.1:5000";
 
   const fetchCartData = async (isRefresh = false) => {
     try {
@@ -80,11 +81,68 @@ export function useEnhancedCart() {
       
       const token = localStorage.getItem("token");
       
+      // Guest mode: load cart from localStorage
       if (!token) {
-        setError("No authentication token found");
+        const guestItems = guestCartUtils.getGuestCart();
+        const { subtotal } = guestCartUtils.calculateGuestCartTotals(guestItems);
+        
+        // Map guest items to CartItem format
+        const cartItems: CartItem[] = guestItems.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          qty: item.quantity, // Legacy field
+          id: item.productId, // Legacy field
+          product: item.product,
+        }));
+        
+        // Fetch real shipping methods from backend
+        const availableShipping = await getShippingMethods();
+        
+        // Create guest cart data structure
+        const guestCartData: EnhancedCartData = {
+          success: true,
+          cart: cartItems,
+          availableShipping: availableShipping,
+          gst: {
+            id: 'default_gst',
+            name: 'GST',
+            percentage: '10',
+            description: 'Goods and Services Tax',
+          },
+          calculations: {
+            subtotal: subtotal.toString(),
+            shippingCost: '0',
+            gstPercentage: '10',
+            gstAmount: '0',
+            grandTotal: subtotal.toString(),
+            selectedShipping: null,
+            gstDetails: {
+              id: '1',
+              name: 'GST',
+              percentage: '10',
+              description: 'Goods and Services Tax',
+              isActive: true,
+              isDefault: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+        
+        setCartData(guestCartData);
+        
+        // Set default shipping
+        if (!selectedShipping && guestCartData.availableShipping.length > 0) {
+          setSelectedShipping(guestCartData.availableShipping[0]);
+        }
+        
+        setError(null);
+        setLoading(false);
+        setRefreshing(false);
         return;
       }
 
+      // Authenticated mode: fetch from API
       const response = await fetch(`${baseUrl}/api/cart/my-cart`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -150,8 +208,15 @@ export function useEnhancedCart() {
   const updateQuantity = async (productId: string, newQuantity: number) => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token");
+      
+      // Guest mode: update in localStorage
+      if (!token) {
+        guestCartUtils.updateGuestCartItem(productId, newQuantity);
+        await fetchCartData(true);
+        return;
+      }
 
+      // Authenticated mode: update via API
       if (newQuantity <= 0) {
         // Remove item if quantity is 0 or less
         const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
@@ -191,8 +256,15 @@ export function useEnhancedCart() {
   const removeItem = async (productId: string) => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token");
+      
+      // Guest mode: remove from localStorage
+      if (!token) {
+        guestCartUtils.removeFromGuestCart(productId);
+        await fetchCartData(true);
+        return;
+      }
 
+      // Authenticated mode: remove via API
       const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
         method: 'DELETE',
         headers: {

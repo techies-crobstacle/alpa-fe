@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useCallback, useRef, useState } from 'react';
 import { useEnhancedCart } from './useEnhancedCart';
+import { guestCartUtils } from '@/app/lib/guestCartUtils';
 
 type SharedCartContextType = ReturnType<typeof useEnhancedCart> & {
   subscribeToUpdates: (callback: () => void) => () => void;
@@ -34,9 +35,27 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
   const enhancedAddToCart = useCallback(async (productId: string, productData: { title: string, price: string, images: string[] }) => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token");
+      
+      // Guest mode: store in localStorage
+      if (!token) {
+        guestCartUtils.addItemToGuestCart(productId, {
+          id: productId,
+          title: productData.title,
+          price: productData.price,
+          images: productData.images,
+          stock: 100,
+          category: '',
+        }, 1);
+        
+        // Small delay to ensure localStorage is updated before triggering refresh
+        setTimeout(() => {
+          triggerUpdate();
+        }, 100);
+        return;
+      }
 
-      const response = await fetch("https://alpa-be-1.onrender.com/api/cart/add", {
+      // Authenticated mode: API call
+      const response = await fetch("http://127.0.0.1:5000/api/cart/add", {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

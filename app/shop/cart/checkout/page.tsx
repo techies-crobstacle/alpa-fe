@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
+import { guestCartUtils } from "@/app/lib/guestCartUtils";
 
 import EmailCart from "../../../components/checkout/emailCart";
 import AddressCart from "../../../components/checkout/addressCart";
@@ -24,6 +25,9 @@ export default function CheckOutPage() {
   const [shippingSuburb, setShippingSuburb] = useState("");
   const [shippingPostcode, setShippingPostcode] = useState("");
   const [shippingFullAddress, setShippingFullAddress] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingState, setShippingState] = useState("");
+  const [shippingZipCode, setShippingZipCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [isAddressValidated, setIsAddressValidated] = useState(false);
@@ -58,9 +62,9 @@ export default function CheckOutPage() {
         setGuestLastName(guestData.guestLastName || "");
         setGuestPhone(guestData.guestPhone || "");
         setShippingStreet(guestData.shippingStreet || "");
-        setShippingSuburb(guestData.shippingSuburb || "");
-        setShippingPostcode(guestData.shippingPostcode || "");
-        setShippingFullAddress(guestData.shippingFullAddress || "");
+        setShippingCity(guestData.shippingCity || "");
+        setShippingState(guestData.shippingState || "");
+        setShippingZipCode(guestData.shippingZipCode || "");
       } catch (error) {
         console.error("Failed to load guest data:", error);
       }
@@ -92,11 +96,11 @@ export default function CheckOutPage() {
       guestLastName,
       guestPhone,
       shippingStreet,
-      shippingSuburb,
-      shippingPostcode,
-      shippingFullAddress,
+      shippingCity,
+      shippingState,
+      shippingZipCode,
     }));
-  }, [guestEmail, guestFirstName, guestLastName, guestPhone, shippingStreet, shippingSuburb, shippingPostcode, shippingFullAddress]);
+  }, [guestEmail, guestFirstName, guestLastName, guestPhone, shippingStreet, shippingCity, shippingState, shippingZipCode]);
 
   useEffect(() => {
     localStorage.setItem("promoCode", promoCode);
@@ -130,7 +134,7 @@ export default function CheckOutPage() {
   const handlePlaceOrder = async () => {
     // Check if using guest checkout
     if (showGuestForm) {
-      if (!guestEmail.trim() || !guestFirstName.trim() || !guestLastName.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingSuburb.trim() || !shippingPostcode.trim() || !shippingFullAddress.trim() || !paymentMethod) {
+      if (!guestEmail.trim() || !guestFirstName.trim() || !guestLastName.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingCity.trim() || !shippingState.trim() || !shippingZipCode.trim() || !paymentMethod) {
         alert("Please complete all required guest checkout fields");
         return;
       }
@@ -147,6 +151,12 @@ export default function CheckOutPage() {
       return;
     }
 
+    // Check cart is not empty
+    if (cartItems.length === 0) {
+      alert("Your cart is empty. Please add items before placing an order");
+      return;
+    }
+
     setIsPlacingOrder(true);
     try {
       let response;
@@ -154,29 +164,66 @@ export default function CheckOutPage() {
       // Get shipping and GST IDs dynamically from cart data
       const shippingMethodId = selectedShipping?.id;
       const gstId = cartData?.gst?.id;
+      
+      console.log('=== ORDER PLACEMENT DEBUG ===');
+      console.log('cartData.availableShipping:', cartData?.availableShipping);
+      console.log('selectedShipping:', selectedShipping);
+      console.log('shippingMethodId:', shippingMethodId);
+      console.log('cartData.gst:', cartData?.gst);
+      console.log('gstId:', gstId);
+      console.log('showGuestForm:', showGuestForm);
 
       if (showGuestForm) {
-        // Guest checkout API call with new body format
-        response = await fetch("https://alpa-be-1.onrender.com/api/orders/guest/checkout", {
+        // Guest checkout API call with guest cart items
+        const guestCartItems = guestCartUtils.getGuestCart();
+        
+        console.log('=== GUEST CHECKOUT DEBUG ===');
+        console.log('Cart items:', guestCartItems);
+        console.log('Guest name:', `${guestFirstName} ${guestLastName}`);
+        console.log('Guest email:', guestEmail);
+        console.log('Guest phone:', guestPhone);
+        console.log('Shipping address:', {
+          street: shippingStreet,
+          city: shippingCity,
+          state: shippingState,
+          zipCode: shippingZipCode,
+        });
+        console.log('Payment method:', paymentMethod);
+        console.log('Shipping method ID:', shippingMethodId);
+        console.log('GST ID:', gstId);
+        
+        const requestBody = {
+          items: guestCartItems.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          })),
+          customerName: `${guestFirstName} ${guestLastName}`,
+          customerEmail: guestEmail,
+          customerPhone: guestPhone,
+          shippingAddress: {
+            street: shippingStreet,
+            city: shippingCity,
+            state: shippingState,
+            zipCode: shippingZipCode,
+          },
+          paymentMethod: paymentMethod,
+          shippingMethodId: shippingMethodId,
+          ...(gstId && { gstId }), // Include gstId only if available
+        };
+        
+        console.log('Full request body:', requestBody);
+        console.log('Request body as JSON string:', JSON.stringify(requestBody));
+        
+        response = await fetch("http://127.0.0.1:5000/api/orders/guest/checkout", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            shippingAddress: {
-              street: shippingStreet,
-              suburb: shippingSuburb,
-              postcode: shippingPostcode,
-              fullAddress: shippingFullAddress,
-            },
-            paymentMethod: paymentMethod,
-            shippingMethodId: shippingMethodId,
-            ...(gstId && { gstId }), // Include gstId only if available
-          }),
+          body: JSON.stringify(requestBody),
         });
       } else {
         // Authenticated user order with new body format
-        response = await fetch("https://alpa-be-1.onrender.com/api/orders/create", {
+        response = await fetch("http://127.0.0.1:5000/api/orders/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -199,6 +246,12 @@ export default function CheckOutPage() {
       if (response.ok) {
         const data = await response.json();
         alert("Order placed successfully!");
+        
+        // Clear guest cart from localStorage if guest checkout
+        if (showGuestForm) {
+          guestCartUtils.clearGuestCart();
+        }
+        
         // Clear checkout data from localStorage
         localStorage.removeItem("checkoutStep");
         localStorage.removeItem("showGuestForm");
@@ -210,8 +263,30 @@ export default function CheckOutPage() {
         localStorage.removeItem("addressValidated");
         window.location.href = "/";
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || "Failed to place order");
+        // Try to parse error response
+        let errorMessage = "Failed to place order";
+        try {
+          const errorData = await response.json();
+          console.error('Backend JSON error response:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          // Response is not JSON, get raw text
+          const errorText = await response.text();
+          console.error('Backend raw error response:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          errorMessage = errorText || errorMessage;
+        }
+        
+        console.error('Full error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          message: errorMessage,
+        });
+        
+        alert(errorMessage);
       }
     } catch (error) {
       console.error("Error placing order:", error);
@@ -316,11 +391,11 @@ export default function CheckOutPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium">Suburb</label>
+                      <label className="block text-sm font-medium">City</label>
                       <input
                         type="text"
-                        value={shippingSuburb}
-                        onChange={e => setShippingSuburb(e.target.value)}
+                        value={shippingCity}
+                        onChange={e => setShippingCity(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
@@ -328,21 +403,21 @@ export default function CheckOutPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium">Postcode</label>
+                      <label className="block text-sm font-medium">State</label>
                       <input
                         type="text"
-                        value={shippingPostcode}
-                        onChange={e => setShippingPostcode(e.target.value)}
+                        value={shippingState}
+                        onChange={e => setShippingState(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium">Full Address</label>
+                      <label className="block text-sm font-medium">Zip Code</label>
                       <input
                         type="text"
-                        value={shippingFullAddress}
-                        onChange={e => setShippingFullAddress(e.target.value)}
+                        value={shippingZipCode}
+                        onChange={e => setShippingZipCode(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
@@ -352,7 +427,7 @@ export default function CheckOutPage() {
                     className="mt-4 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800"
                     onClick={() => {
                       // Validate guest fields before proceeding
-                      if (!guestFirstName.trim() || !guestLastName.trim() || !guestEmail.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingSuburb.trim() || !shippingPostcode.trim() || !shippingFullAddress.trim()) {
+                      if (!guestFirstName.trim() || !guestLastName.trim() || !guestEmail.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingCity.trim() || !shippingState.trim() || !shippingZipCode.trim()) {
                         alert("Please fill all guest checkout fields");
                         return;
                       }
