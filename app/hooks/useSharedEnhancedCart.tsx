@@ -36,7 +36,7 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token");
 
-      const response = await fetch("http://127.0.0.1:5000/api/cart/add", {
+      const response = await fetch("https://alpa-be-1.onrender.com/api/cart/add", {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

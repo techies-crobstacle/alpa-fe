@@ -66,7 +66,7 @@ export function useEnhancedCart() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const baseUrl = "http://127.0.0.1:5000";
+  const baseUrl = "https://alpa-be-1.onrender.com";
 
   const fetchCartData = async (isRefresh = false) => {
     try {
