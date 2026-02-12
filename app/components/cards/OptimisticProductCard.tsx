@@ -1,12 +1,11 @@
 // app/components/cards/OptimisticProductCard.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Minus, Plus, Heart, Star, Loader2 } from "lucide-react";
-import { useCart } from "@/app/context/CartContext";
-import { useOptimisticAddToCart, useOptimisticUpdateCart } from "@/app/hooks/useCartMutations";
+import { ShoppingCart, Minus, Plus, Heart, Star, Loader2, Check } from "lucide-react";
+import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
 import { useToggleWishlist } from "@/app/hooks/useWishlistMutations";
 import { useWishlistQuery } from "@/app/hooks/useWishlist";
 
@@ -34,16 +33,47 @@ export default function OptimisticProductCard({
   tags = [],
   featured = false,
 }: OptimisticProductCardProps) {
-  const { getItemQuantity } = useCart();
+  // Use shared enhanced cart for real-time synchronization
+  const { 
+    cartData,
+    updateQuantity,
+    addToCart,
+    loading,
+    subscribeToUpdates
+  } = useSharedEnhancedCart();
+  
+  // Local state for UI animations and loading
   const [isAnimating, setIsAnimating] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
   const [optimisticWishlist, setOptimisticWishlist] = useState<boolean | null>(null);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [syncTrigger, setSyncTrigger] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  // React Query hooks
+  // React Query hooks for wishlist
   const { data: wishlistData } = useWishlistQuery();
-  const addToCartMutation = useOptimisticAddToCart();
-  const updateCartMutation = useOptimisticUpdateCart();
   const toggleWishlistMutation = useToggleWishlist();
+
+  // Subscribe to cart updates for real-time sync
+  useEffect(() => {
+    const unsubscribe = subscribeToUpdates(() => {
+      setSyncTrigger(prev => prev + 1);
+    });
+    return unsubscribe;
+  }, [subscribeToUpdates]);
+
+  // Get current quantity from enhanced cart data
+  const currentCartItem = useMemo(() => {
+    return cartData?.cart.find(item => item.productId === id);
+  }, [cartData, id, syncTrigger]);
+
+  const qty = currentCartItem?.quantity || 0;
+  const remainingStock = Math.max(0, (stock || 0) - qty);
+  const isInCart = qty > 0;
+  const isOutOfStock = remainingStock === 0;
+
+  // Loading states for specific buttons
+  const isWishlistLoading = toggleWishlistMutation.isPending;
 
   // Fast wishlist check using React Query data
   const isWishlisted = useMemo(() => {
@@ -62,42 +92,32 @@ export default function OptimisticProductCard({
     });
   }, [wishlistData, id, optimisticWishlist]);
 
-  const qty = getItemQuantity(id);
-  const remainingStock = Math.max(0, (stock || 0) - qty);
-  const isInCart = qty > 0;
-  const isOutOfStock = remainingStock === 0;
-
-  // Loading states for specific buttons
-  const isAddToCartLoading = addToCartMutation.isPending;
-  // const isUpdateCartLoading = updateCartMutation.isPending;
-  const isWishlistLoading = toggleWishlistMutation.isPending;
-
-  /* ---------- INSTANT ADD TO CART ---------- */
+  /* ---------- REAL-TIME ADD TO CART ---------- */
   const handleAdd = async () => {
-    if (isOutOfStock) return;
+    if (isOutOfStock || isAddingToCart) return;
 
     setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 300);
-
-    // Immediate UI feedback - the cart context handles optimistic updates
-    addToCartMutation.mutate({
-        id,
-        name,
-        price: amount,
-        image: photo,
-        slug,
-        cartId: ""
-    });
-  };
-
-  /* ---------- INSTANT QUANTITY CHANGES ---------- */
-  const handleIncrease = () => {
-    if (isOutOfStock) return;
-    updateCartMutation.mutate({ productId: id, change: 1 });
-  };
-
-  const handleDecrease = () => {
-    updateCartMutation.mutate({ productId: id, change: -1 });
+    setIsAddingToCart(true);
+    
+    try {
+      // Add item to cart using the shared enhanced cart
+      await addToCart(id, {
+        title: name,
+        price: amount.toString(),
+        images: [photo]
+      });
+      
+      // Show success indicator
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
+      
+      // Visual feedback
+      setTimeout(() => setIsAnimating(false), 300);
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   /* ---------- INSTANT WISHLIST TOGGLE ---------- */
@@ -159,6 +179,34 @@ export default function OptimisticProductCard({
 
   return (
     <div className="group bg-white p-1 rounded-xl shadow-sm hover:shadow-lg transition relative flex flex-col h-full">
+      {/* Cart sync overlay */}
+      {isAddingToCart && (
+        <div className="absolute inset-0 bg-amber-100/30 rounded-xl z-10 flex items-center justify-center">
+          <div className="bg-amber-900 text-white px-3 py-1 rounded-full flex items-center gap-2">
+            <Loader2 size={14} className="animate-spin" />
+            <span className="text-xs font-medium">Adding to cart...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Success indicator */}
+      {showSuccess && (
+        <div className="absolute inset-0 bg-green-100/30 rounded-xl z-10 flex items-center justify-center">
+          <div className="bg-green-600 text-white px-3 py-1 rounded-full flex items-center gap-2">
+            <div className="h-3 w-3 bg-green-300 rounded-full animate-pulse"></div>
+            <span className="text-xs font-medium">Added to cart!</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Real-time sync indicator */}
+      {/* <div className="absolute top-1 left-1 z-20">
+        <div className="flex items-center gap-1 bg-green-50 border border-green-200 rounded-lg px-2 py-1">
+          <div className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-[10px] text-green-700 font-medium">Live</span>
+        </div>
+      </div> */}
+
       {/* IMAGE CONTAINER */}
       <div className="relative mb-2 sm:mb-3 rounded-lg overflow-hidden bg-gray-50 grow flex items-center justify-center min-h-50 sm:min-h-55 md:min-h-60 lg:min-h-65">
         {/* Featured Badge */}
@@ -259,59 +307,51 @@ export default function OptimisticProductCard({
               />
             </button>
 
-            {/* CART BUTTON/CONTROLS */}
-            {isInCart ? (
-              <div
-                className={`flex items-center gap-1 sm:gap-2 bg-amber-900 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full transition-all ${
-                  isAnimating ? "scale-105" : ""
-                }`}
-              >
-                <button
-                  onClick={handleDecrease}
-                  className="p-1 hover:bg-amber-800 rounded-full transition-colors"
-                  aria-label="Decrease quantity"
-                >
-                  <Minus size={14} className="sm:w-4 sm:h-4" />
-                </button>
-
-                <span className="min-w-4 sm:min-w-5 text-center font-bold text-sm sm:text-base">
-                  {qty}
-                </span>
-
-                <button
-                  onClick={handleIncrease}
-                  disabled={isOutOfStock}
-                  className="p-1 hover:bg-amber-800 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Increase quantity"
-                >
-                  <Plus size={14} className="sm:w-4 sm:h-4" />
-                </button>
-              </div>
-            ) : (
+            {/* CART BUTTON */}
+            <div className="relative">
+              {/* Success tick overlay */}
+              {isInCart && (
+                <div className="absolute -top-1 -right-1 z-10 flex items-center justify-center">
+                  <div className="bg-green-500 rounded-full p-0.5 shadow-sm animate-pulse">
+                    <Check size={10} className="text-white" strokeWidth={3} />
+                  </div>
+                </div>
+              )}
+              
               <button
                 onClick={handleAdd}
-                disabled={isOutOfStock || isAddToCartLoading}
-                className={`p-1.5 sm:p-2 rounded-full transition-all flex items-center justify-center ${
-                  isOutOfStock || isAddToCartLoading
-                    ? "bg-gray-400 cursor-not-allowed"
+                disabled={isOutOfStock || isAddingToCart || isInCart}
+                className={`relative p-1.5 sm:p-2 rounded-full transition-all flex items-center justify-center ${
+                  isOutOfStock || isAddingToCart || isInCart
+                    ? "bg-gray-400 cursor-not-allowed opacity-70"
                     : "bg-amber-900 text-white hover:bg-amber-800 active:scale-95"
-                }`}
-                aria-label={isOutOfStock ? "Out of stock" : isAddToCartLoading ? "Adding to cart..." : "Add to cart"}
+                } ${isAnimating ? "scale-110" : ""}`}
+                aria-label={isInCart ? "Already in cart" : isOutOfStock ? "Out of stock" : isAddingToCart ? "Adding to cart..." : "Add to cart"}
+                title={isInCart ? "Item is already in your cart" : isOutOfStock ? "Item is out of stock" : "Add to cart"}
               >
-                {isAddToCartLoading ? (
+                {isAddingToCart ? (
                   <Loader2 color="#e7d0b0" size={16} className="sm:w-5 sm:h-5 animate-spin" />
                 ) : (
-                  <ShoppingCart color="#e7d0b0" fill="#e7d0b0" size={16} className="sm:w-5 sm:h-5" />
+                  <ShoppingCart 
+                    color="#e7d0b0" 
+                    fill="#e7d0b0" 
+                    size={16} 
+                    className="sm:w-5 sm:h-5" 
+                  />
                 )}
               </button>
-            )}
+            </div>
+
+            {/* Show quantity if item is already in cart */}
+            {/* {isInCart && (
+              <div className="bg-gray-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                {qty}
+              </div>
+            )} */}
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-
-
 

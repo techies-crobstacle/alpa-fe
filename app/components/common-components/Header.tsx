@@ -680,6 +680,7 @@ import MiniCart from "../cards/MiniCart";
 import OptimisticMiniCart from "../cards/OptimisticMiniCart";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "@/app/context/CartContext";
+import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
 import { CouponDropdownIcon } from "./CouponDropdown";
 import { useProducts, Product } from "@/app/hooks/useProducts";
 
@@ -709,14 +710,28 @@ export default function Header() {
 
   const { user, logout, fetchUser, loading } = useAuth();
   const { cartItems, fetchCartFromBackend } = useCart();
+  const { cartData, subscribeToUpdates } = useSharedEnhancedCart();
   const { data: products = [] } = useProducts();
   const router = useRouter();
 
+  // Local state for real-time cart updates
+  const [cartUpdateTrigger, setCartUpdateTrigger] = useState(0);
+
+  // Subscribe to cart updates for real-time header count
+  useEffect(() => {
+    const unsubscribe = subscribeToUpdates(() => {
+      setCartUpdateTrigger(prev => prev + 1);
+    });
+    return unsubscribe;
+  }, [subscribeToUpdates]);
+
   // Get cart items and calculate total count (memoized)
-  const cartItemCount = useMemo(() => 
-    cartItems.reduce((total, item) => total + item.qty, 0), 
-    [cartItems]
-  );
+  const cartItemCount = useMemo(() => {
+    if (cartData && cartData.cart && cartData.cart.length > 0) {
+      return cartData.cart.reduce((total, item) => total + item.quantity, 0);
+    }
+    return cartItems.reduce((total, item) => total + item.qty, 0);
+  }, [cartData, cartItems, cartUpdateTrigger]);
 
   // Search functionality using useMemo to prevent unnecessary re-computations
   const searchResults = useMemo(() => {
