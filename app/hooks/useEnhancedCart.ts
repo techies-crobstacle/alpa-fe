@@ -12,6 +12,8 @@ export interface CartProduct {
 }
 
 export interface CartItem {
+  qty: any;
+  id: any;
   productId: string;
   quantity: number;
   product: CartProduct;

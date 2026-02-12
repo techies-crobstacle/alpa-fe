@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { X, Plus, Minus, ShoppingBag, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
 import confetti from "canvas-confetti";
 
@@ -19,7 +19,13 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
     subscribeToUpdates,
   } = useSharedEnhancedCart();
   
-  const cartItems = cartData?.cart || [];
+  // Stable sorted cart items to prevent shuffling
+  const cartItems = useMemo(() => {
+    const items = cartData?.cart || [];
+    // Sort by productId to maintain stable order regardless of API response order
+    return [...items].sort((a, b) => a.productId.localeCompare(b.productId));
+  }, [cartData?.cart]);
+  
   const { subtotal } = calculateTotals;
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const router = useRouter();

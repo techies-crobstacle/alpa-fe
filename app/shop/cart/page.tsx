@@ -342,6 +342,20 @@ export default function Page() {
     }
   };
 
+  // Handle remove item with loading state
+  const handleRemoveItem = async (productId: string) => {
+    setUpdatingItems(prev => new Set(prev).add(productId));
+    try {
+      await removeItem(productId);
+    } finally {
+      setUpdatingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+    }
+  };
+
   // Subscribe to cart updates for real-time sync between cart page and mini cart
   useEffect(() => {
     const unsubscribe = subscribeToUpdates(() => {
@@ -382,7 +396,12 @@ export default function Page() {
     );
   }
 
-  const cartItems = cartData?.cart || [];
+  // Stable sorted cart items to prevent shuffling
+  const cartItems = useMemo(() => {
+    const items = cartData?.cart || [];
+    // Sort by productId to maintain stable order regardless of API response order
+    return [...items].sort((a, b) => a.productId.localeCompare(b.productId));
+  }, [cartData?.cart]);
 
   return (
     <section className="bg-[#EBE3D5]">
@@ -451,12 +470,10 @@ export default function Page() {
               return (
             <div
               key={item.productId}
-              className={`relative grid grid-cols-[2fr_1fr_1fr_1fr_auto] items-center py-6 border-b border-black/10 gap-4 transition-opacity duration-200 ${
-                isUpdating ? 'opacity-70' : ''
-              }`}
+              className={`relative grid grid-cols-[2fr_1fr_1fr_1fr_auto] items-center py-6 border-b border-black/10 gap-4`}
             >
               {isUpdating && (
-                <div className="absolute left-0 top-0 right-0 bottom-0 bg-white/40 rounded-sm flex items-center justify-center z-20">
+                <div className="absolute left-0 top-0 right-0 bottom-0 bg-white/20 rounded-sm flex items-center justify-center z-20 pointer-events-none">
                   <Loader className="h-6 w-6 animate-spin text-amber-900" />
                 </div>
               )}
@@ -522,8 +539,9 @@ export default function Page() {
                 {/* Remove Button */}
                 <div className="flex justify-end">
                   <button
-                    onClick={() => removeItem(item.productId)}
-                    className="text-gray-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
+                    onClick={() => handleRemoveItem(item.productId)}
+                    disabled={isUpdating}
+                    className="text-gray-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label={`Remove ${item.product.title} from cart`}
                   >
                     <Trash2 className="h-5 w-5" />

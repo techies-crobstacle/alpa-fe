@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
 
 import EmailCart from "../../../components/checkout/emailCart";
 import AddressCart from "../../../components/checkout/addressCart";
@@ -27,8 +28,12 @@ export default function CheckOutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [isAddressValidated, setIsAddressValidated] = useState(false);
 
-  const { cartItems, subtotal } = useCart();
+  const { cartData, selectedShipping, calculateTotals } = useSharedEnhancedCart();
   const { token, loading } = useAuth();
+  
+  // Get cart items and totals from enhanced cart
+  const cartItems = cartData?.cart || [];
+  const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } = calculateTotals;
 
   // Load checkout data from localStorage on mount
   useEffect(() => {
@@ -101,10 +106,11 @@ export default function CheckOutPage() {
     localStorage.setItem("paymentMethod", paymentMethod);
   }, [paymentMethod]);
 
-  /* ---------------- PRICE LOGIC ---------------- */
-  const shipping = subtotal > 100 ? 0 : 20;
-  const tax = +(subtotal * 0.05).toFixed(2);
-  const total = subtotal + shipping + tax;
+  /* ---------------- PRICE LOGIC (from enhanced cart) ---------------- */
+  // Use pre-calculated totals from enhanced cart
+  const shipping = shippingCost;
+  const tax = gstAmount;
+  const total = grandTotal;
 
   /* ---------------- STEP HANDLERS ---------------- */
   const handleNext = () => {
@@ -135,35 +141,41 @@ export default function CheckOutPage() {
       }
     }
 
+    // Validate shipping method selection
+    if (!selectedShipping) {
+      alert("Please select a shipping method");
+      return;
+    }
+
     setIsPlacingOrder(true);
     try {
       let response;
+      
+      // Get shipping and GST IDs dynamically from cart data
+      const shippingMethodId = selectedShipping?.id;
+      const gstId = cartData?.gst?.id;
+
       if (showGuestForm) {
-        // Guest checkout API call
+        // Guest checkout API call with new body format
         response = await fetch("https://alpa-be-1.onrender.com/api/orders/guest/checkout", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            items: cartItems.map((item) => ({
-              productId: item.id,
-              quantity: item.qty,
-            })),
-            customerName: `${guestFirstName} ${guestLastName}`.trim(),
-            customerEmail: guestEmail,
-            customerPhone: guestPhone,
             shippingAddress: {
               street: shippingStreet,
               suburb: shippingSuburb,
               postcode: shippingPostcode,
               fullAddress: shippingFullAddress,
             },
-            paymentMethod,
+            paymentMethod: paymentMethod,
+            shippingMethodId: shippingMethodId,
+            ...(gstId && { gstId }), // Include gstId only if available
           }),
         });
       } else {
-        // Authenticated user order
+        // Authenticated user order with new body format
         response = await fetch("https://alpa-be-1.onrender.com/api/orders/create", {
           method: "POST",
           headers: {
@@ -171,8 +183,15 @@ export default function CheckOutPage() {
             "Authorization": `Bearer ${token}`,
           },
           body: JSON.stringify({
-            shippingAddress,
-            paymentMethod: paymentMethod.toUpperCase(),
+            shippingAddress: {
+              street: shippingStreet,
+              suburb: shippingSuburb,
+              postcode: shippingPostcode,
+              fullAddress: shippingFullAddress,
+            },
+            paymentMethod: paymentMethod,
+            shippingMethodId: shippingMethodId,
+            ...(gstId && { gstId }), // Include gstId only if available
           }),
         });
       }
@@ -473,7 +492,7 @@ export default function CheckOutPage() {
                 </div>
 
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax (5%)</span>
+                  <span className="text-gray-600">GST ({gstPercentage?.toFixed(1)}%)</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
               </div>
@@ -515,12 +534,12 @@ export default function CheckOutPage() {
 
                 <div className="space-y-4">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex gap-4">
+                    <div key={item.productId} className="flex gap-4">
                       {/* IMAGE */}
                       <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                         <Image
-                          src={item.image || "/images/placeholder.png"}
-                          alt={item.name}
+                          src={item.product.images?.[0] || "/images/placeholder.png"}
+                          alt={item.product.title}
                           fill
                           className="object-cover"
                         />
@@ -528,15 +547,15 @@ export default function CheckOutPage() {
 
                       {/* INFO */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{item.name}</p>
+                        <p className="font-medium truncate">{item.product.title}</p>
                         <p className="text-sm text-gray-600">
-                          Qty {item.qty} × ${item.price.toFixed(2)}
+                          Qty {item.quantity} × ${parseFloat(item.product.price).toFixed(2)}
                         </p>
                       </div>
 
                       {/* ITEM TOTAL */}
                       <p className="font-medium text-sm">
-                        ${(item.qty * item.price).toFixed(2)}
+                        ${(item.quantity * parseFloat(item.product.price)).toFixed(2)}
                       </p>
                     </div>
                   ))}
