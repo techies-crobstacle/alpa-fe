@@ -384,7 +384,7 @@ function ShopContent() {
           {/* FULL IMAGE */}
           <div
             className="relative h-[30vh] sm:h-[35vh] md:h-[50vh] lg:h-[65vh]
-                   bg-[url('/images/shop-banner.jpg')] bg-cover bg-center"
+                   bg-[url('/images/main.png')] bg-cover bg-center"
           >
             {/* Overlay */}
             <div className="absolute inset-0 bg-black/30" />

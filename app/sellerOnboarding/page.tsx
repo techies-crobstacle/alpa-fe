@@ -265,7 +265,7 @@
 //                 height={90}
 //               />
 //             </Link>
-//     {/* <div className="relative min-h-[70vh]  overflow-hidden bg-[url('/images/main.jpg')] bg-cover bg-center">
+//     {/* <div className="relative min-h-[70vh]  overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center">
 //         <div className="absolute inset-0 bg-black/50" />
 
 //         <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-4 py-32 md:py-60">
@@ -1297,7 +1297,7 @@ export default function ArtistOnboardingForm() {
                 height={90}
               />
             </Link>
-    {/* <div className="relative min-h-[70vh]  overflow-hidden bg-[url('/images/main.jpg')] bg-cover bg-center">
+    {/* <div className="relative min-h-[70vh]  overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center">
         <div className="absolute inset-0 bg-black/50" />
 
         <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-4 py-32 md:py-60">
