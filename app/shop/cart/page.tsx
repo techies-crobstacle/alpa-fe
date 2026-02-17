@@ -430,7 +430,7 @@ export default function Page() {
             </h1>
 
             <p className="max-w-xl mb-6 text-white/90">
-              Review your selected items and proceed to secure checkout.
+              Review your selected items and proceed to secure checkout
             </p>
 
             <div className="flex items-center gap-4 w-full max-w-xl">

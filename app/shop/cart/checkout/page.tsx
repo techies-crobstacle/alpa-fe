@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext";
@@ -30,6 +30,7 @@ export default function CheckOutPage() {
   const [shippingZipCode, setShippingZipCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [isAddressValidated, setIsAddressValidated] = useState(false);
 
   const { cartData, selectedShipping, calculateTotals } = useSharedEnhancedCart();
   const { token, loading } = useAuth();
@@ -116,7 +117,14 @@ export default function CheckOutPage() {
   const total = grandTotal;
 
   /* ---------------- STEP HANDLERS ---------------- */
-  const handleNext = () => setStep((s) => Math.min(3, s + 1));
+  const handleNext = () => {
+    // When on step 2 (address), require validation before proceeding
+    if (step === 2 && !isAddressValidated) {
+      alert("Please validate your address before proceeding");
+      return;
+    }
+    setStep((s) => Math.min(3, s + 1));
+  };
   const handleBack = () => setStep((s) => Math.max(1, s - 1));
 
   const handlePromoSubmit = () => {
@@ -459,7 +467,20 @@ export default function CheckOutPage() {
                       <EmailCart onEmailChange={() => {}} />
                     )}
                     {step === 2 && (
-                      <AddressCart onAddressChange={setShippingAddress} />
+                      <>
+                        {!isAddressValidated && (
+                          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-sm text-amber-800 font-medium">
+                              ⚠️ Address validation is required to proceed. Please validate your address using the "Validate" button.
+                            </p>
+                          </div>
+                        )}
+                        <AddressCart 
+                          key="address-cart-step2" 
+                          onAddressChange={setShippingAddress} 
+                          onValidationChange={setIsAddressValidated} 
+                        />
+                      </>
                     )}
                     {step === 3 && <PaymentCart onPaymentMethodChange={setPaymentMethod} />}
                   </div>
@@ -481,8 +502,9 @@ export default function CheckOutPage() {
                     {step < 3 ? (
                       <button
                         onClick={handleNext}
-                        disabled={cartItems.length === 0 || (step === 2 && !shippingAddress.trim())}
+                        disabled={cartItems.length === 0 || (step === 2 && !shippingAddress.trim()) || (step === 2 && !isAddressValidated)}
                         className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                        title={step === 2 && !isAddressValidated ? "Please validate your address to continue" : ""}
                       >
                         Continue
                       </button>
