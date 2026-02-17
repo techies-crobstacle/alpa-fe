@@ -359,7 +359,7 @@ export default function Header() {
           <div className="flex-1"></div>
 
           {/* Desktop Navigation - Centered */}
-          <nav className="flex gap-4 lg:gap-6 absolute left-110 transform -translate-x-1/2">
+          <nav className="flex gap-4 lg:gap-6 absolute left-1/2 transform -translate-x-1/2">
             {NAV_LINKS.map(({ label, href }) => (
               <Link
                 key={href}
@@ -525,7 +525,7 @@ export default function Header() {
                               `/shop?search=${encodeURIComponent(searchTerm)}`
                             );
                           }}
-                          className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-[#5A1E12] hover:text-white transition-colors text-[#5A1E12] font-medium text-sm text-center"
+                          className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-[#5A1E12] hover:text-white transition-colors text-[#5A1E12] font-medium text-sm"
                         >
                           View all results ({segregatedSearchResults.products.length + segregatedSearchResults.categories.length + segregatedSearchResults.artists.length}+)
                         </button>

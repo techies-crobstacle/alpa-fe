@@ -26,7 +26,7 @@ export default function EmailCart({ onEmailChange }: EmailCartProps) {
   };
 
   return (
-    <section className="p-10 flex flex-col gap-5">
+    <section className="p-3 flex flex-col gap-5">
 
         <h1 className="text-2xl font-extrabold">Who is placing this order? </h1>
         <p className="text-sm text-gray-600 -mt-3">

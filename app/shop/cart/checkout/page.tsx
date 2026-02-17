@@ -32,12 +32,14 @@ export default function CheckOutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [isAddressValidated, setIsAddressValidated] = useState(false);
 
-  const { cartData, selectedShipping, calculateTotals } = useSharedEnhancedCart();
+  const { cartData, selectedShipping, calculateTotals } =
+    useSharedEnhancedCart();
   const { token, loading } = useAuth();
-  
+
   // Get cart items and totals from enhanced cart
   const cartItems = cartData?.cart || [];
-  const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } = calculateTotals;
+  const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } =
+    calculateTotals;
 
   // Load checkout data from localStorage on mount
   useEffect(() => {
@@ -90,17 +92,29 @@ export default function CheckOutPage() {
   }, [showGuestForm]);
 
   useEffect(() => {
-    localStorage.setItem("guestCheckoutData", JSON.stringify({
-      guestEmail,
-      guestFirstName,
-      guestLastName,
-      guestPhone,
-      shippingStreet,
-      shippingCity,
-      shippingState,
-      shippingZipCode,
-    }));
-  }, [guestEmail, guestFirstName, guestLastName, guestPhone, shippingStreet, shippingCity, shippingState, shippingZipCode]);
+    localStorage.setItem(
+      "guestCheckoutData",
+      JSON.stringify({
+        guestEmail,
+        guestFirstName,
+        guestLastName,
+        guestPhone,
+        shippingStreet,
+        shippingCity,
+        shippingState,
+        shippingZipCode,
+      }),
+    );
+  }, [
+    guestEmail,
+    guestFirstName,
+    guestLastName,
+    guestPhone,
+    shippingStreet,
+    shippingCity,
+    shippingState,
+    shippingZipCode,
+  ]);
 
   useEffect(() => {
     localStorage.setItem("promoCode", promoCode);
@@ -134,7 +148,17 @@ export default function CheckOutPage() {
   const handlePlaceOrder = async () => {
     // Check if using guest checkout
     if (showGuestForm) {
-      if (!guestEmail.trim() || !guestFirstName.trim() || !guestLastName.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingCity.trim() || !shippingState.trim() || !shippingZipCode.trim() || !paymentMethod) {
+      if (
+        !guestEmail.trim() ||
+        !guestFirstName.trim() ||
+        !guestLastName.trim() ||
+        !guestPhone.trim() ||
+        !shippingStreet.trim() ||
+        !shippingCity.trim() ||
+        !shippingState.trim() ||
+        !shippingZipCode.trim() ||
+        !paymentMethod
+      ) {
         alert("Please complete all required guest checkout fields");
         return;
       }
@@ -160,40 +184,40 @@ export default function CheckOutPage() {
     setIsPlacingOrder(true);
     try {
       let response;
-      
+
       // Get shipping and GST IDs dynamically from cart data
       const shippingMethodId = selectedShipping?.id;
       const gstId = cartData?.gst?.id;
-      
-      console.log('=== ORDER PLACEMENT DEBUG ===');
-      console.log('cartData.availableShipping:', cartData?.availableShipping);
-      console.log('selectedShipping:', selectedShipping);
-      console.log('shippingMethodId:', shippingMethodId);
-      console.log('cartData.gst:', cartData?.gst);
-      console.log('gstId:', gstId);
-      console.log('showGuestForm:', showGuestForm);
+
+      console.log("=== ORDER PLACEMENT DEBUG ===");
+      console.log("cartData.availableShipping:", cartData?.availableShipping);
+      console.log("selectedShipping:", selectedShipping);
+      console.log("shippingMethodId:", shippingMethodId);
+      console.log("cartData.gst:", cartData?.gst);
+      console.log("gstId:", gstId);
+      console.log("showGuestForm:", showGuestForm);
 
       if (showGuestForm) {
         // Guest checkout API call with guest cart items
         const guestCartItems = guestCartUtils.getGuestCart();
-        
-        console.log('=== GUEST CHECKOUT DEBUG ===');
-        console.log('Cart items:', guestCartItems);
-        console.log('Guest name:', `${guestFirstName} ${guestLastName}`);
-        console.log('Guest email:', guestEmail);
-        console.log('Guest phone:', guestPhone);
-        console.log('Shipping address:', {
+
+        console.log("=== GUEST CHECKOUT DEBUG ===");
+        console.log("Cart items:", guestCartItems);
+        console.log("Guest name:", `${guestFirstName} ${guestLastName}`);
+        console.log("Guest email:", guestEmail);
+        console.log("Guest phone:", guestPhone);
+        console.log("Shipping address:", {
           street: shippingStreet,
           city: shippingCity,
           state: shippingState,
           zipCode: shippingZipCode,
         });
-        console.log('Payment method:', paymentMethod);
-        console.log('Shipping method ID:', shippingMethodId);
-        console.log('GST ID:', gstId);
-        
+        console.log("Payment method:", paymentMethod);
+        console.log("Shipping method ID:", shippingMethodId);
+        console.log("GST ID:", gstId);
+
         const requestBody = {
-          items: guestCartItems.map(item => ({
+          items: guestCartItems.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
           })),
@@ -210,48 +234,57 @@ export default function CheckOutPage() {
           shippingMethodId: shippingMethodId,
           ...(gstId && { gstId }), // Include gstId only if available
         };
-        
-        console.log('Full request body:', requestBody);
-        console.log('Request body as JSON string:', JSON.stringify(requestBody));
-        
-        response = await fetch("https://alpa-be-1.onrender.com/api/orders/guest/checkout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+
+        console.log("Full request body:", requestBody);
+        console.log(
+          "Request body as JSON string:",
+          JSON.stringify(requestBody),
+        );
+
+        response = await fetch(
+          "https://alpa-be-1.onrender.com/api/orders/guest/checkout",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
           },
-          body: JSON.stringify(requestBody),
-        });
+        );
       } else {
         // Authenticated user order with new body format
-        response = await fetch("https://alpa-be-1.onrender.com/api/orders/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            shippingAddress: {
-              street: shippingStreet,
-              suburb: shippingSuburb,
-              postcode: shippingPostcode,
-              fullAddress: shippingFullAddress,
+        response = await fetch(
+          "https://alpa-be-1.onrender.com/api/orders/create",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-            paymentMethod: paymentMethod,
-            shippingMethodId: shippingMethodId,
-            ...(gstId && { gstId }), // Include gstId only if available
-          }),
-        });
+            body: JSON.stringify({
+              shippingAddress: {
+                street: shippingStreet,
+                suburb: shippingSuburb,
+                postcode: shippingPostcode,
+                fullAddress: shippingFullAddress,
+              },
+              paymentMethod: paymentMethod,
+              shippingMethodId: shippingMethodId,
+              ...(gstId && { gstId }), // Include gstId only if available
+            }),
+          },
+        );
       }
 
       if (response.ok) {
         const data = await response.json();
         alert("Order placed successfully!");
-        
+
         // Clear guest cart from localStorage if guest checkout
         if (showGuestForm) {
           guestCartUtils.clearGuestCart();
         }
-        
+
         // Clear checkout data from localStorage
         localStorage.removeItem("checkoutStep");
         localStorage.removeItem("showGuestForm");
@@ -267,25 +300,25 @@ export default function CheckOutPage() {
         let errorMessage = "Failed to place order";
         try {
           const errorData = await response.json();
-          console.error('Backend JSON error response:', errorData);
+          console.error("Backend JSON error response:", errorData);
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (parseError) {
           // Response is not JSON, get raw text
           const errorText = await response.text();
-          console.error('Backend raw error response:', {
+          console.error("Backend raw error response:", {
             status: response.status,
             statusText: response.statusText,
             body: errorText,
           });
           errorMessage = errorText || errorMessage;
         }
-        
-        console.error('Full error details:', {
+
+        console.error("Full error details:", {
           status: response.status,
           statusText: response.statusText,
           message: errorMessage,
         });
-        
+
         alert(errorMessage);
       }
     } catch (error) {
@@ -296,29 +329,28 @@ export default function CheckOutPage() {
     }
   };
 
-
   return (
-    <section className=" p-12 bg-[#f5f5f5]">
+    <section className="min-h-screen bg-[#ead7b7]">
       <Link
-                  href="/"
-                  className="absolute top-6 left-6 font-bold transition-transform hover:scale-105 active:scale-95 shrink-0"
-                >
-                  <Image
-                    src="/images/navbarLogo.png"
-                    width={500}
-                    height={500}
-                    alt="Logo"
-                    className="w-10 md:w-20"
-                    priority
-                  />
-                </Link>
-      
-      <div className="max-w-7xl  mx-auto">
+        href="/"
+        className="absolute top-6 left-5 font-bold transition-transform hover:scale-105 active:scale-95 shrink-0"
+      >
+        <Image
+          src="/images/navbarLogo.png"
+          width={500}
+          height={500}
+          alt="Logo"
+          className="w-10 md:w-20"
+          priority
+        />
+      </Link>
+
+      <div className="container mx-auto px-4 md:px-8">
         <h1 className="text-3xl font-bold "></h1>
 
-        <div className="flex flex-col lg:flex-row gap-8 ">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           {/* ================= LEFT: STEPS ================= */}
-          <div className="lg:w-2/3">
+          <div className="lg:w-2/3 absolute left-20 top-18 px-5">
             <div className="bg-white rounded-xl shadow-sm p-6">
               {/* Continue as Guest Option */}
               {!showGuestForm && (
@@ -326,7 +358,9 @@ export default function CheckOutPage() {
                   <div className="flex justify-between items-center">
                     <div>
                       {/* <h3 className="font-medium text-gray-900">Guest Checkout Available</h3> */}
-                      <p className="text-sm text-gray-600">Don't have account? </p>
+                      <p className="text-sm text-gray-600">
+                        Don't have account?{" "}
+                      </p>
                     </div>
                     <button
                       className="px-4 py-2 text-blue-500 rounded-lg font-medium hover:underline transition-colors"
@@ -338,12 +372,14 @@ export default function CheckOutPage() {
                 </div>
               )}
 
-              {/* Guest Checkout Form */}
+             
               {/* Guest Checkout Form */}
               {showGuestForm ? (
                 <div className="space-y-4 bg-amber-50 p-6 rounded-lg">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Guest Checkout Details</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Guest Checkout Details
+                    </h3>
                     <button
                       className="text-sm text-gray-600 hover:text-gray-800 underline"
                       onClick={() => setShowGuestForm(false)}
@@ -353,21 +389,25 @@ export default function CheckOutPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium">First Name</label>
+                      <label className="block text-sm font-medium">
+                        First Name
+                      </label>
                       <input
                         type="text"
                         value={guestFirstName}
-                        onChange={e => setGuestFirstName(e.target.value)}
+                        onChange={(e) => setGuestFirstName(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium">Last Name</label>
+                      <label className="block text-sm font-medium">
+                        Last Name
+                      </label>
                       <input
                         type="text"
                         value={guestLastName}
-                        onChange={e => setGuestLastName(e.target.value)}
+                        onChange={(e) => setGuestLastName(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
@@ -378,7 +418,7 @@ export default function CheckOutPage() {
                     <input
                       type="email"
                       value={guestEmail}
-                      onChange={e => setGuestEmail(e.target.value)}
+                      onChange={(e) => setGuestEmail(e.target.value)}
                       className="border-b px-2 py-1 outline-none w-full"
                       required
                     />
@@ -388,18 +428,20 @@ export default function CheckOutPage() {
                     <input
                       type="tel"
                       value={guestPhone}
-                      onChange={e => setGuestPhone(e.target.value)}
+                      onChange={(e) => setGuestPhone(e.target.value)}
                       className="border-b px-2 py-1 outline-none w-full"
                       required
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium">Street</label>
+                      <label className="block text-sm font-medium">
+                        Street
+                      </label>
                       <input
                         type="text"
                         value={shippingStreet}
-                        onChange={e => setShippingStreet(e.target.value)}
+                        onChange={(e) => setShippingStreet(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
@@ -409,7 +451,7 @@ export default function CheckOutPage() {
                       <input
                         type="text"
                         value={shippingCity}
-                        onChange={e => setShippingCity(e.target.value)}
+                        onChange={(e) => setShippingCity(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
@@ -421,17 +463,19 @@ export default function CheckOutPage() {
                       <input
                         type="text"
                         value={shippingState}
-                        onChange={e => setShippingState(e.target.value)}
+                        onChange={(e) => setShippingState(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium">Zip Code</label>
+                      <label className="block text-sm font-medium">
+                        Zip Code
+                      </label>
                       <input
                         type="text"
                         value={shippingZipCode}
-                        onChange={e => setShippingZipCode(e.target.value)}
+                        onChange={(e) => setShippingZipCode(e.target.value)}
                         className="border-b px-2 py-1 outline-none w-full"
                         required
                       />
@@ -441,7 +485,16 @@ export default function CheckOutPage() {
                     className="mt-4 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800"
                     onClick={() => {
                       // Validate guest fields before proceeding
-                      if (!guestFirstName.trim() || !guestLastName.trim() || !guestEmail.trim() || !guestPhone.trim() || !shippingStreet.trim() || !shippingCity.trim() || !shippingState.trim() || !shippingZipCode.trim()) {
+                      if (
+                        !guestFirstName.trim() ||
+                        !guestLastName.trim() ||
+                        !guestEmail.trim() ||
+                        !guestPhone.trim() ||
+                        !shippingStreet.trim() ||
+                        !shippingCity.trim() ||
+                        !shippingState.trim() ||
+                        !shippingZipCode.trim()
+                      ) {
                         alert("Please fill all guest checkout fields");
                         return;
                       }
@@ -455,7 +508,7 @@ export default function CheckOutPage() {
                 // Normal 3-step checkout form
                 <>
                   {/* STEP INDICATORS */}
-                  <div className="flex justify-between mb-8 relative">
+                  <div className="flex justify-between mb-5 relative px-10">
                     <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-10" />
                     {[1, 2, 3].map((n) => (
                       <div key={n} className="flex flex-col items-center">
@@ -477,26 +530,28 @@ export default function CheckOutPage() {
 
                   {/* STEP CONTENT */}
                   <div className="min-h-75">
-                    {step === 1 && (
-                      <EmailCart onEmailChange={() => {}} />
-                    )}
+                    {step === 1 && <EmailCart onEmailChange={() => {}} />}
                     {step === 2 && (
                       <>
                         {!isAddressValidated && (
                           <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                             <p className="text-sm text-amber-800 font-medium">
-                              ⚠️ Address validation is required to proceed. Please validate your address using the "Validate" button.
+                              ⚠️ Address validation is required to proceed.
+                              Please validate your address using the "Validate"
+                              button.
                             </p>
                           </div>
                         )}
-                        <AddressCart 
-                          key="address-cart-step2" 
-                          onAddressChange={setShippingAddress} 
-                          onValidationChange={setIsAddressValidated} 
+                        <AddressCart
+                          key="address-cart-step2"
+                          onAddressChange={setShippingAddress}
+                          onValidationChange={setIsAddressValidated}
                         />
                       </>
                     )}
-                    {step === 3 && <PaymentCart onPaymentMethodChange={setPaymentMethod} />}
+                    {step === 3 && (
+                      <PaymentCart onPaymentMethodChange={setPaymentMethod} />
+                    )}
                   </div>
 
                   {/* NAV BUTTONS */}
@@ -516,9 +571,17 @@ export default function CheckOutPage() {
                     {step < 3 ? (
                       <button
                         onClick={handleNext}
-                        disabled={cartItems.length === 0 || (step === 2 && !shippingAddress.trim()) || (step === 2 && !isAddressValidated)}
+                        disabled={
+                          cartItems.length === 0 ||
+                          (step === 2 && !shippingAddress.trim()) ||
+                          (step === 2 && !isAddressValidated)
+                        }
                         className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-                        title={step === 2 && !isAddressValidated ? "Please validate your address to continue" : ""}
+                        title={
+                          step === 2 && !isAddressValidated
+                            ? "Please validate your address to continue"
+                            : ""
+                        }
                       >
                         Continue
                       </button>
@@ -544,7 +607,7 @@ export default function CheckOutPage() {
                       onClick={() => setStep(1)}
                       className="px-6 py-3 border rounded-lg hover:bg-gray-50"
                     >
-                      Back  
+                      Back
                     </button>
                     <button
                       onClick={handlePlaceOrder}
@@ -560,33 +623,65 @@ export default function CheckOutPage() {
           </div>
 
           {/* ================= RIGHT: ORDER SUMMARY ================= */}
-          <div className="lg:w-1/3">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
+          <div className="w-1/4 absolute right-0 top-0">
+            <div className="bg-white rounded-l-xl shadow-sm p-6 sticky top-0 h-screen overflow-y-auto">
               <h2 className="text-xl font-bold mb-6 pb-4 border-b">
                 Order Summary
               </h2>
 
-              {/* PRICE SUMMARY */}
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+          
+              
+              {/* CART ITEMS */}
+              <div className="mt-6 pb-6 border-b">
+                <h3 className="font-medium mb-4">Items ({cartItems.length})</h3>
+
+                <div className="space-y-4">
+                  {cartItems.map((item) => (
+                    <div key={item.productId} className="flex gap-4">
+                      {/* IMAGE */}
+                      <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                        <Image
+                          src={
+                            item.product.images?.[0] ||
+                            "/images/placeholder.png"
+                          }
+                          alt={item.product.title}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+
+                      {/* INFO */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {item.product.title}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Qty {item.quantity} × $
+                          {parseFloat(item.product.price).toFixed(2)}
+                        </p>
+                      </div>
+
+                      {/* ITEM TOTAL */}
+                      <p className="font-medium text-sm">
+                        $
+                        {(
+                          item.quantity * parseFloat(item.product.price)
+                        ).toFixed(2)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Shipping</span>
-                  <span>
-                    {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">GST ({gstPercentage?.toFixed(1)}%)</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
+                {cartItems.length === 0 && (
+                  <p className="text-sm text-gray-500 text-center mt-6">
+                    Your cart is empty
+                  </p>
+                )}
               </div>
 
-              {/* PROMO */}
+              <div className="space-y-4 mt-32 mb-6">
+                {/* PROMO */}
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">
                   Promo Code
@@ -606,6 +701,27 @@ export default function CheckOutPage() {
                   </button>
                 </div>
               </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Shipping</span>
+                  <span>
+                    {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">
+                    GST ({gstPercentage?.toFixed(1)}%)
+                  </span>
+                  <span>${tax.toFixed(2)}</span>
+                </div>
+              </div>
+
+              
 
               <hr className="my-6" />
 
@@ -615,47 +731,6 @@ export default function CheckOutPage() {
                 <span>${total.toFixed(2)}</span>
               </div>
 
-              {/* CART ITEMS */}
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="font-medium mb-4">
-                  Items ({cartItems.length})
-                </h3>
-
-                <div className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div key={item.productId} className="flex gap-4">
-                      {/* IMAGE */}
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                        <Image
-                          src={item.product.images?.[0] || "/images/placeholder.png"}
-                          alt={item.product.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-
-                      {/* INFO */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{item.product.title}</p>
-                        <p className="text-sm text-gray-600">
-                          Qty {item.quantity} × ${parseFloat(item.product.price).toFixed(2)}
-                        </p>
-                      </div>
-
-                      {/* ITEM TOTAL */}
-                      <p className="font-medium text-sm">
-                        ${(item.quantity * parseFloat(item.product.price)).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {cartItems.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center mt-6">
-                    Your cart is empty
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         </div>

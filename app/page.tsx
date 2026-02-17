@@ -17,7 +17,7 @@ const Page = () => {
       <section>
         <div className="relative min-h-screen overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
           {/* Using standard Tailwind v3 gradient syntax for compatibility */}
-          <div className="absolute inset-0 bg-gradient-to-b from-amber-900/60 via-amber-900/30 to-black/70"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-amber-900/60 via-amber-900/30 to-black/70"></div>
 
           <div className="relative z-10 flex flex-col justify-center text-white px-4 sm:px-6 lg:px-24 py-32 md:py-40 lg:py-60">
             <h1 className="text-3xl sm:text-4xl font-bold mb-2">
@@ -187,7 +187,7 @@ const Page = () => {
             </div>
 
             <div className="relative col-span-1 h-64 sm:h-72 lg:h-80 rounded-2xl lg:rounded-3xl overflow-hidden bg-[url('/images/color-rock.jpg')] bg-cover bg-center grayscale hover:grayscale-0 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
               <div className="relative z-10 p-6 h-full flex flex-col justify-end">
                 <h3 className="text-lg font-bold mb-2">Ancient Lore</h3>
                 <p className="text-xs opacity-90">
@@ -197,7 +197,7 @@ const Page = () => {
             </div>
 
             <div className="relative col-span-1 md:col-span-2 h-64 sm:h-72 lg:h-80 rounded-2xl lg:rounded-3xl overflow-hidden bg-[url('/images/mid3.jpg')] bg-cover bg-center hover:scale-[1.01] transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
               <div className="relative z-10 p-6 lg:p-10 h-full flex flex-col justify-end">
                 <h3 className="text-xl lg:text-3xl font-bold mb-2">
                   Cultural Heritage
@@ -267,7 +267,7 @@ const Page = () => {
               className="relative h-64 lg:h-80 xl:h-96 rounded-2xl lg:rounded-3xl overflow-hidden group cursor-pointer"
             >
               <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+              <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent"></div>
               <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md rounded-xl p-3 text-center">
                 <h3 className="text-xs font-bold text-gray-900">
                   Category {item}
