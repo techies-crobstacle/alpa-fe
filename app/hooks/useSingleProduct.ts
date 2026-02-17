@@ -14,6 +14,7 @@ export interface SingleProduct {
   category?: string;
   brand?: string;
   sellerName?: string;
+  artistName?: string;
   rating?: number;
   reviews?: number;
   discount?: number | boolean;

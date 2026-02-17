@@ -5,6 +5,8 @@ import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import QueryProvider from "./providers/QueryProvider";
+import { EnhancedCartProvider } from "./hooks/useSharedEnhancedCart";
+import { StickyLeftCouponDrawer } from "./components/common-components/StickyLeftCouponDrawer";
 
 export const metadata = {
   title: "Arnhem  ",
@@ -20,11 +22,14 @@ export default function RootLayout({
       <body className="bg-[#ECE4D6]">
         <QueryProvider>
           <CartProvider>
-            <AuthProvider>
-              <NavbarWrapper />
-              {children}
-              <FooterWrapper />
-            </AuthProvider>
+            <EnhancedCartProvider>
+              <AuthProvider>
+                <StickyLeftCouponDrawer />
+                <NavbarWrapper />
+                {children}
+                <FooterWrapper />
+              </AuthProvider>
+            </EnhancedCartProvider>
           </CartProvider>
         </QueryProvider>
       </body>

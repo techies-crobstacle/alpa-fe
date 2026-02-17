@@ -2,12 +2,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Component } from "lucide-react";
+import { ChevronDown, Component, Copy, Check } from "lucide-react";
 import { useCoupons } from "@/app/hooks/useCoupons";
 
 // Desktop Coupon Dropdown with text
 export function CouponDropdown() {
   const [open, setOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Use React Query hook
@@ -22,6 +23,13 @@ export function CouponDropdown() {
       }
       return next;
     });
+  };
+
+  // Handle copy to clipboard
+  const handleCopy = (code: string, id: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // Close dropdown when clicking outside
@@ -62,14 +70,33 @@ export function CouponDropdown() {
             )}
             {!isLoading && !error && coupons.length > 0 && (
               <ul className="divide-y divide-gray-100 max-h-60 overflow-y-auto">
-                {coupons.map((coupon) => (
-                  <li key={coupon.id || coupon._id} className="py-2 px-1">
-                    <div className="font-semibold text-gray-800">{coupon.code}</div>
-                    <div className="text-xs text-gray-600">
-                      {coupon.description || coupon.discount || "No description"}
-                    </div>
-                  </li>
-                ))}
+                {coupons.map((coupon) => {
+                  const couponId = (coupon.id || coupon._id) as string;
+                  const isCopied = copiedId === couponId;
+                  return (
+                    <li key={couponId} className="py-2 px-1 hover:bg-gray-50 transition">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-800">{coupon.code}</div>
+                          <div className="text-xs text-gray-600">
+                            {coupon.description || coupon.discount || "No description"}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleCopy(coupon.code, couponId)}
+                          className="shrink-0 p-1.5 rounded hover:bg-gray-200 transition text-gray-600 hover:text-gray-800"
+                          title="Copy coupon code"
+                        >
+                          {isCopied ? (
+                            <Check className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -82,6 +109,7 @@ export function CouponDropdown() {
 // Desktop Coupon Dropdown with icon only
 export function CouponDropdownIcon() {
   const [open, setOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Use React Query hook
@@ -96,6 +124,13 @@ export function CouponDropdownIcon() {
       }
       return next;
     });
+  };
+
+  // Handle copy to clipboard
+  const handleCopy = (code: string, id: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // Close dropdown when clicking outside
@@ -136,14 +171,33 @@ export function CouponDropdownIcon() {
             )}
             {!isLoading && !error && coupons.length > 0 && (
               <ul className="divide-y divide-gray-100 max-h-60 overflow-y-auto">
-                {coupons.map((coupon) => (
-                  <li key={coupon.id || coupon._id} className="py-2 px-1">
-                    <div className="font-semibold text-gray-800">{coupon.code}</div>
-                    <div className="text-xs text-gray-600">
-                      {coupon.description || coupon.discount || "No description"}
-                    </div>
-                  </li>
-                ))}
+                {coupons.map((coupon) => {
+                  const couponId = (coupon.id || coupon._id) as string;
+                  const isCopied = copiedId === couponId;
+                  return (
+                    <li key={couponId} className="py-2 px-1 hover:bg-gray-50 transition">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-800">{coupon.code}</div>
+                          <div className="text-xs text-gray-600">
+                            {coupon.description || coupon.discount || "No description"}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleCopy(coupon.code, couponId)}
+                          className="shrink-0 p-1.5 rounded hover:bg-gray-200 transition text-gray-600 hover:text-gray-800"
+                          title="Copy coupon code"
+                        >
+                          {isCopied ? (
+                            <Check className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

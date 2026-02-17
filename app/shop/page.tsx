@@ -37,16 +37,19 @@ function ShopContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>("all");
+  
+  // Price range filter - dual range slider
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [showAllArtists, setShowAllArtists] = useState(false);
 
   const [page, setPage] = useState(1);
   const PRODUCTS_PER_PAGE = 8;
   const [totalPages, setTotalPages] = useState(1);
 
   // Show more states for filters
-  const [showAllBrands, setShowAllBrands] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const INITIAL_ITEMS_TO_SHOW = 5;
 
@@ -55,12 +58,43 @@ function ShopContent() {
 
   const { addToCart, getItemQuantity } = useCart();
 
-  // Handle URL search parameters
+  /* ---------- DYNAMIC MIN/MAX PRICE ---------- */
+  const { minPrice, maxPrice } = useMemo(() => {
+    if (products.length === 0) return { minPrice: 0, maxPrice: 1000 };
+    
+    const prices = products.map(p => parseFloat(p.price));
+    const min = Math.floor(Math.min(...prices));
+    const max = Math.ceil(Math.max(...prices));
+    
+    // Update price range if it was not set yet
+    if (priceRange[0] === 0 && priceRange[1] === 1000) {
+      setPriceRange([min, max]);
+    }
+    
+    return { minPrice: min, maxPrice: max };
+  }, [products, priceRange]);
+
+  // Handle URL search parameters (search, category, artist)
   useEffect(() => {
     const urlSearchTerm = searchParams.get("search");
+    const urlCategory = searchParams.get("category");
+    const urlArtist = searchParams.get("artist");
+    
     if (urlSearchTerm) {
       setSearchTerm(urlSearchTerm);
       setDebouncedSearchTerm(urlSearchTerm);
+    }
+    
+    if (urlCategory) {
+      setSelectedCategories([urlCategory]);
+      setPage(1);
+      setShowMobileFilters(false);
+    }
+    
+    if (urlArtist) {
+      setSelectedArtists([urlArtist]);
+      setPage(1);
+      setShowMobileFilters(false);
     }
   }, [searchParams]);
 
@@ -140,15 +174,19 @@ function ShopContent() {
 
     // Then apply other filters
     return filtered.filter((product) => {
-      const brandMatch =
-        selectedBrands.length === 0 ||
-        (product.brand && selectedBrands.includes(product.brand));
+      const artistMatch =
+        selectedArtists.length === 0 ||
+        (product.artistName && selectedArtists.includes(product.artistName));
 
       const categoryMatch =
         selectedCategories.length === 0 ||
         selectedCategories.includes(product.category);
 
-      // Search match - check title, description, brand, and category
+      // Price match
+      const productPrice = parseFloat(product.price);
+      const priceMatch = productPrice >= priceRange[0] && productPrice <= priceRange[1];
+
+      // Search match - check title, description, artist, and category
       const searchMatch =
         !debouncedSearchTerm ||
         product.title
@@ -157,22 +195,23 @@ function ShopContent() {
         product.description
           .toLowerCase()
           .includes(debouncedSearchTerm.toLowerCase()) ||
-        (product.brand &&
-          product.brand
+        (product.artistName &&
+          product.artistName
             .toLowerCase()
             .includes(debouncedSearchTerm.toLowerCase())) ||
         product.category
           .toLowerCase()
           .includes(debouncedSearchTerm.toLowerCase());
 
-      return brandMatch && categoryMatch && searchMatch;
+      return artistMatch && categoryMatch && priceMatch && searchMatch;
     });
   }, [
     sortedProducts,
-    selectedBrands,
+    selectedArtists,
     selectedCategories,
     debouncedSearchTerm,
     activeTab,
+    priceRange,
   ]);
 
   /* ---------- PAGINATION ---------- */
@@ -191,8 +230,8 @@ function ShopContent() {
 
   /* ---------- ACTIVE FILTER LABELS ---------- */
   const activeFilters = useMemo(
-    () => [...selectedBrands, ...selectedCategories],
-    [selectedBrands, selectedCategories],
+    () => [...selectedArtists, ...selectedCategories],
+    [selectedArtists, selectedCategories],
   );
 
   /* ---------- UNIQUE CATEGORIES WITH COUNTS ---------- */
@@ -214,26 +253,27 @@ function ShopContent() {
     }));
   }, [products]);
 
-  /* ---------- UNIQUE BRANDS WITH COUNTS ---------- */
-  const brandsWithCounts = useMemo(() => {
-    const brandMap = new Map<string, number>();
+  /* ---------- UNIQUE ARTISTS WITH COUNTS ---------- */
+  const artistsWithCounts = useMemo(() => {
+    const artistMap = new Map<string, number>();
 
     products.forEach((product) => {
-      const brand = product.brand || product.title.split(" ")[0];
-      if (brand) {
-        brandMap.set(brand, (brandMap.get(brand) || 0) + 1);
+      const artist = product.artistName;
+      if (artist) {
+        artistMap.set(artist, (artistMap.get(artist) || 0) + 1);
       }
     });
 
-    return Array.from(brandMap.entries()).map(([name, count]) => ({
+    return Array.from(artistMap.entries()).map(([name, count]) => ({
       name,
       count,
     }));
   }, [products]);
 
   const clearAll = () => {
-    setSelectedBrands([]);
+    setSelectedArtists([]);
     setSelectedCategories([]);
+    setPriceRange([minPrice, maxPrice]);
     setSearchTerm("");
     setDebouncedSearchTerm("");
     setPage(1);
@@ -241,13 +281,13 @@ function ShopContent() {
   };
 
   const removeActiveFilter = (value: string) => {
-    setSelectedBrands((prev) => prev.filter((b) => b !== value));
+    setSelectedArtists((prev) => prev.filter((a) => a !== value));
     setSelectedCategories((prev) => prev.filter((c) => c !== value));
     setPage(1);
   };
 
   const hasActiveFilters =
-    selectedBrands.length > 0 ||
+    selectedArtists.length > 0 ||
     selectedCategories.length > 0 ||
     debouncedSearchTerm.trim().length > 0;
 
@@ -307,9 +347,9 @@ function ShopContent() {
   );
 
   // Filter items to display based on showMore state
-  const displayBrands = showAllBrands
-    ? brandsWithCounts
-    : brandsWithCounts.slice(0, INITIAL_ITEMS_TO_SHOW);
+  const displayArtists = showAllArtists
+    ? artistsWithCounts
+    : artistsWithCounts.slice(0, INITIAL_ITEMS_TO_SHOW);
 
   const displayCategories = showAllCategories
     ? categoriesWithCounts
@@ -499,18 +539,130 @@ function ShopContent() {
                 </button>
               </div>
 
-              {/* Brand Filter - Mobile */}
+              {/* Price Slider - Mobile */}
+              <div className="mb-8">
+                {loading ? (
+                  <FilterSkeleton />
+                ) : (
+                  <>
+                    <div className="flex justify-between mb-4 text-sm font-medium">
+                      <span>Price Range</span>
+                      <button
+                        onClick={() => {
+                          setPriceRange([minPrice, maxPrice]);
+                          setPage(1);
+                        }}
+                        className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                      >
+                        Reset
+                      </button>
+                    </div>
+
+                    {/* Dual Range Slider */}
+                    <div className="relative pt-2 pb-6">
+                      {/* Range Track Background */}
+                      <div className="absolute top-3 left-0 right-0 h-2 bg-gray-300 rounded-full pointer-events-none"></div>
+                      
+                      {/* Progress Track (Blue Gradient) */}
+                      <div
+                        className="absolute top-3 h-2 bg-linear-to-r from-blue-400 to-blue-600 rounded-full pointer-events-none"
+                        style={{
+                          left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
+                          right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
+                        }}
+                      ></div>
+
+                      {/* Min Price Input */}
+                      <input
+                        type="range"
+                        min={minPrice}
+                        max={maxPrice}
+                        value={priceRange[0]}
+                        onChange={(e) => {
+                          const val = Math.min(Number(e.target.value), priceRange[1]);
+                          setPriceRange([val, priceRange[1]]);
+                          setPage(1);
+                        }}
+                        className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-5"
+                        style={{
+                          zIndex: priceRange[0] > (minPrice + maxPrice) / 2 ? 5 : 3,
+                        }}
+                      />
+
+                      {/* Max Price Input */}
+                      <input
+                        type="range"
+                        min={minPrice}
+                        max={maxPrice}
+                        value={priceRange[1]}
+                        onChange={(e) => {
+                          const val = Math.max(Number(e.target.value), priceRange[0]);
+                          setPriceRange([priceRange[0], val]);
+                          setPage(1);
+                        }}
+                        className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-4"
+                      />
+
+                      <style>{`
+                        input[type="range"]::-webkit-slider-thumb {
+                          appearance: none;
+                          width: 20px;
+                          height: 20px;
+                          border-radius: 50%;
+                          background: #441208;
+                          cursor: pointer;
+                          border: 3px solid white;
+                          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                          pointer-events: auto;
+                        }
+                        input[type="range"]::-moz-range-thumb {
+                          width: 20px;
+                          height: 20px;
+                          border-radius: 50%;
+                          background: #441208;
+                          cursor: pointer;
+                          border: 3px solid white;
+                          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                          pointer-events: auto;
+                        }
+                      `}</style>
+
+                      {/* Labels Below Slider */}
+                      <div className="flex justify-between text-xs text-gray-500 mt-8 px-2">
+                        <span>$0</span>
+                        <span>${Math.round((minPrice + maxPrice) / 2)}</span>
+                        <span>${maxPrice}</span>
+                      </div>
+                    </div>
+
+                    {/* Price Display */}
+                    <div className="flex justify-between items-center bg-[#EBE3D5] rounded-lg p-3 mt-4">
+                      <div className="text-sm">
+                        <span className="text-gray-600">From: </span>
+                        <span className="font-bold text-lg text-[#441208]">${priceRange[0]}</span>
+                      </div>
+                      <div className="text-gray-400">-</div>
+                      <div className="text-sm">
+                        <span className="text-gray-600">To: </span>
+                        <span className="font-bold text-lg text-[#441208]">${priceRange[1]}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Artist Filter - Mobile */}
               <div className="mb-8">
                 {loading ? (
                   <FilterSkeleton />
                 ) : (
                   <>
                     <div className="flex justify-between mb-3 text-sm font-medium">
-                      <span>Brand</span>
+                      <span>Artist</span>
                       <button
                         onClick={() => {
-                          setSelectedBrands([]);
-                          setShowAllBrands(false);
+                          setSelectedArtists([]);
+                          setShowAllArtists(false);
                         }}
                         className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
                       >
@@ -518,39 +670,39 @@ function ShopContent() {
                       </button>
                     </div>
                     <div className="max-h-48 overflow-y-auto pr-2">
-                      {displayBrands.map((brand) => (
+                      {displayArtists.map((artist) => (
                         <label
-                          key={brand.name}
+                          key={artist.name}
                           className="flex justify-between items-center mb-3 cursor-pointer group"
                         >
                           <div className="flex gap-3 items-center">
                             <input
                               type="checkbox"
-                              checked={selectedBrands.includes(brand.name)}
+                              checked={selectedArtists.includes(artist.name)}
                               onChange={() =>
-                                toggleFilter(brand.name, setSelectedBrands)
+                                toggleFilter(artist.name, setSelectedArtists)
                               }
                               className="accent-[#441208] w-4 h-4"
                             />
                             <span className="group-hover:text-[#441208] transition-colors">
-                              {brand.name}
+                              {artist.name}
                             </span>
                           </div>
                           <span className="text-gray-500 text-sm">
-                            {brand.count}
+                            {artist.count}
                           </span>
                         </label>
                       ))}
 
                       {/* Show More/Less Button */}
-                      {brandsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                      {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
                         <button
-                          onClick={() => setShowAllBrands(!showAllBrands)}
+                          onClick={() => setShowAllArtists(!showAllArtists)}
                           className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
                         >
-                          {showAllBrands
+                          {showAllArtists
                             ? "Show Less"
-                            : `Show More (${brandsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
+                            : `Show More (${artistsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
                         </button>
                       )}
                     </div>
@@ -640,18 +792,130 @@ function ShopContent() {
         <aside className="hidden lg:block lg:w-64 shrink-0 lg:sticky lg:top-24 h-fit rounded-xl p-6">
           <h2 className="font-semibold text-xl mb-6">Filters</h2>
 
-          {/* Brand Filter - Desktop */}
+          {/* Price Slider - Desktop */}
+          <div className="mb-8">
+            {loading ? (
+              <FilterSkeleton />
+            ) : (
+              <>
+                <div className="flex justify-between mb-4 text-sm font-medium">
+                  <span>Price Range</span>
+                  <button
+                    onClick={() => {
+                      setPriceRange([minPrice, maxPrice]);
+                      setPage(1);
+                    }}
+                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                {/* Dual Range Slider */}
+                <div className="relative pt-2 pb-6">
+                  {/* Range Track Background */}
+                  <div className="absolute top-3 left-0 right-0 h-2 bg-gray-300 rounded-full pointer-events-none"></div>
+                  
+                  {/* Progress Track (Blue Gradient) */}
+                  <div
+                    className="absolute top-3 h-2 bg-linear-to-r from-blue-400 to-blue-600 rounded-full pointer-events-none"
+                    style={{
+                      left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
+                      right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
+                    }}
+                  ></div>
+
+                  {/* Min Price Input */}
+                  <input
+                    type="range"
+                    min={minPrice}
+                    max={maxPrice}
+                    value={priceRange[0]}
+                    onChange={(e) => {
+                      const val = Math.min(Number(e.target.value), priceRange[1]);
+                      setPriceRange([val, priceRange[1]]);
+                      setPage(1);
+                    }}
+                    className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-5"
+                    style={{
+                      zIndex: priceRange[0] > (minPrice + maxPrice) / 2 ? 5 : 3,
+                    }}
+                  />
+
+                  {/* Max Price Input */}
+                  <input
+                    type="range"
+                    min={minPrice}
+                    max={maxPrice}
+                    value={priceRange[1]}
+                    onChange={(e) => {
+                      const val = Math.max(Number(e.target.value), priceRange[0]);
+                      setPriceRange([priceRange[0], val]);
+                      setPage(1);
+                    }}
+                    className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-4"
+                  />
+
+                  <style>{`
+                    input[type="range"]::-webkit-slider-thumb {
+                      appearance: none;
+                      width: 20px;
+                      height: 20px;
+                      border-radius: 50%;
+                      background: #441208;
+                      cursor: pointer;
+                      border: 3px solid white;
+                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                      pointer-events: auto;
+                    }
+                    input[type="range"]::-moz-range-thumb {
+                      width: 20px;
+                      height: 20px;
+                      border-radius: 50%;
+                      background: #441208;
+                      cursor: pointer;
+                      border: 3px solid white;
+                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                      pointer-events: auto;
+                    }
+                  `}</style>
+
+                  {/* Labels Below Slider */}
+                  <div className="flex justify-between text-xs text-gray-500 mt-8 px-2">
+                    <span>$0</span>
+                    <span>${Math.round((minPrice + maxPrice) / 2)}</span>
+                    <span>${maxPrice}</span>
+                  </div>
+                </div>
+
+                {/* Price Display */}
+                {/* <div className="flex justify-between items-center bg-[#EBE3D5] rounded-lg p-3 mt-4">
+                  <div className="text-sm">
+                    <span className="text-gray-600">From: </span>
+                    <span className="font-bold text-lg text-[#441208]">${priceRange[0]}</span>
+                  </div>
+                  <div className="text-gray-400">-</div>
+                  <div className="text-sm">
+                    <span className="text-gray-600">To: </span>
+                    <span className="font-bold text-lg text-[#441208]">${priceRange[1]}</span>
+                  </div>
+                </div> */}
+              </>
+            )}
+          </div>
+
+          {/* Artist Filter - Desktop */}
           <div className="mb-8">
             {loading ? (
               <FilterSkeleton />
             ) : (
               <>
                 <div className="flex justify-between mb-3 text-sm font-medium">
-                  <span>Brand</span>
+                  <span>Artist</span>
                   <button
                     onClick={() => {
-                      setSelectedBrands([]);
-                      setShowAllBrands(false);
+                      setSelectedArtists([]);
+                      setShowAllArtists(false);
                     }}
                     className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
                   >
@@ -659,39 +923,39 @@ function ShopContent() {
                   </button>
                 </div>
                 <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                  {displayBrands.map((brand) => (
+                  {displayArtists.map((artist) => (
                     <label
-                      key={brand.name}
+                      key={artist.name}
                       className="flex justify-between items-center mb-3 cursor-pointer group"
                     >
                       <div className="flex gap-3 items-center">
                         <input
                           type="checkbox"
-                          checked={selectedBrands.includes(brand.name)}
+                          checked={selectedArtists.includes(artist.name)}
                           onChange={() =>
-                            toggleFilter(brand.name, setSelectedBrands)
+                            toggleFilter(artist.name, setSelectedArtists)
                           }
                           className="accent-[#441208] w-4 h-4"
                         />
                         <span className="group-hover:text-[#441208] transition-colors">
-                          {brand.name}
+                          {artist.name}
                         </span>
                       </div>
                       <span className="text-gray-500 text-sm">
-                        {brand.count}
+                        {artist.count}
                       </span>
                     </label>
                   ))}
 
                   {/* Show More/Less Button */}
-                  {brandsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                  {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
                     <button
-                      onClick={() => setShowAllBrands(!showAllBrands)}
+                      onClick={() => setShowAllArtists(!showAllArtists)}
                       className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
                     >
-                      {showAllBrands
+                      {showAllArtists
                         ? "Show Less"
-                        : `Show More (${brandsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
+                        : `Show More (${artistsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
                     </button>
                   )}
                 </div>
@@ -770,8 +1034,8 @@ function ShopContent() {
               </h1>
               {hasActiveFilters && (
                 <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                  {selectedBrands.length} brand
-                  {selectedBrands.length !== 1 ? "s" : ""},
+                  {selectedArtists.length} artist
+                  {selectedArtists.length !== 1 ? "s" : ""},
                   {selectedCategories.length} categor
                   {selectedCategories.length !== 1 ? "ies" : "y"} selected
                 </p>
@@ -881,6 +1145,7 @@ function ShopContent() {
                     slug={product.slug}
                     tags={product.tags}
                     featured={product.featured}
+                    artistName={product.artistName}
                   />
                 ))}
               </div>
@@ -964,5 +1229,9 @@ export default function Page() {
     <Suspense fallback={<ShopLoading />}>
       <ShopContent />
     </Suspense>
-  );
+  )
+function setSelectedBrands(arg0: never[]) {
+  throw new Error("Function not implemented.");
+}
+;
 }
