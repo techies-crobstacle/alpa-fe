@@ -6,7 +6,7 @@ import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
 import { guestCartUtils } from "@/app/lib/guestCartUtils";
-
+import Link from "next/link";
 import EmailCart from "../../../components/checkout/emailCart";
 import AddressCart from "../../../components/checkout/addressCart";
 import PaymentCart from "../../../components/checkout/paymentCart";
@@ -298,14 +298,28 @@ export default function CheckOutPage() {
 
 
   return (
-    <section className="min-h-screen py-20  px-4 sm:px-6 lg:px-8 bg-[#f5f5f5]">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-12"></h1>
+    <section className=" p-12 bg-[#f5f5f5]">
+      <Link
+                  href="/"
+                  className="absolute top-6 left-6 font-bold transition-transform hover:scale-105 active:scale-95 shrink-0"
+                >
+                  <Image
+                    src="/images/navbarLogo.png"
+                    width={500}
+                    height={500}
+                    alt="Logo"
+                    className="w-10 md:w-20"
+                    priority
+                  />
+                </Link>
+      
+      <div className="max-w-7xl  mx-auto">
+        <h1 className="text-3xl font-bold "></h1>
 
         <div className="flex flex-col lg:flex-row gap-8 ">
           {/* ================= LEFT: STEPS ================= */}
           <div className="lg:w-2/3">
-            <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
+            <div className="bg-white rounded-xl shadow-sm p-6">
               {/* Continue as Guest Option */}
               {!showGuestForm && (
                 <div className="mb-6 rounded-lg">

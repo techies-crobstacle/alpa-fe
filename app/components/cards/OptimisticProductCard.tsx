@@ -136,7 +136,7 @@ export default function OptimisticProductCard({
     }
   };
 
-  /* ---------- INSTANT WISHLIST TOGGLE ---------- */
+    /* ---------- INSTANT WISHLIST TOGGLE ---------- */
   const handleWishlist = () => {
     // Don't allow if already wishlisted
     if (isWishlisted) return;
@@ -194,10 +194,7 @@ export default function OptimisticProductCard({
   };
 
   return (
-    <div className="group bg-white p-1 rounded-xl shadow-sm hover:shadow-lg transition relative flex flex-col h-full">
-      {/* Cart sync overlay - Removed */}
-      {/* Success indicator - Removed */}
-      
+    <div className={`group bg-white p-1 rounded-xl shadow-sm hover:shadow-lg transition relative flex flex-col h-full ${isOutOfStock ? "opacity-50 grayscale-50" : ""}`}>
       {/* Real-time sync indicator */}
       {/* <div className="absolute top-1 left-1 z-20">
         <div className="flex items-center gap-1 bg-green-50 border border-green-200 rounded-lg px-2 py-1">
@@ -282,7 +279,7 @@ export default function OptimisticProductCard({
               ({rating.toFixed(1)})
             </span>
           </div>
-          <div><h3 className="text-sm text-red-600 font-bold">{stock} left</h3></div>
+          <div><h3 className="text-sm text-red-600 font-bold">{stock === 0 ? "Out of Stock" : `${stock} left`}</h3></div>
         </div>
 
         {/* PRICE + WISHLIST + CART */}
@@ -332,8 +329,8 @@ export default function OptimisticProductCard({
                     ? "bg-amber-800 text-white cursor-default opacity-90"
                     : "bg-amber-900 text-white hover:bg-amber-800 active:scale-95 cursor-pointer"
                 } ${isAnimating ? "scale-110" : ""}`}
-                aria-label={isInCart ? "Already in cart" : isOutOfStock ? "Out of stock" : isAddingToCart ? "Adding to cart..." : "Add to cart"}
-                title={isInCart ? "Item is already in your cart" : isOutOfStock ? "Item is out of stock" : "Add to cart"}
+                aria-label={isInCart ? "Already in cart" : isOutOfStock ? "Out of Stock" : isAddingToCart ? "Adding to cart..." : "Add to cart"}
+                title={isInCart ? "Item is already in your cart" : isOutOfStock ? "Out of Stock" : "Add to cart"}
               >
                 {isAddingToCart ? (
                   <div className="w-full flex justify-center px-2">
@@ -341,6 +338,8 @@ export default function OptimisticProductCard({
                   </div>
                 ) : isInCart ? (
                    <span className="text-sm font-medium px-2 whitespace-nowrap">Added to cart</span>
+                ) : isOutOfStock ? (
+                  <span className="text-sm font-medium px-2 whitespace-nowrap">Out of Stock</span>
                 ) : (
                   <span className="text-sm font-medium px-2">Add to cart</span>
                 )}

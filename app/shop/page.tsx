@@ -565,7 +565,7 @@ function ShopContent() {
                       
                       {/* Progress Track (Blue Gradient) */}
                       <div
-                        className="absolute top-3 h-2 bg-linear-to-r from-blue-400 to-blue-600 rounded-full pointer-events-none"
+                        className="absolute top-3 h-2 bg-linear-to-r from-[#441208] to-blue-600 rounded-full pointer-events-none"
                         style={{
                           left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
                           right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
@@ -818,7 +818,7 @@ function ShopContent() {
                   
                   {/* Progress Track (Blue Gradient) */}
                   <div
-                    className="absolute top-3 h-2 bg-linear-to-r from-blue-400 to-blue-600 rounded-full pointer-events-none"
+                className="absolute top-3 h-2 bg-linear-to-r bg-[#441208] to-[#c94930] rounded-full pointer-events-none"
                     style={{
                       left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
                       right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
@@ -1056,14 +1056,14 @@ function ShopContent() {
               <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setView(3)}
-                  className={`p-2 ${view === 3 ? "bg-black text-white" : "bg-white hover:bg-gray-100"}`}
+                  className={`p-2 ${view === 3 ? "bg-[#7b3306] text-white" : "bg-white hover:bg-gray-100"}`}
                   title="3-column view"
                 >
                   <ThreeGridIcon />
                 </button>
                 <button
                   onClick={() => setView(4)}
-                  className={`p-2 ${view === 4 ? "bg-black text-white" : "bg-white hover:bg-gray-100"}`}
+                  className={`p-2 ${view === 4 ? "bg-[#7b3306] text-white" : "bg-white hover:bg-gray-100"}`}
                   title="4-column view"
                 >
                   <HiViewGrid size={20} />
