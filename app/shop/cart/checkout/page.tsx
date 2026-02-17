@@ -10,6 +10,7 @@ import Link from "next/link";
 import EmailCart from "../../../components/checkout/emailCart";
 import AddressCart from "../../../components/checkout/addressCart";
 import PaymentCart from "../../../components/checkout/paymentCart";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CheckOutPage() {
   const [step, setStep] = useState(1); // Start from Email step (optional)
@@ -350,219 +351,230 @@ export default function CheckOutPage() {
 
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           {/* ================= LEFT: STEPS ================= */}
-          <div className="lg:w-2/3 absolute left-20 top-18 px-5">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              {/* Continue as Guest Option */}
-              {!showGuestForm && (
-                <div className="mb-6 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      {/* <h3 className="font-medium text-gray-900">Guest Checkout Available</h3> */}
-                      <p className="text-sm text-gray-600">
-                        Don't have account?{" "}
-                      </p>
-                    </div>
-                    <button
-                      className="px-4 py-2 text-blue-500 rounded-lg font-medium hover:underline transition-colors"
-                      onClick={() => setShowGuestForm(true)}
-                    >
-                      Continue as Guest
-                    </button>
-                  </div>
-                </div>
-              )}
-
-             
+          <div className="lg:w-2/3 absolute left-20 top-24 px-5 h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden no-scrollbar">
+            <div className="p-6">
+              
               {/* Guest Checkout Form */}
               {showGuestForm ? (
-                <div className="space-y-4 bg-amber-50 p-6 rounded-lg">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                <div className="space-y-6 bg-white/50 backdrop-blur-sm p-8 rounded-xl border border-[#5A1E12]/10 shadow-sm">
+                  <div className="flex justify-between items-center mb-6 border-b border-[#5A1E12]/10 pb-4">
+                    <h3 className="text-2xl font-bold text-[#5A1E12]">
                       Guest Checkout Details
                     </h3>
                     <button
-                      className="text-sm text-gray-600 hover:text-gray-800 underline"
+                      className="text-sm font-medium text-[#5A1E12]/70 hover:text-[#5A1E12] transition-colors"
                       onClick={() => setShowGuestForm(false)}
                     >
-                      Back to Normal Checkout
+                      ← Back to Login
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium">
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-[#5A1E12]">
                         First Name
                       </label>
                       <input
                         type="text"
                         value={guestFirstName}
                         onChange={(e) => setGuestFirstName(e.target.value)}
-                        className="border-b px-2 py-1 outline-none w-full"
+                        className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                        placeholder="John"
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-[#5A1E12]">
                         Last Name
                       </label>
                       <input
                         type="text"
                         value={guestLastName}
                         onChange={(e) => setGuestLastName(e.target.value)}
-                        className="border-b px-2 py-1 outline-none w-full"
+                        className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                        placeholder="Doe"
                         required
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium">Email</label>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-[#5A1E12]">Email</label>
                     <input
                       type="email"
                       value={guestEmail}
                       onChange={(e) => setGuestEmail(e.target.value)}
-                      className="border-b px-2 py-1 outline-none w-full"
+                      className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                      placeholder="john@example.com"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium">Phone</label>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-[#5A1E12]">Phone</label>
                     <input
                       type="tel"
                       value={guestPhone}
                       onChange={(e) => setGuestPhone(e.target.value)}
-                      className="border-b px-2 py-1 outline-none w-full"
+                      className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                      placeholder="+1 (555) 000-0000"
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Street
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingStreet}
-                        onChange={(e) => setShippingStreet(e.target.value)}
-                        className="border-b px-2 py-1 outline-none w-full"
-                        required
-                      />
+
+                  <div className="border-t border-[#5A1E12]/10 pt-6 mt-6">
+                    <h4 className="text-lg font-semibold text-[#5A1E12] mb-4">Shipping Address</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-[#5A1E12]">
+                          Street Address
+                        </label>
+                        <input
+                          type="text"
+                          value={shippingStreet}
+                          onChange={(e) => setShippingStreet(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                          placeholder="123 Main St"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-[#5A1E12]">City</label>
+                        <input
+                          type="text"
+                          value={shippingCity}
+                          onChange={(e) => setShippingCity(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                          placeholder="New York"
+                          required
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium">City</label>
-                      <input
-                        type="text"
-                        value={shippingCity}
-                        onChange={(e) => setShippingCity(e.target.value)}
-                        className="border-b px-2 py-1 outline-none w-full"
-                        required
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-[#5A1E12]">State / Province</label>
+                        <input
+                          type="text"
+                          value={shippingState}
+                          onChange={(e) => setShippingState(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                          placeholder="NY"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-[#5A1E12]">
+                          Zip / Postal Code
+                        </label>
+                        <input
+                          type="text"
+                          value={shippingZipCode}
+                          onChange={(e) => setShippingZipCode(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                          placeholder="10001"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium">State</label>
-                      <input
-                        type="text"
-                        value={shippingState}
-                        onChange={(e) => setShippingState(e.target.value)}
-                        className="border-b px-2 py-1 outline-none w-full"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Zip Code
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingZipCode}
-                        onChange={(e) => setShippingZipCode(e.target.value)}
-                        className="border-b px-2 py-1 outline-none w-full"
-                        required
-                      />
-                    </div>
+
+                  <div className="pt-6">
+                    <button
+                      className="w-full px-8 py-4 bg-[#5A1E12] text-white rounded-lg font-bold text-lg hover:bg-[#441208] shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => {
+                        // Validate guest fields before proceeding
+                        if (
+                          !guestFirstName.trim() ||
+                          !guestLastName.trim() ||
+                          !guestEmail.trim() ||
+                          !guestPhone.trim() ||
+                          !shippingStreet.trim() ||
+                          !shippingCity.trim() ||
+                          !shippingState.trim() ||
+                          !shippingZipCode.trim()
+                        ) {
+                          alert("Please fill all guest checkout fields");
+                          return;
+                        }
+                        setStep(3); // Go directly to payment step
+                      }}
+                    >
+                      Continue to Payment
+                    </button>
                   </div>
-                  <button
-                    className="mt-4 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800"
-                    onClick={() => {
-                      // Validate guest fields before proceeding
-                      if (
-                        !guestFirstName.trim() ||
-                        !guestLastName.trim() ||
-                        !guestEmail.trim() ||
-                        !guestPhone.trim() ||
-                        !shippingStreet.trim() ||
-                        !shippingCity.trim() ||
-                        !shippingState.trim() ||
-                        !shippingZipCode.trim()
-                      ) {
-                        alert("Please fill all guest checkout fields");
-                        return;
-                      }
-                      setStep(3); // Go directly to payment step
-                    }}
-                  >
-                    Continue to Payment
-                  </button>
                 </div>
               ) : (
                 // Normal 3-step checkout form
-                <>
-                  {/* STEP INDICATORS */}
-                  <div className="flex justify-between mb-5 relative px-10">
-                    <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-10" />
-                    {[1, 2, 3].map((n) => (
-                      <div key={n} className="flex flex-col items-center">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            step >= n
-                              ? "bg-black text-white"
-                              : "bg-gray-200 text-gray-600"
-                          }`}
-                        >
-                          {n}
+                <div className="relative min-h-[400px]">
+                  <AnimatePresence mode="wait">
+                    {step === 1 && (
+                      <motion.div
+                        key="step1"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <h2 className="text-2xl font-bold mb-6 text-[#5A1E12]">Contact Information</h2>
+                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-[#5A1E12]/10">
+                          <EmailCart onEmailChange={() => {}} />
                         </div>
-                        <span className="text-sm mt-2">
-                          {n === 1 ? "Email" : n === 2 ? "Address" : "Payment"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                      </motion.div>
+                    )}
 
-                  {/* STEP CONTENT */}
-                  <div className="min-h-75">
-                    {step === 1 && <EmailCart onEmailChange={() => {}} />}
                     {step === 2 && (
-                      <>
-                        {!isAddressValidated && (
-                          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                            <p className="text-sm text-amber-800 font-medium">
-                              ⚠️ Address validation is required to proceed.
-                              Please validate your address using the "Validate"
-                              button.
-                            </p>
-                          </div>
-                        )}
-                        <AddressCart
-                          key="address-cart-step2"
-                          onAddressChange={setShippingAddress}
-                          onValidationChange={setIsAddressValidated}
-                        />
-                      </>
+                      <motion.div
+                        key="step2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <h2 className="text-2xl font-bold mb-6 text-[#5A1E12]">Shipping Address</h2>
+                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-[#5A1E12]/10">
+                          {!isAddressValidated && (
+                            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                              <p className="text-sm text-amber-800 font-medium">
+                                ⚠️ Address validation is required to proceed.
+                                Please validate your address using the "Validate"
+                                button.
+                              </p>
+                            </div>
+                          )}
+                          <AddressCart
+                            key="address-cart-step2"
+                            onAddressChange={setShippingAddress}
+                            onValidationChange={setIsAddressValidated}
+                          />
+                        </div>
+                      </motion.div>
                     )}
+
                     {step === 3 && (
-                      <PaymentCart onPaymentMethodChange={setPaymentMethod} />
+                      <motion.div
+                        key="step3"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <h2 className="text-2xl font-bold mb-6 text-[#5A1E12]">Payment Details</h2>
+                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-[#5A1E12]/10">
+                          <PaymentCart onPaymentMethodChange={setPaymentMethod} />
+                        </div>
+                      </motion.div>
                     )}
-                  </div>
+                  </AnimatePresence>
 
                   {/* NAV BUTTONS */}
                   <div className="flex justify-between mt-8 pt-6">
                     <button
                       onClick={handleBack}
                       disabled={step === 1}
-                      className={`px-6 py-3 border rounded-lg ${
+                      className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
                         step === 1
                           ? "opacity-0 pointer-events-none"
-                          : "hover:bg-gray-50"
+                          : "text-[#5A1E12] border border-[#5A1E12] hover:bg-[#5A1E12] hover:text-white"
                       }`}
                     >
                       Back
@@ -576,7 +588,7 @@ export default function CheckOutPage() {
                           (step === 2 && !shippingAddress.trim()) ||
                           (step === 2 && !isAddressValidated)
                         }
-                        className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                        className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
                         title={
                           step === 2 && !isAddressValidated
                             ? "Please validate your address to continue"
@@ -589,13 +601,13 @@ export default function CheckOutPage() {
                       <button
                         onClick={handlePlaceOrder}
                         disabled={isPlacingOrder || !paymentMethod}
-                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                        className="px-8 py-3 bg-green-700 text-white rounded-lg font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
                       >
                         {isPlacingOrder ? "Placing Order..." : "Place Order"}
                       </button>
                     )}
                   </div>
-                </>
+                </div>
               )}
 
               {/* Guest Payment Step */}
