@@ -6,6 +6,7 @@ import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import QueryProvider from "./providers/QueryProvider";
 import { EnhancedCartProvider } from "./hooks/useSharedEnhancedCart";
+import { StickyLeftCouponDrawer } from "./components/common-components/StickyLeftCouponDrawer";
 
 export const metadata = {
   title: "Arnhem  ",
@@ -23,6 +24,7 @@ export default function RootLayout({
           <CartProvider>
             <EnhancedCartProvider>
               <AuthProvider>
+                <StickyLeftCouponDrawer />
                 <NavbarWrapper />
                 {children}
                 <FooterWrapper />

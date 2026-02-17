@@ -43,7 +43,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
   const [validationMessage, setValidationMessage] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
   const autocompleteRef = useRef<any>(null);
-  const baseURL = "http://127.0.0.1:5000";
+  const baseURL = "https://alpa-be-1.onrender.com";
 
   // Load saved address data from localStorage on mount
   useEffect(() => {

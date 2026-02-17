@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { guestCartUtils, getShippingMethods } from '@/app/lib/guestCartUtils';
 
 export interface CartProduct {
@@ -68,10 +68,18 @@ export function useEnhancedCart() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Ref to track current selection for async operations like setInterval
+  const selectedShippingRef = useRef<ShippingOption | null>(null);
 
-  const baseUrl = "http://127.0.0.1:5000";
+  const baseUrl = "https://alpa-be-1.onrender.com";
 
-  const fetchCartData = async (isRefresh = false) => {
+  // Sync ref with state whenever selectedShipping changes
+  useEffect(() => {
+    selectedShippingRef.current = selectedShipping;
+  }, [selectedShipping]);
+
+  const fetchCartData = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -80,7 +88,8 @@ export function useEnhancedCart() {
       }
       
       const token = localStorage.getItem("token");
-      
+      const currentSelectedShipping = selectedShippingRef.current; // Use ref to get latest value
+
       // Guest mode: load cart from localStorage
       if (!token) {
         const guestItems = guestCartUtils.getGuestCart();
@@ -132,7 +141,7 @@ export function useEnhancedCart() {
         setCartData(guestCartData);
         
         // Set default shipping
-        if (!selectedShipping && guestCartData.availableShipping.length > 0) {
+        if (!currentSelectedShipping && guestCartData.availableShipping.length > 0) {
           setSelectedShipping(guestCartData.availableShipping[0]);
         }
         
@@ -157,12 +166,20 @@ export function useEnhancedCart() {
       const data: EnhancedCartData = await response.json();
       setCartData(data);
       
-      // Set default shipping to General shipping if not already selected
-      if (!selectedShipping && data.availableShipping.length > 0) {
-        const generalShipping = data.availableShipping.find(
-          ship => ship.name.toLowerCase().includes('general')
-        ) || data.availableShipping[0];
-        setSelectedShipping(generalShipping);
+      // Set shipping method priority:
+      // 1. Currently selected in UI (ref)
+      // 2. Saved in backend (data.calculations.selectedShipping)
+      // 3. Default "General" shipping
+      
+      if (!currentSelectedShipping) {
+        if (data.calculations.selectedShipping) {
+           setSelectedShipping(data.calculations.selectedShipping);
+        } else if (data.availableShipping.length > 0) {
+           const generalShipping = data.availableShipping.find(
+             ship => ship.name.toLowerCase().includes('general')
+           ) || data.availableShipping[0];
+           setSelectedShipping(generalShipping);
+        }
       }
       
       setError(null);
@@ -173,22 +190,29 @@ export function useEnhancedCart() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   // Calculate real-time totals based on selected shipping
   const calculateTotals = () => {
-    if (!cartData || !selectedShipping) {
+    // If we have cartData but no selectedShipping yet, use the one from cartData if available
+    let currentShipping = selectedShipping;
+    if (!currentShipping && cartData?.calculations?.selectedShipping) {
+      currentShipping = cartData.calculations.selectedShipping;
+    }
+    
+    if (!cartData || !currentShipping) {
       return {
         subtotal: 0,
         shippingCost: 0,
         gstAmount: 0,
         grandTotal: 0,
+        gstPercentage: 10, // Default GST
       };
     }
 
-    const subtotal = parseFloat(cartData.calculations.subtotal);
-    const shippingCost = parseFloat(selectedShipping.cost);
-    const gstPercentage = parseFloat(cartData.calculations.gstPercentage);
+    const subtotal = parseFloat(cartData.calculations.subtotal || '0');
+    const shippingCost = parseFloat(currentShipping.cost || '0');
+    const gstPercentage = parseFloat(cartData.calculations.gstPercentage || '10');
     
     // Calculate GST on subtotal + shipping
     const taxableAmount = subtotal + shippingCost;
@@ -300,6 +324,74 @@ export function useEnhancedCart() {
     }
   }, [selectedShipping]);
 
+  // OPTIMISTIC UPDATES
+  const optimisticAddItem = (newItem: CartProduct, quantity: number) => {
+    setCartData(prev => {
+      if (!prev) return prev;
+      
+      const existingItemIndex = prev.cart.findIndex(item => item.productId === newItem.id);
+      
+      let newCart = [...prev.cart];
+      if (existingItemIndex >= 0) {
+        // Update existing
+        const existing = newCart[existingItemIndex];
+        const newQty = (existing.quantity || 0) + quantity;
+        newCart[existingItemIndex] = {
+          ...existing,
+          quantity: newQty,
+          qty: newQty
+        };
+      } else {
+        // Add new
+        newCart.push({
+          id: newItem.id,
+          productId: newItem.id,
+          quantity: quantity,
+          qty: quantity,
+          product: newItem
+        });
+      }
+      
+      return {
+        ...prev,
+        cart: newCart
+      };
+    });
+  };
+
+  const optimisticUpdateItem = (productId: string, quantity: number) => {
+    setCartData(prev => {
+      if (!prev) return prev;
+      
+      const newCart = prev.cart.map(item => {
+        if (item.productId === productId) {
+          return {
+            ...item,
+            quantity: quantity,
+            qty: quantity
+          };
+        }
+        return item;
+      });
+
+      return {
+        ...prev,
+        cart: newCart
+      };
+    });
+  };
+
+  const optimisticRemoveItem = (productId: string) => {
+    setCartData(prev => {
+      if (!prev) return prev;
+      const newCart = prev.cart.filter(item => item.productId !== productId);
+      return {
+        ...prev,
+        cart: newCart
+      };
+    });
+  };
+
   return {
     cartData,
     selectedShipping,
@@ -311,5 +403,8 @@ export function useEnhancedCart() {
     calculateTotals: calculateTotals(),
     updateQuantity,
     removeItem,
+    optimisticAddItem,
+    optimisticUpdateItem,
+    optimisticRemoveItem
   };
 }

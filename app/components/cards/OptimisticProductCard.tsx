@@ -8,6 +8,7 @@ import { ShoppingCart, Minus, Plus, Heart, Star, Loader2, Check } from "lucide-r
 import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
 import { useToggleWishlist } from "@/app/hooks/useWishlistMutations";
 import { useWishlistQuery } from "@/app/hooks/useWishlist";
+import { div } from "framer-motion/client";
 
 interface OptimisticProductCardProps {
   id: string;
@@ -20,6 +21,7 @@ interface OptimisticProductCardProps {
   rating?: number;
   tags?: string[];
   featured?: boolean;
+  artistName?: string;
 }
 export default function OptimisticProductCard({
   id,
@@ -32,6 +34,7 @@ export default function OptimisticProductCard({
   rating = 4.5,
   tags = [],
   featured = false,
+  artistName,
 }: OptimisticProductCardProps) {
   // Use shared enhanced cart for real-time synchronization
   const { 
@@ -46,6 +49,7 @@ export default function OptimisticProductCard({
   const [isAnimating, setIsAnimating] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
   const [optimisticWishlist, setOptimisticWishlist] = useState<boolean | null>(null);
+  const [optimisticAdded, setOptimisticAdded] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -69,7 +73,7 @@ export default function OptimisticProductCard({
 
   const qty = currentCartItem?.quantity || 0;
   const remainingStock = Math.max(0, (stock || 0) - qty);
-  const isInCart = qty > 0;
+  const isInCart = optimisticAdded || (qty > 0);
   const isOutOfStock = remainingStock === 0;
 
   // Loading states for specific buttons
@@ -92,12 +96,21 @@ export default function OptimisticProductCard({
     });
   }, [wishlistData, id, optimisticWishlist]);
 
+  // Reset optimistic state when real cart data syncs
+  useEffect(() => {
+    if (qty > 0) {
+      setOptimisticAdded(false);
+    }
+  }, [qty]);
+
   /* ---------- REAL-TIME ADD TO CART ---------- */
   const handleAdd = async () => {
-    if (isOutOfStock || isAddingToCart) return;
+    if (isOutOfStock || isAddingToCart || isInCart) return;
 
-    setIsAnimating(true);
-    setIsAddingToCart(true);
+    // Optimistic update: instantly show as added
+    setOptimisticAdded(true);
+    // Removed showSuccess state toggle here
+    // We want to show the tick/check icon instantly instead
     
     try {
       // Add item to cart using the shared enhanced cart
@@ -106,17 +119,20 @@ export default function OptimisticProductCard({
         price: amount.toString(),
         images: [photo]
       });
+      // Removed success message timeout
       
-      // Show success indicator
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 2000);
+      // Reset optimistic state after a delay or let it be superseded by real data
+      // (If we keep it true, it stays true until component unmounts or we handle sync)
+      // Actually, once real data comes back, qty > 0 will be true. 
+      // But we can keep optimisticAdded as true. 
+      // Ideally we would listen for the real update and clear optimisticAdded, 
+      // but keeping it true is safe as long as id matches.
       
-      // Visual feedback
-      setTimeout(() => setIsAnimating(false), 300);
     } catch (error) {
       console.error('Failed to add to cart:', error);
-    } finally {
-      setIsAddingToCart(false);
+      // Revert optimistic update on failure
+      setOptimisticAdded(false);
+      // Removed setShowSuccess(false)
     }
   };
 
@@ -179,25 +195,8 @@ export default function OptimisticProductCard({
 
   return (
     <div className="group bg-white p-1 rounded-xl shadow-sm hover:shadow-lg transition relative flex flex-col h-full">
-      {/* Cart sync overlay */}
-      {isAddingToCart && (
-        <div className="absolute inset-0 bg-amber-100/30 rounded-xl z-10 flex items-center justify-center">
-          <div className="bg-amber-900 text-white px-3 py-1 rounded-full flex items-center gap-2">
-            <Loader2 size={14} className="animate-spin" />
-            <span className="text-xs font-medium">Adding to cart...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Success indicator */}
-      {showSuccess && (
-        <div className="absolute inset-0 bg-green-100/30 rounded-xl z-10 flex items-center justify-center">
-          <div className="bg-green-600 text-white px-3 py-1 rounded-full flex items-center gap-2">
-            <div className="h-3 w-3 bg-green-300 rounded-full animate-pulse"></div>
-            <span className="text-xs font-medium">Added to cart!</span>
-          </div>
-        </div>
-      )}
+      {/* Cart sync overlay - Removed */}
+      {/* Success indicator - Removed */}
       
       {/* Real-time sync indicator */}
       {/* <div className="absolute top-1 left-1 z-20">
@@ -240,6 +239,11 @@ export default function OptimisticProductCard({
           src="/images/navbarLogo.png"
           alt=""
         />
+        {artistName && (
+          <p className="text-xs sm:text-sm text-gray-500 mb-1 italic truncate">
+            By {artistName}
+          </p>
+        )}
         <h2 className="font-bold text-base sm:text-lg text-gray-800 mb-1 line-clamp-1">
           <Link
             href={`/shop/${id}`}
@@ -312,32 +316,33 @@ export default function OptimisticProductCard({
               {/* Success tick overlay */}
               {isInCart && (
                 <div className="absolute -top-1 -right-1 z-10 flex items-center justify-center">
-                  <div className="bg-green-500 rounded-full p-0.5 shadow-sm animate-pulse">
+                  <div className="bg-amber-800 rounded-full p-0.5 shadow-sm animate-pulse">
                     <Check size={10} className="text-white" strokeWidth={3} />
                   </div>
                 </div>
               )}
-              
+
               <button
                 onClick={handleAdd}
                 disabled={isOutOfStock || isAddingToCart || isInCart}
                 className={`relative p-1.5 sm:p-2 rounded-full transition-all flex items-center justify-center ${
-                  isOutOfStock || isAddingToCart || isInCart
+                  isOutOfStock
                     ? "bg-gray-400 cursor-not-allowed opacity-70"
-                    : "bg-amber-900 text-white hover:bg-amber-800 active:scale-95"
+                    : isInCart
+                    ? "bg-amber-800 text-white cursor-default opacity-90"
+                    : "bg-amber-900 text-white hover:bg-amber-800 active:scale-95 cursor-pointer"
                 } ${isAnimating ? "scale-110" : ""}`}
                 aria-label={isInCart ? "Already in cart" : isOutOfStock ? "Out of stock" : isAddingToCart ? "Adding to cart..." : "Add to cart"}
                 title={isInCart ? "Item is already in your cart" : isOutOfStock ? "Item is out of stock" : "Add to cart"}
               >
                 {isAddingToCart ? (
-                  <Loader2 color="#e7d0b0" size={16} className="sm:w-5 sm:h-5 animate-spin" />
+                  <div className="w-full flex justify-center px-2">
+                    <Loader2 color="#e7d0b0" size={18} className="animate-spin" />
+                  </div>
+                ) : isInCart ? (
+                   <span className="text-sm font-medium px-2 whitespace-nowrap">Added to cart</span>
                 ) : (
-                  <ShoppingCart 
-                    color="#e7d0b0" 
-                    fill="#e7d0b0" 
-                    size={16} 
-                    className="sm:w-5 sm:h-5" 
-                  />
+                  <span className="text-sm font-medium px-2">Add to cart</span>
                 )}
               </button>
             </div>

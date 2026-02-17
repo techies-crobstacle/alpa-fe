@@ -358,14 +358,29 @@ export default function Page() {
 
   // Subscribe to cart updates for real-time sync between cart page and mini cart
   useEffect(() => {
+    // Initial fetch when landing on cart page to ensure fresh data
+    const timer = setTimeout(() => {
+      fetchCartData(true);
+    }, 100);
+
     const unsubscribe = subscribeToUpdates(() => {
       // Force a re-render when cart updates from other components (like MiniCart)
       setSyncTrigger(prev => prev + 1);
       console.log('Cart page synced with cart updates from other components');
     });
 
-    return unsubscribe;
-  }, [subscribeToUpdates]);
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [subscribeToUpdates, fetchCartData]);
+
+  // Stable sorted cart items to prevent shuffling
+  const cartItems = useMemo(() => {
+    const items = cartData?.cart || [];
+    // Sort by productId to maintain stable order regardless of API response order
+    return [...items].sort((a, b) => a.productId.localeCompare(b.productId));
+  }, [cartData?.cart]);
 
   // Loading state
   if (loading) {
@@ -395,13 +410,6 @@ export default function Page() {
       </section>
     );
   }
-
-  // Stable sorted cart items to prevent shuffling
-  const cartItems = useMemo(() => {
-    const items = cartData?.cart || [];
-    // Sort by productId to maintain stable order regardless of API response order
-    return [...items].sort((a, b) => a.productId.localeCompare(b.productId));
-  }, [cartData?.cart]);
 
   return (
     <section className="bg-[#EBE3D5]">

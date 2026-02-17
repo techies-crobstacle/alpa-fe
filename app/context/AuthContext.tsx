@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       const res = await fetch(
-        "http://127.0.0.1:5000/api/profile",
+        "https://alpa-be-1.onrender.com/api/profile",
         {
           headers: { 
             Authorization: `Bearer ${currentToken}`,
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Call logout API if token exists
       if (currentToken) {
-        await fetch("http://127.0.0.1:5000/api/auth/logout", {
+        await fetch("https://alpa-be-1.onrender.com/api/auth/logout", {
           method: "POST",
           headers: { 
             Authorization: `Bearer ${currentToken}`,

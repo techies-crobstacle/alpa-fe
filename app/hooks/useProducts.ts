@@ -17,6 +17,8 @@ export interface Product {
   slug?: string;
   tags?: string[];
   featured?: boolean;
+  artistName?: string;
+  sellerName?: string;
 }
 
 export const productQueryKeys = {

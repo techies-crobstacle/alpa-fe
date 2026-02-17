@@ -33,6 +33,22 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
 
   // Enhanced add to cart function that notifies all components
   const enhancedAddToCart = useCallback(async (productId: string, productData: { title: string, price: string, images: string[] }) => {
+    // 1. OPTIMISTIC UPDATE FIRST
+    try {
+      // Construct a temporary product object for optimistic update
+      // We assume stock is decent for display purposes
+      cartData.optimisticAddItem({
+        id: productId,
+        title: productData.title,
+        price: productData.price,
+        images: productData.images,
+        stock: 99, 
+        category: ''
+      }, 1);
+    } catch (e) {
+      console.error("Optimistic add failed", e);
+    }
+
     try {
       const token = localStorage.getItem("token");
       
@@ -55,7 +71,7 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
       }
 
       // Authenticated mode: API call
-      const response = await fetch("http://127.0.0.1:5000/api/cart/add", {
+      const response = await fetch("https://alpa-be-1.onrender.com/api/cart/add", {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -71,17 +87,27 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
       
       // Small delay to ensure backend is updated before triggering refresh
       setTimeout(() => {
+        cartData.fetchCartData(true); // Fetch fresh data from backend
         triggerUpdate();
       }, 100);
       
     } catch (error) {
       console.error('Enhanced add to cart error:', error);
+      // Revert optimistic update here if needed (could trigger a force fetch)
+      cartData.fetchCartData(true);
       throw error;
     }
-  }, [triggerUpdate]);
+  }, [triggerUpdate, cartData]);
 
   // Enhanced update function that notifies all components
   const enhancedUpdateQuantity = useCallback(async (productId: string, newQuantity: number) => {
+    // 1. OPTIMISTIC UPDATE FIRST
+    if (newQuantity > 0) {
+       cartData.optimisticUpdateItem(productId, newQuantity);
+    } else {
+       cartData.optimisticRemoveItem(productId);
+    }
+
     try {
       const result = await cartData.updateQuantity(productId, newQuantity);
       
@@ -93,12 +119,17 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
       return result;
     } catch (error) {
       console.error('Enhanced update quantity error:', error);
+      // Revert
+      cartData.fetchCartData(true);
       throw error;
     }
-  }, [cartData.updateQuantity, triggerUpdate]);
+  }, [cartData, triggerUpdate]);
 
   // Enhanced remove function that notifies all components
   const enhancedRemoveItem = useCallback(async (productId: string) => {
+    // 1. OPTIMISTIC UPDATE FIRST
+    cartData.optimisticRemoveItem(productId);
+
     try {
       const result = await cartData.removeItem(productId);
       
@@ -110,9 +141,11 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
       return result;
     } catch (error) {
       console.error('Enhanced remove item error:', error);
+      // Revert
+      cartData.fetchCartData(true);
       throw error;
     }
-  }, [cartData.removeItem, triggerUpdate]);
+  }, [cartData, triggerUpdate]);
 
   // Enhanced fetch function that notifies all components
   const enhancedFetchCartData = useCallback(async (isRefresh?: boolean) => {

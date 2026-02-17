@@ -62,7 +62,7 @@
 //   const [showVerificationInput, setShowVerificationInput] = useState(false);
 
 //   const totalSteps = 6;
-//   const baseURL = 'http://127.0.0.1:5000';
+//   const baseURL = 'https://alpa-be-1.onrender.com';
 
 //   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 //     const { name, value } = e.target;
@@ -673,7 +673,7 @@ export default function ArtistOnboardingForm() {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [abnVerified, setAbnVerified] = useState(false);
-  const baseURL = 'http://127.0.0.1:5000';
+  const baseURL = 'https://alpa-be-1.onrender.com';
 
   const [formData, setFormData] = useState({
     // Step 1

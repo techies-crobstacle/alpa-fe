@@ -214,7 +214,7 @@ export default function CheckOutPage() {
         console.log('Full request body:', requestBody);
         console.log('Request body as JSON string:', JSON.stringify(requestBody));
         
-        response = await fetch("http://127.0.0.1:5000/api/orders/guest/checkout", {
+        response = await fetch("https://alpa-be-1.onrender.com/api/orders/guest/checkout", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -223,7 +223,7 @@ export default function CheckOutPage() {
         });
       } else {
         // Authenticated user order with new body format
-        response = await fetch("http://127.0.0.1:5000/api/orders/create", {
+        response = await fetch("https://alpa-be-1.onrender.com/api/orders/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
