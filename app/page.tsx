@@ -12,7 +12,7 @@ const Page = () => {
   };
 
   return (
-    <main className="min-h-screen bg-[url('/images/main-bg.png')] bg-repeat bg-center">
+    <main className="min-h-screen bg-[#EAD7B7] ">
       {/* ================= HERO ================= */}
       <section>
         <div className="relative min-h-screen overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
@@ -41,14 +41,14 @@ const Page = () => {
       </section>
 
       {/* ================= FEATURES & SPONSOR CAROUSEL ================= */}
-      <section className="relative bg-[url('/images/main-bg2.jpg')] bg-center bg-cover p-4 sm:p-6 lg:p-10 rounded-2xl lg:rounded-4xl mx-2 sm:mx-4 lg:mx-10 -mt-8 sm:-mt-12 lg:-mt-20 mb-8 lg:mb-16">
+      <section className="relative bg-[#632013] p-4 sm:p-6 lg:p-10 rounded-2xl lg:rounded-4xl mx-2 sm:mx-4 lg:mx-10 -mt-8 sm:-mt-12 lg:-mt-20 mb-8 lg:mb-16">
         <div className="flex flex-col w-full mb-8 sm:mb-12 lg:mb-20">
           {/* CAROUSEL WRAPPER */}
           <div className="relative group w-full px-0 sm:px-6 mb-16">
             {/* Arrows */}
             <button
               onClick={() => scrollByAmount(-400)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full hidden md:block transition-all"
+              className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full hidden md:block transition-all shadow-lg cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -68,7 +68,7 @@ const Page = () => {
 
             <button
               onClick={() => scrollByAmount(400)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full hidden md:block transition-all"
+              className="absolute -right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full hidden md:block transition-all shadow-lg cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -94,8 +94,8 @@ const Page = () => {
             >
               {/* SLIDE 1: Australia Post */}
               <div className="min-w-full snap-center px-1">
-                <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden shadow-2xl bg-[#803512]">
-                  <div className="relative w-full md:w-1/2 h-64 md:h-96 bg-[url('/images/ap.jpg')] bg-cover bg-right shrink-0">
+                <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512]">
+                  <div className="relative w-full md:w-1/2  bg-[url('/images/ap.jpg')] bg-cover bg-right shrink-0">
                     <div className="absolute inset-0 bg-black/5"></div>
                   </div>
                   <div className="relative w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center text-white">
@@ -115,7 +115,7 @@ const Page = () => {
                           Sponsored
                         </span>
                       </div>
-                      <h2 className="text-3xl lg:text-5xl font-bold mb-6 leading-tight">
+                      <h2 className="text-3xl lg:text-4xl font-bold mb-3 leading-tight">
                         Delivering <br />
                         <span className="text-orange-200">For Australia</span>
                       </h2>
@@ -133,8 +133,8 @@ const Page = () => {
 
               {/* SLIDE 2: Government Services (Medicare / Service Australia) */}
               <div className="min-w-full snap-center px-1">
-                <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden shadow-2xl bg-[#803512]">
-                  <div className="relative w-full md:w-1/2 h-64 md:h-96 bg-[url('/images/medicare.jpg')] bg-cover bg-center shrink-0">
+                <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512]">
+                  <div className="relative w-full md:w-1/2 bg-[url('/images/medicare.jpg')] bg-cover bg-center shrink-0">
                     <div className="absolute inset-0 bg-black/10"></div>
                   </div>
                   <div className="relative w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center text-white">
@@ -154,7 +154,7 @@ const Page = () => {
                           Government
                         </span>
                       </div>
-                      <h2 className="text-3xl lg:text-5xl font-bold mb-6 leading-tight">
+                      <h2 className="text-3xl lg:text-4xl font-bold mb-3 leading-tight">
                         Support For <br />
                         <span className="text-orange-200">Your Wellbeing</span>
                       </h2>
