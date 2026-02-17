@@ -42,22 +42,24 @@ export function StickyLeftCouponDrawer() {
       )}
 
       {/* Sticky Left Coupon Drawer Tab */}
-      <div className="fixed left-0 top-1/2 transform -translate-y-1/2 z-50">
+      <div 
+        className={`fixed left-0 top-1/2 transform -translate-y-1/2 z-50 transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full pointer-events-none"
+        }`}
+      >
         {/* Drawer */}
         <div
-          className={`flex flex-col bg-white border-2 border-gray-200 shadow-2xl transition-all duration-300 ease-in-out rounded-r-2xl w-72 max-h-96 ${
-            open ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className="flex flex-col bg-white border-2 border-gray-200 shadow-2xl rounded-r-2xl w-72 max-h-96"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-3 bg-linear-to-r from-amber-500 to-amber-600 text-white border-b border-amber-600 rounded-tr-lg">
+          <div className="flex items-center justify-between p-3 bg-[#5A1E12] text-white border-b border-[#441208] rounded-tr-lg">
             <div className="flex items-center gap-2">
               <Tag className="w-4 h-4" />
               <h2 className="text-sm font-bold">Coupons</h2>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="p-0.5 hover:bg-amber-700 rounded transition"
+              className="p-0.5 hover:bg-[#441208] rounded transition"
               aria-label="Close coupons"
             >
               <X className="w-4 h-4" />
@@ -89,20 +91,20 @@ export function StickyLeftCouponDrawer() {
                   return (
                     <div
                       key={couponId}
-                      className="p-2 border border-amber-200 rounded bg-amber-50 hover:bg-amber-100 transition"
+                      className="p-2 border border-[#5A1E12]/20 rounded bg-[#EAD7B7]/20 hover:bg-[#EAD7B7]/40 transition"
                     >
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <div className="flex-1">
-                          <div className="font-bold text-amber-900 text-sm">
+                          <div className="font-bold text-[#441208] text-sm">
                             {coupon.code}
                           </div>
-                          <div className="text-xs text-amber-700 line-clamp-1">
+                          <div className="text-xs text-[#5A1E12] line-clamp-1">
                             {coupon.description || coupon.discount || "Special Offer"}
                           </div>
                         </div>
                         <button
                           onClick={() => handleCopy(coupon.code, couponId)}
-                          className="p-1 rounded hover:bg-amber-200 transition text-amber-600 shrink-0"
+                          className="p-1 rounded hover:bg-[#EAD7B7] transition text-[#5A1E12] shrink-0"
                           title="Copy coupon code"
                         >
                           {isCopied ? (
@@ -130,7 +132,7 @@ export function StickyLeftCouponDrawer() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed left-0 top-1/2 transform -translate-y-1/2 z-50 w-10 h-28 bg-linear-to-r from-amber-500 to-amber-600 text-white flex flex-col items-center justify-center gap-1 rounded-r-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+          className="fixed left-0 top-1/2 transform -translate-y-1/2 z-50 w-10 h-28 bg-[#5A1E12] text-white flex flex-col items-center justify-center gap-1 rounded-r-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all outline-none"
           aria-label="Open coupons drawer"
           title="View Coupons"
         >

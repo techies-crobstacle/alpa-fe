@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { HiViewGrid } from "react-icons/hi";
 import { Search, X } from "lucide-react";
+import { motion } from "framer-motion";
 // import ProductCard from "../components/cards/productCard";
 import OptimisticProductCard from "../components/cards/OptimisticProductCard";
 import { useCart } from "../context/CartContext";
@@ -289,7 +290,9 @@ function ShopContent() {
   const hasActiveFilters =
     selectedArtists.length > 0 ||
     selectedCategories.length > 0 ||
-    debouncedSearchTerm.trim().length > 0;
+    debouncedSearchTerm.trim().length > 0 ||
+    priceRange[0] > minPrice ||
+    priceRange[1] < maxPrice;
 
   const ThreeGridIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -395,9 +398,9 @@ function ShopContent() {
                 Shop
               </h1>
                {/* TAB CAROUSEL */}
-          <div className="mt-4">
+          <div className="mt-8">
             <div className="flex items-center justify-center overflow-x-auto scrollbar-hide pb-1">
-              <div className="flex bg-amber-50 rounded-full p-1.5 border border-amber-200 shadow-lg min-w-fit">
+              <div className="flex bg-[#EAD7B7]/90 backdrop-blur-sm rounded-full p-2 border border-[#5A1E12]/10 shadow-xl min-w-fit gap-2 sm:gap-4">
                 {[
                   { key: "all", label: "All" },
                   { key: "featured", label: "Featured" },
@@ -411,34 +414,45 @@ function ShopContent() {
                       setActiveTab(tab.key);
                       setPage(1);
                     }}
-                    className={`relative px-3 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap flex items-center gap-1.5 transform hover:scale-105 ${
+                    className={`relative px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-300 whitespace-nowrap flex items-center justify-center gap-1.5 min-w-[80px] sm:min-w-[100px] ${
                       activeTab === tab.key
-                        ? "bg-linear-to-r from-amber-500 to-amber-600 text-white shadow-lg scale-105"
-                        : "text-amber-700 hover:bg-amber-100 hover:text-amber-800 hover:shadow-md"
+                        ? "text-white"
+                        : "text-[#5A1E12] hover:bg-[#5A1E12]/10"
                     }`}
                   >
-                    {/* <span className="text-sm">{tab.icon}</span> */}
-                    <span className="hidden sm:inline font-semibold">
+                    {activeTab === tab.key && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-[#5A1E12] rounded-full shadow-md"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    
+                    {/* Label Content */}
+                    <span className="relative z-10 hidden sm:inline font-bold tracking-wide">
                       {tab.label}
                     </span>
-                    <span className="sm:hidden font-semibold">
+                    <span className="relative z-10 sm:hidden font-bold tracking-wide">
                       {tab.key === "limited-edition"
                         ? "Limited"
                         : tab.key === "new-arrivals"
                           ? "New"
                           : tab.label}
                     </span>
-                    {activeTab === tab.key && (
-                      <div className="absolute inset-0 rounded-full bg-linear-to-r from-amber-400 to-orange-400 opacity-20 animate-pulse" />
-                    )}
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Tab description */}
-            <div className="text-center mt-3">
-              <p className="text-sm text-gray-100">
+            <div className="text-center mt-6 h-6">
+              <motion.p 
+                key={activeTab}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="text-sm font-medium text-white/90 drop-shadow-sm"
+              >
                 {activeTab === "all" && "Browse all available products"}
                 {activeTab === "featured" && "Handpicked premium products"}
                 {activeTab === "sale" && "Special offers and discounted items"}
@@ -446,7 +460,7 @@ function ShopContent() {
                   "Exclusive limited quantity items"}
                 {activeTab === "new-arrivals" &&
                   "Latest additions to our collection"}
-              </p>
+              </motion.p>
             </div>
           </div>
             </div>
@@ -454,35 +468,6 @@ function ShopContent() {
           </div>
         </div>
       </section>
-
-      {/* SEARCH BAR */}
-      {/* <div className="mx-auto px-4 md:px-4 py-3">
-        <div className="max-w-2xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search products by name, brand, category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#441208] focus:border-[#441208] outline-none bg-white text-gray-900 placeholder-gray-500 shadow-sm transition-all"
-            />
-            {searchTerm && (
-              <button
-                onClick={clearSearch}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-          {debouncedSearchTerm && (
-            <p className="mt-2 text-sm text-gray-600 text-center">
-              Searching for: <span className="font-medium">"{debouncedSearchTerm}"</span>
-            </p>
-          )}
-        </div>
-      </div> */}
 
       {/* MOBILE FILTER BUTTON */}
       <div className="lg:hidden mx-auto px-4 md:px-8 py-4">
@@ -579,13 +564,13 @@ function ShopContent() {
                         max={maxPrice}
                         value={priceRange[0]}
                         onChange={(e) => {
-                          const val = Math.min(Number(e.target.value), priceRange[1]);
+                          const val = Math.min(Number(e.target.value), priceRange[1] - 1);
                           setPriceRange([val, priceRange[1]]);
                           setPage(1);
                         }}
-                        className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-5"
+                        className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-30"
                         style={{
-                          zIndex: priceRange[0] > (minPrice + maxPrice) / 2 ? 5 : 3,
+                          zIndex: priceRange[0] > (maxPrice - 100) ? 50 : 30,
                         }}
                       />
 
@@ -596,11 +581,11 @@ function ShopContent() {
                         max={maxPrice}
                         value={priceRange[1]}
                         onChange={(e) => {
-                          const val = Math.max(Number(e.target.value), priceRange[0]);
+                          const val = Math.max(Number(e.target.value), priceRange[0] + 1);
                           setPriceRange([priceRange[0], val]);
                           setPage(1);
                         }}
-                        className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-4"
+                        className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-40"
                       />
 
                       <style>{`
@@ -628,10 +613,9 @@ function ShopContent() {
                       `}</style>
 
                       {/* Labels Below Slider */}
-                      <div className="flex justify-between text-xs text-gray-500 mt-8 px-2">
-                        <span>$0</span>
-                        <span>${Math.round((minPrice + maxPrice) / 2)}</span>
-                        <span>${maxPrice}</span>
+                      <div className="flex justify-between text-xs text-black font-semibold mt-8 px-2">
+                        <span>${priceRange[0]}</span>
+                        <span>${priceRange[1]}</span>
                       </div>
                     </div>
 
@@ -832,13 +816,13 @@ function ShopContent() {
                     max={maxPrice}
                     value={priceRange[0]}
                     onChange={(e) => {
-                      const val = Math.min(Number(e.target.value), priceRange[1]);
+                      const val = Math.min(Number(e.target.value), priceRange[1] - 1);
                       setPriceRange([val, priceRange[1]]);
                       setPage(1);
                     }}
-                    className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-5"
+                    className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-30"
                     style={{
-                      zIndex: priceRange[0] > (minPrice + maxPrice) / 2 ? 5 : 3,
+                      zIndex: priceRange[0] > ((maxPrice - 100)) ? 50 : 30
                     }}
                   />
 
@@ -849,11 +833,11 @@ function ShopContent() {
                     max={maxPrice}
                     value={priceRange[1]}
                     onChange={(e) => {
-                      const val = Math.max(Number(e.target.value), priceRange[0]);
+                      const val = Math.max(Number(e.target.value), priceRange[0] + 1);
                       setPriceRange([priceRange[0], val]);
                       setPage(1);
                     }}
-                    className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-4"
+                    className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-40"
                   />
 
                   <style>{`
@@ -881,25 +865,11 @@ function ShopContent() {
                   `}</style>
 
                   {/* Labels Below Slider */}
-                  <div className="flex justify-between text-xs text-gray-500 mt-8 px-2">
-                    <span>$0</span>
-                    <span>${Math.round((minPrice + maxPrice) / 2)}</span>
-                    <span>${maxPrice}</span>
+                  <div className="flex justify-between text-xs text-black font-semibold mt-8 px-2">
+                    <span>${priceRange[0]}</span>
+                    <span>${priceRange[1]}</span>
                   </div>
                 </div>
-
-                {/* Price Display */}
-                {/* <div className="flex justify-between items-center bg-[#EBE3D5] rounded-lg p-3 mt-4">
-                  <div className="text-sm">
-                    <span className="text-gray-600">From: </span>
-                    <span className="font-bold text-lg text-[#441208]">${priceRange[0]}</span>
-                  </div>
-                  <div className="text-gray-400">-</div>
-                  <div className="text-sm">
-                    <span className="text-gray-600">To: </span>
-                    <span className="font-bold text-lg text-[#441208]">${priceRange[1]}</span>
-                  </div>
-                </div> */}
               </>
             )}
           </div>
@@ -1028,18 +998,22 @@ function ShopContent() {
         <section className="flex-1">
           {/* INFO + SORT */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div>
+            <div className="min-h-[3.5rem] flex flex-col justify-center">
               <h1 className="text-base sm:text-lg font-medium">
                 Showing {filteredProducts.length} of {products.length} products
               </h1>
-              {hasActiveFilters && (
-                <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                  {selectedArtists.length} artist
-                  {selectedArtists.length !== 1 ? "s" : ""},
-                  {selectedCategories.length} categor
-                  {selectedCategories.length !== 1 ? "ies" : "y"} selected
-                </p>
-              )}
+              <p className="text-xs sm:text-sm text-gray-600 mt-1 transition-all duration-300">
+                {hasActiveFilters ? (
+                  <>
+                    {selectedArtists.length > 0 && `${selectedArtists.length} artist${selectedArtists.length !== 1 ? "s" : ""}, `}
+                    {selectedCategories.length > 0 && `${selectedCategories.length} categor${selectedCategories.length !== 1 ? "ies" : "y"} selected`}
+                    {/* If we have active filters but no text yet (e.g. only price/search), show generic text */}
+                    {selectedArtists.length === 0 && selectedCategories.length === 0 && "Filters active"}
+                  </>
+                ) : (
+                  "No filters selected"
+                )}
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-3 items-center">
@@ -1071,39 +1045,52 @@ function ShopContent() {
               </div>
             </div>
           </div>
-
           {/* ACTIVE FILTERS */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
-                Active filters:
-              </span>
-              {debouncedSearchTerm && (
+          <div className={`flex flex-wrap items-center gap-2 mb-6 min-h-[2.5rem] transition-all duration-300 ${hasActiveFilters ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+            {hasActiveFilters && (
+              <>
+                <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
+                  Active filters:
+                </span>
+                {debouncedSearchTerm && (
+                  <span
+                    className="inline-flex items-center gap-1 bg-[#441208] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
+                    onClick={clearSearch}
+                  >
+                    Search: "{debouncedSearchTerm}"<span className="ml-1">×</span>
+                  </span>
+                )}
+                {(priceRange[0] > minPrice || priceRange[1] < maxPrice) && (
                 <span
                   className="inline-flex items-center gap-1 bg-[#441208] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
-                  onClick={clearSearch}
+                  onClick={() => {
+                    setPriceRange([minPrice, maxPrice]);
+                    setPage(1);
+                  }}
                 >
-                  Search: "{debouncedSearchTerm}"<span className="ml-1">×</span>
-                </span>
-              )}
-              {activeFilters.map((filter) => (
-                <span
-                  key={filter}
-                  className="inline-flex items-center gap-1 bg-[#6F433A] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
-                  onClick={() => removeActiveFilter(filter)}
-                >
-                  {filter}
+                  Price: ${priceRange[0]} - ${priceRange[1]}
                   <span className="ml-1">×</span>
                 </span>
-              ))}
-              <button
-                onClick={clearAll}
-                className="text-[#441208] hover:text-black underline text-xs sm:text-sm font-medium"
-              >
-                Clear all
-              </button>
-            </div>
-          )}
+              )}
+                {activeFilters.map((filter) => (
+                  <span
+                    key={filter}
+                    className="inline-flex items-center gap-1 bg-[#6F433A] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
+                    onClick={() => removeActiveFilter(filter)}
+                  >
+                    {filter}
+                    <span className="ml-1">×</span>
+                  </span>
+                ))}
+                <button
+                  onClick={clearAll}
+                  className="text-[#441208] hover:text-black underline text-xs sm:text-sm font-medium"
+                >
+                  Clear all
+                </button>
+              </>
+            )}
+          </div>
 
         
 
