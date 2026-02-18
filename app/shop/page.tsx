@@ -7,22 +7,12 @@ import React, {
   Suspense,
 } from "react";
 import { HiViewGrid } from "react-icons/hi";
-import { Search, X } from "lucide-react";
 import { motion } from "framer-motion";
-// import ProductCard from "../components/cards/productCard";
 import OptimisticProductCard from "../components/cards/OptimisticProductCard";
 import { useCart } from "../context/CartContext";
 import { useProducts, Product } from "../hooks/useProducts";
 import { useSearchParams } from "next/navigation";
 
-/* =======================
-   TYPES
-======================= */
-// Product type moved to useProducts.ts hook
-
-/* =======================
-   SHOP CONTENT COMPONENT
-======================= */
 function ShopContent() {
   // Use React Query hook instead of manual fetch
   const {
@@ -530,7 +520,7 @@ function ShopContent() {
                   <FilterSkeleton />
                 ) : (
                   <>
-                    <div className="flex justify-between mb-4 text-sm font-medium">
+                    <div className="flex justify-between mb-4 font-medium">
                       <span>Price Range</span>
                       <button
                         onClick={() => {
@@ -548,9 +538,9 @@ function ShopContent() {
                       {/* Range Track Background */}
                       <div className="absolute top-3 left-0 right-0 h-2 bg-gray-300 rounded-full pointer-events-none"></div>
                       
-                      {/* Progress Track (Blue Gradient) */}
+{/* Progress Track (Brown Gradient) */}
                       <div
-                        className="absolute top-3 h-2 bg-linear-to-r from-[#441208] to-blue-600 rounded-full pointer-events-none"
+                        className="absolute top-3 h-2 bg-linear-to-r from-[#973c00] to-[#c94930] rounded-full pointer-events-none"
                         style={{
                           left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
                           right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
@@ -594,7 +584,7 @@ function ShopContent() {
                           width: 20px;
                           height: 20px;
                           border-radius: 50%;
-                          background: #441208;
+                          background: #973c00;
                           cursor: pointer;
                           border: 3px solid white;
                           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -604,7 +594,7 @@ function ShopContent() {
                           width: 20px;
                           height: 20px;
                           border-radius: 50%;
-                          background: #441208;
+                          background: #973c00;
                           cursor: pointer;
                           border: 3px solid white;
                           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -623,12 +613,12 @@ function ShopContent() {
                     <div className="flex justify-between items-center bg-[#EBE3D5] rounded-lg p-3 mt-4">
                       <div className="text-sm">
                         <span className="text-gray-600">From: </span>
-                        <span className="font-bold text-lg text-[#441208]">${priceRange[0]}</span>
+                        <span className="font-bold text-lg text-[#973c00]">${priceRange[0]}</span>
                       </div>
                       <div className="text-gray-400">-</div>
                       <div className="text-sm">
                         <span className="text-gray-600">To: </span>
-                        <span className="font-bold text-lg text-[#441208]">${priceRange[1]}</span>
+                        <span className="font-bold text-lg text-[#973c00]">${priceRange[1]}</span>
                       </div>
                     </div>
                   </>
@@ -641,7 +631,7 @@ function ShopContent() {
                   <FilterSkeleton />
                 ) : (
                   <>
-                    <div className="flex justify-between mb-3 text-sm font-medium">
+                    <div className="flex justify-between mb-3 font-medium">
                       <span>Artist</span>
                       <button
                         onClick={() => {
@@ -657,7 +647,7 @@ function ShopContent() {
                       {displayArtists.map((artist) => (
                         <label
                           key={artist.name}
-                          className="flex justify-between items-center mb-3 cursor-pointer group"
+                          className="flex justify-between items-center text-2xl mb-3 cursor-pointer group"
                         >
                           <div className="flex gap-3 items-center">
                             <input
@@ -666,9 +656,9 @@ function ShopContent() {
                               onChange={() =>
                                 toggleFilter(artist.name, setSelectedArtists)
                               }
-                              className="accent-[#441208] w-4 h-4"
+                              className="accent-[#973c00] w-4 h-4"
                             />
-                            <span className="group-hover:text-[#441208] transition-colors">
+                            <span className="group-hover:text-[#973c00] transition-colors">
                               {artist.name}
                             </span>
                           </div>
@@ -682,7 +672,7 @@ function ShopContent() {
                       {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
                         <button
                           onClick={() => setShowAllArtists(!showAllArtists)}
-                          className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
+                          className="w-full text-center mt-2 text-[#973c00] hover:text-black text-sm py-1"
                         >
                           {showAllArtists
                             ? "Show Less"
@@ -731,9 +721,9 @@ function ShopContent() {
                                   setSelectedCategories,
                                 )
                               }
-                              className="accent-[#441208] w-4 h-4"
+                              className="accent-[#973c00] w-4 h-4"
                             />
-                            <span className="group-hover:text-[#441208] transition-colors">
+                            <span className="group-hover:text-[#973c00] transition-colors">
                               {category.name}
                             </span>
                           </div>
@@ -749,7 +739,7 @@ function ShopContent() {
                           onClick={() =>
                             setShowAllCategories(!showAllCategories)
                           }
-                          className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
+                          className="w-full text-center mt-2 text-[#973c00] hover:text-black text-sm py-1"
                         >
                           {showAllCategories
                             ? "Show Less"
@@ -764,7 +754,7 @@ function ShopContent() {
               {/* Apply Filters Button - Mobile */}
               <button
                 onClick={() => setShowMobileFilters(false)}
-                className="w-full py-3 bg-[#441208] text-white rounded-lg font-medium mt-6"
+                className="w-full py-3 bg-[#973c00] text-white rounded-lg font-medium mt-6"
               >
                 Apply Filters
               </button>
@@ -776,20 +766,20 @@ function ShopContent() {
         <aside className="hidden lg:block lg:w-64 shrink-0 lg:sticky lg:top-24 h-fit rounded-xl p-6">
           <h2 className="font-semibold text-xl mb-6">Filters</h2>
 
-          {/* Price Slider - Desktop */}
+          
           <div className="mb-8">
             {loading ? (
               <FilterSkeleton />
             ) : (
               <>
-                <div className="flex justify-between mb-4 text-sm font-medium">
+                <div className="flex justify-between mb-4 font-medium">
                   <span>Price Range</span>
                   <button
                     onClick={() => {
                       setPriceRange([minPrice, maxPrice]);
                       setPage(1);
                     }}
-                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity text-sm underline"
                   >
                     Reset
                   </button>
@@ -800,9 +790,9 @@ function ShopContent() {
                   {/* Range Track Background */}
                   <div className="absolute top-3 left-0 right-0 h-2 bg-gray-300 rounded-full pointer-events-none"></div>
                   
-                  {/* Progress Track (Blue Gradient) */}
+                  {/* Progress Track (Brown Gradient) */}
                   <div
-                className="absolute top-3 h-2 bg-linear-to-r bg-[#441208] to-[#c94930] rounded-full pointer-events-none"
+                className="absolute top-3 h-2 bg-linear-to-r bg-[#973c00] to-[#c94930] rounded-full pointer-events-none"
                     style={{
                       left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
                       right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
@@ -846,7 +836,7 @@ function ShopContent() {
                       width: 20px;
                       height: 20px;
                       border-radius: 50%;
-                      background: #441208;
+                      background: #973c00;
                       cursor: pointer;
                       border: 3px solid white;
                       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -856,7 +846,7 @@ function ShopContent() {
                       width: 20px;
                       height: 20px;
                       border-radius: 50%;
-                      background: #441208;
+                      background: #973c00;
                       cursor: pointer;
                       border: 3px solid white;
                       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -880,14 +870,14 @@ function ShopContent() {
               <FilterSkeleton />
             ) : (
               <>
-                <div className="flex justify-between mb-3 text-sm font-medium">
+                <div className="flex justify-between mb-3 font-medium">
                   <span>Artist</span>
                   <button
                     onClick={() => {
                       setSelectedArtists([]);
                       setShowAllArtists(false);
                     }}
-                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                    className="opacity-60 cursor-pointer text-sm underline hover:opacity-100 transition-opacity"
                   >
                     Reset
                   </button>
@@ -896,7 +886,7 @@ function ShopContent() {
                   {displayArtists.map((artist) => (
                     <label
                       key={artist.name}
-                      className="flex justify-between items-center mb-3 cursor-pointer group"
+                      className="flex justify-between items-center text-sm mb-3 cursor-pointer group"
                     >
                       <div className="flex gap-3 items-center">
                         <input
@@ -905,9 +895,9 @@ function ShopContent() {
                           onChange={() =>
                             toggleFilter(artist.name, setSelectedArtists)
                           }
-                          className="accent-[#441208] w-4 h-4"
+                          className="accent-[#973c00] w-4 h-4"
                         />
-                        <span className="group-hover:text-[#441208] transition-colors">
+                        <span className="group-hover:text-[#973c00] transition-colors">
                           {artist.name}
                         </span>
                       </div>
@@ -921,7 +911,7 @@ function ShopContent() {
                   {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
                     <button
                       onClick={() => setShowAllArtists(!showAllArtists)}
-                      className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
+                      className="w-full text-center mt-2 text-[#973c00] hover:text-black text-sm py-1"
                     >
                       {showAllArtists
                         ? "Show Less"
@@ -939,14 +929,14 @@ function ShopContent() {
               <FilterSkeleton />
             ) : (
               <>
-                <div className="flex justify-between mb-3 text-sm font-medium">
+                <div className="flex justify-between mb-3 font-medium">
                   <span>Category</span>
                   <button
                     onClick={() => {
                       setSelectedCategories([]);
                       setShowAllCategories(false);
                     }}
-                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
+                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity text-sm underline"
                   >
                     Reset
                   </button>
@@ -956,7 +946,7 @@ function ShopContent() {
                   {displayCategories.map((category) => (
                     <label
                       key={category.name}
-                      className="flex justify-between items-center mb-3 cursor-pointer group"
+                      className="flex justify-between items-center mb-3 text-sm cursor-pointer group"
                     >
                       <div className="flex gap-3 items-center">
                         <input
@@ -965,9 +955,9 @@ function ShopContent() {
                           onChange={() =>
                             toggleFilter(category.name, setSelectedCategories)
                           }
-                          className="accent-[#441208] w-4 h-4"
+                          className="accent-[#973c00] w-4 h-4"
                         />
-                        <span className="group-hover:text-[#441208] transition-colors">
+                        <span className="group-hover:text-[#973c00] transition-colors">
                           {category.name}
                         </span>
                       </div>
@@ -981,7 +971,7 @@ function ShopContent() {
                   {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
                     <button
                       onClick={() => setShowAllCategories(!showAllCategories)}
-                      className="w-full text-center mt-2 text-[#441208] hover:text-black text-sm py-1"
+                      className="w-full text-center mt-2 text-[#973c00] hover:text-black text-sm py-1"
                     >
                       {showAllCategories
                         ? "Show Less"
@@ -1030,14 +1020,14 @@ function ShopContent() {
               <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setView(3)}
-                  className={`p-2 ${view === 3 ? "bg-[#7b3306] text-white" : "bg-white hover:bg-gray-100"}`}
+                  className={`p-2 ${view === 3 ? "bg-[#973c00] text-white" : "bg-white hover:bg-gray-100"}`}
                   title="3-column view"
                 >
                   <ThreeGridIcon />
                 </button>
                 <button
                   onClick={() => setView(4)}
-                  className={`p-2 ${view === 4 ? "bg-[#7b3306] text-white" : "bg-white hover:bg-gray-100"}`}
+                  className={`p-2 ${view === 4 ? "bg-[#973c00] text-white" : "bg-white hover:bg-gray-100"}`}
                   title="4-column view"
                 >
                   <HiViewGrid size={20} />
@@ -1054,7 +1044,7 @@ function ShopContent() {
                 </span>
                 {debouncedSearchTerm && (
                   <span
-                    className="inline-flex items-center gap-1 bg-[#441208] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
+                    className="inline-flex items-center gap-1 bg-[#fdf4ef] text-[#973c00] border border-[#973c00]/10 px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#fae8de] transition-colors"
                     onClick={clearSearch}
                   >
                     Search: "{debouncedSearchTerm}"<span className="ml-1">×</span>
@@ -1062,7 +1052,7 @@ function ShopContent() {
                 )}
                 {(priceRange[0] > minPrice || priceRange[1] < maxPrice) && (
                 <span
-                  className="inline-flex items-center gap-1 bg-[#441208] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
+                  className="inline-flex items-center gap-1 bg-[#fdf4ef] text-[#973c00] border border-[#973c00]/10 px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#fae8de] transition-colors"
                   onClick={() => {
                     setPriceRange([minPrice, maxPrice]);
                     setPage(1);
@@ -1075,7 +1065,7 @@ function ShopContent() {
                 {activeFilters.map((filter) => (
                   <span
                     key={filter}
-                    className="inline-flex items-center gap-1 bg-[#6F433A] text-white px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#5a352d] transition-colors"
+                    className="inline-flex items-center gap-1 bg-[#fdf4ef] text-[#973c00] border border-[#973c00]/10 px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#fae8de] transition-colors"
                     onClick={() => removeActiveFilter(filter)}
                   >
                     {filter}
@@ -1084,7 +1074,7 @@ function ShopContent() {
                 ))}
                 <button
                   onClick={clearAll}
-                  className="text-[#441208] hover:text-black underline text-xs sm:text-sm font-medium"
+                  className="text-[#973c00] hover:text-black underline text-xs sm:text-sm font-medium"
                 >
                   Clear all
                 </button>
@@ -1146,7 +1136,7 @@ function ShopContent() {
                     className={`px-4 sm:px-5 py-2 sm:py-2.5 border rounded-lg transition-colors text-sm sm:text-base ${
                       page === 1
                         ? "border-gray-300 text-gray-400 cursor-not-allowed"
-                        : "border-black text-black hover:bg-black hover:text-white"
+                        : "border-[#973c00] text-[#973c00] hover:bg-[#973c00] hover:text-white"
                     }`}
                   >
                     Previous
@@ -1178,7 +1168,7 @@ function ShopContent() {
                     className={`px-4 sm:px-5 py-2 sm:py-2.5 border rounded-lg transition-colors text-sm sm:text-base ${
                       page === totalPages
                         ? "border-gray-300 text-gray-400 cursor-not-allowed"
-                        : "border-black text-black hover:bg-black hover:text-white"
+                        : "border-[#973c00] text-[#973c00] hover:bg-[#973c00] hover:text-white"
                     }`}
                   >
                     Next
@@ -1217,8 +1207,4 @@ export default function Page() {
       <ShopContent />
     </Suspense>
   )
-function setSelectedBrands(arg0: never[]) {
-  throw new Error("Function not implemented.");
-}
-;
 }
