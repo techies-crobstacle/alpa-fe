@@ -6,7 +6,6 @@ import { X, Plus, Minus, ShoppingBag, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
-import confetti from "canvas-confetti";
 
 export default function MiniCart({ onClose }: { onClose: () => void }) {
   const {
@@ -29,7 +28,6 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
   const { subtotal } = calculateTotals;
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const router = useRouter();
-  const confettiTriggered = useRef(false);
 
   const [syncTrigger, setSyncTrigger] = useState(0);
 
@@ -81,36 +79,6 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [onClose]);
-
-  // Trigger confetti when reaching $100 free shipping
-  useEffect(() => {
-    if (subtotal >= 100 && !confettiTriggered.current) {
-      confettiTriggered.current = true;
-      // Use setTimeout to ensure DOM is ready
-      setTimeout(() => {
-        try {
-          confetti({
-            particleCount: 150, 
-            spread: 90,
-            origin: { x: 0.5, y: 0.5 },
-            colors: ["#440C03", "#6F433A", "#A48068", "#FFD700", "#FFA500"]
-          });
-          // Second burst for more effect
-          confetti({
-            particleCount: 100,
-            spread: 100,
-            origin: { x: 0.5, y: 0.3 },
-            colors: ["#FFD700", "#FFA500", "#440C03"]
-          });
-        } catch (error) {
-          console.error("Confetti error:", error);
-        }
-      }, 100);
-    } else if (subtotal < 100) {
-      // Reset the trigger when subtotal drops below $100
-      confettiTriggered.current = false;
-    }
-  }, [subtotal]);
 
   const navigate = (path: string) => {
     onClose();

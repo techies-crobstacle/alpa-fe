@@ -49,74 +49,74 @@ export function StickyLeftCouponDrawer() {
       >
         {/* Drawer */}
         <div
-          className="flex flex-col bg-white border-2 border-gray-200 shadow-2xl rounded-r-2xl w-72 max-h-96"
+          className="flex flex-col bg-[#5A1E12] shadow-2xl rounded-r-2xl w-80 max-h-105 backdrop-blur-sm"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-3 bg-[#5A1E12] text-white border-b border-[#441208] rounded-tr-lg">
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4" />
-              <h2 className="text-sm font-bold">Coupons</h2>
+          <div className="flex items-center justify-between p-4 bg-[#441208] text-[#EAD7B7] border-b border-[#803512]/30 rounded-tr-2xl">
+            <div className="flex items-center gap-3">
+              <Tag className="w-5 h-5 text-[#EAD7B7]" />
+              <h2 className="text-lg font-bold">Available Coupons</h2>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="p-0.5 hover:bg-[#441208] rounded transition"
+              className="p-2 hover:bg-[#803512] rounded-lg transition-all hover:scale-110 text-[#EAD7B7] hover:text-white"
               aria-label="Close coupons"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto p-4 bg-linear-to-b from-[#5A1E12] to-[#441208] rounded-br-2xl">
             {isLoading && (
-              <div className="text-xs text-gray-500 text-center py-2">
-                Loading coupons...
+              <div className="text-sm text-[#EAD7B7]/70 text-center py-4 font-medium">
+                🔄 Loading coupons...
               </div>
             )}
             {error && (
-              <div className="text-xs text-red-500 text-center py-2">
-                {error.message}
+              <div className="text-sm text-red-300 text-center py-4 font-medium">
+                ❌ {error.message}
               </div>
             )}
             {!isLoading && !error && coupons.length === 0 && (
-              <div className="text-xs text-gray-500 text-center py-2">
-                No coupons available
+              <div className="text-sm text-[#EAD7B7]/70 text-center py-4 font-medium">
+                📋 No coupons available
               </div>
             )}
             {!isLoading && !error && coupons.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {coupons.map((coupon) => {
                   const couponId = (coupon.id || coupon._id) as string;
                   const isCopied = copiedId === couponId;
                   return (
                     <div
                       key={couponId}
-                      className="p-2 border border-[#5A1E12]/20 rounded bg-[#EAD7B7]/20 hover:bg-[#EAD7B7]/40 transition"
+                      className="p-4 border border-[#EAD7B7]/20 rounded-xl bg-[#EAD7B7]/10 hover:bg-[#EAD7B7]/20 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg backdrop-blur-sm"
                     >
-                      <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex-1">
-                          <div className="font-bold text-[#441208] text-sm">
+                          <div className="font-bold text-[#EAD7B7] text-base tracking-wide">
                             {coupon.code}
                           </div>
-                          <div className="text-xs text-[#5A1E12] line-clamp-1">
-                            {coupon.description || coupon.discount || "Special Offer"}
+                          <div className="text-sm text-[#EAD7B7]/80 line-clamp-2 mt-1">
+                            {coupon.discount}{coupon.discount ? ' off' : ''} {coupon.description || "Special Offer"}
                           </div>
                         </div>
                         <button
                           onClick={() => handleCopy(coupon.code, couponId)}
-                          className="p-1 rounded hover:bg-[#EAD7B7] transition text-[#5A1E12] shrink-0"
+                          className="p-2 rounded-lg hover:bg-[#EAD7B7]/30 transition-all text-[#EAD7B7] shrink-0 hover:scale-110"
                           title="Copy coupon code"
                         >
                           {isCopied ? (
-                            <Check className="w-4 h-4 text-green-600" />
+                            <Check className="w-5 h-5 text-green-300" />
                           ) : (
-                            <Copy className="w-4 h-4" />
+                            <Copy className="w-5 h-5" />
                           )}
                         </button>
                       </div>
                       {isCopied && (
-                        <div className="text-xs text-green-600 font-medium">
-                          ✓ Copied!
+                        <div className="text-sm text-green-300 font-medium mt-2 animate-pulse">
+                          ✓ Copied to clipboard!
                         </div>
                       )}
                     </div>

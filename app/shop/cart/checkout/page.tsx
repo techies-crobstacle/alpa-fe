@@ -7,12 +7,15 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
 import { guestCartUtils } from "@/app/lib/guestCartUtils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import EmailCart from "../../../components/checkout/emailCart";
 import AddressCart from "../../../components/checkout/addressCart";
 import PaymentCart from "../../../components/checkout/paymentCart";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CheckOutPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1); // Start from Email step (optional)
   const [showGuestForm, setShowGuestForm] = useState(false);
   const [promoCode, setPromoCode] = useState("");
@@ -135,7 +138,8 @@ export default function CheckOutPage() {
   const handleNext = () => {
     // When on step 2 (address), require validation before proceeding
     if (step === 2 && !isAddressValidated) {
-      alert("Please validate your address before proceeding");
+      toast.dismiss();
+      toast.error("Please validate your address before proceeding");
       return;
     }
     setStep((s) => Math.min(3, s + 1));
@@ -160,25 +164,25 @@ export default function CheckOutPage() {
         !shippingZipCode.trim() ||
         !paymentMethod
       ) {
-        alert("Please complete all required guest checkout fields");
+        toast.error("Please complete all required guest checkout fields");
         return;
       }
     } else {
       if (!shippingAddress.trim() || !paymentMethod) {
-        alert("Please complete all required fields");
+        toast.error("Please complete all required fields");
         return;
       }
     }
 
     // Validate shipping method selection
     if (!selectedShipping) {
-      alert("Please select a shipping method");
+      toast.error("Please select a shipping method");
       return;
     }
 
     // Check cart is not empty
     if (cartItems.length === 0) {
-      alert("Your cart is empty. Please add items before placing an order");
+      toast.error("Your cart is empty. Please add items before placing an order");
       return;
     }
 
@@ -254,13 +258,23 @@ export default function CheckOutPage() {
         );
       } else {
         // Authenticated user order with new body format
+        // Get the latest token from localStorage to ensure it's not stale
+        const currentToken = token || localStorage.getItem("token");
+        
+        if (!currentToken) {
+          toast.error("Your session has expired. Please log in again.");
+          // Optionally redirect to login
+          // router.push("/login?redirect=/shop/cart/checkout");
+          return;
+        }
+
         response = await fetch(
           "https://alpa-be-1.onrender.com/api/orders/create",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${currentToken}`,
             },
             body: JSON.stringify({
               shippingAddress: {
@@ -279,7 +293,8 @@ export default function CheckOutPage() {
 
       if (response.ok) {
         const data = await response.json();
-        alert("Order placed successfully!");
+        toast.dismiss();
+        toast.success("Order placed successfully!");
 
         // Clear guest cart from localStorage if guest checkout
         if (showGuestForm) {
@@ -295,8 +310,20 @@ export default function CheckOutPage() {
         localStorage.removeItem("addressCartData");
         localStorage.removeItem("addressPlaceId");
         localStorage.removeItem("addressValidated");
-        window.location.href = "/";
+        
+        // Wait for toast to be visible before redirecting
+        setTimeout(() => {
+          router.push("/");
+        }, 2500);
       } else {
+        if (response.status === 401 || response.status === 403) {
+          toast.error("Session expired. Please log in again.");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setTimeout(() => router.push("/login"), 2000);
+          return;
+        }
+
         // Try to parse error response
         let errorMessage = "Failed to place order";
         try {
@@ -320,11 +347,11 @@ export default function CheckOutPage() {
           message: errorMessage,
         });
 
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error placing order:", error);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsPlacingOrder(false);
     }
@@ -493,7 +520,7 @@ export default function CheckOutPage() {
                           !shippingState.trim() ||
                           !shippingZipCode.trim()
                         ) {
-                          alert("Please fill all guest checkout fields");
+                          toast.error("Please fill all guest checkout fields");
                           return;
                         }
                         setStep(3); // Go directly to payment step
@@ -505,7 +532,7 @@ export default function CheckOutPage() {
                 </div>
               ) : (
                 // Normal 3-step checkout form
-                <div className="relative min-h-[400px]">
+                <div className="relative min-h-100">
                   <AnimatePresence mode="wait">
                     {step === 1 && (
                       <motion.div

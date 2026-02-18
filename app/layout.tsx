@@ -7,6 +7,7 @@ import { AuthProvider } from "./context/AuthContext";
 import QueryProvider from "./providers/QueryProvider";
 import { EnhancedCartProvider } from "./hooks/useSharedEnhancedCart";
 import { StickyLeftCouponDrawer } from "./components/common-components/StickyLeftCouponDrawer";
+import ToastProvider from "./providers/ToastProvider";
 
 export const metadata = {
   title: "Arnhem  ",
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-[#ECE4D6]">
+        <ToastProvider />
         <QueryProvider>
           <CartProvider>
             <EnhancedCartProvider>

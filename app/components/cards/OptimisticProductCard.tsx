@@ -653,7 +653,7 @@ export default function OptimisticProductCard({
               onClick={handleAdd}
               disabled={isOutOfStock || isAddingToCart || isInCart}
               className={`
-                relative h-10 px-4 min-w-[100px] rounded-full flex items-center justify-center transition-all duration-300
+                relative h-10 px-4 min-w-25 rounded-full flex items-center justify-center transition-all duration-300
                 ${isOutOfStock 
                   ? "bg-stone-200 text-stone-400 cursor-not-allowed" 
                   : isInCart

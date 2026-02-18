@@ -1,9 +1,14 @@
 "use client";
 import React, { useRef } from "react";
 import Image from "next/image";
+import { useProducts } from "./hooks/useProducts";
+import OptimisticProductCard from "./components/cards/OptimisticProductCard";
+import Link from "next/link";
 
 const Page = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { data: products = [] } = useProducts();
+  const limitedProducts = products.slice(0, 4);
 
   const scrollByAmount = (amount: number) => {
     if (scrollRef.current) {
@@ -173,7 +178,7 @@ const Page = () => {
           </div>
 
           {/* STATIC CARDS GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-white">
+          {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-white">
             <div className="relative col-span-1 h-64 sm:h-72 lg:h-80 rounded-2xl lg:rounded-3xl overflow-hidden bg-[url('/images/woodenfluet.jpg')] bg-cover bg-center grayscale hover:grayscale-0 transition-all duration-500">
               <div className="absolute inset-0 bg-black/30"></div>
               <div className="relative z-10 p-6 h-full flex flex-col justify-end">
@@ -206,6 +211,39 @@ const Page = () => {
                   Explore the oldest living culture on Earth.
                 </p>
               </div>
+            </div>
+          </div> */}
+
+          {/* Fetch the Product cards dynamically  */}
+          <div>
+            <h2 className="text-center text-4xl font-bold text-[#e5d3b3] underline">
+              Explore Our Products
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-10">
+              {limitedProducts.map((product) => (
+                <OptimisticProductCard
+                  key={product.id}
+                  id={product.id}
+                  photo={product.images?.[0] || "/images/placeholder.png"}
+                  name={product.title}
+                  description={product.description}
+                  amount={parseFloat(product.price)}
+                  stock={product.stock}
+                  slug={product.slug}
+                  rating={4.5} // Default rating since product doesn't have it
+                  tags={product.tags}
+                  featured={product.featured}
+                  artistName={product.artistName}
+                />
+              ))}
+            </div>
+            <div className="flex justify-center mt-10">
+              <Link 
+                href="/shop" 
+                className="px-8 py-2 bg-amber-900 text-white rounded-lg hover:bg-amber-800 transition"
+              >
+                View All
+              </Link>
             </div>
           </div>
         </div>
