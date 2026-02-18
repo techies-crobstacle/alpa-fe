@@ -414,7 +414,7 @@ function ShopContent() {
                       setActiveTab(tab.key);
                       setPage(1);
                     }}
-                    className={`relative px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-300 whitespace-nowrap flex items-center justify-center gap-1.5 min-w-[80px] sm:min-w-[100px] ${
+                    className={`relative px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-300 whitespace-nowrap flex items-center justify-center gap-1.5 min-w-20 sm:min-w-25 ${
                       activeTab === tab.key
                         ? "text-white"
                         : "text-[#5A1E12] hover:bg-[#5A1E12]/10"
@@ -998,7 +998,7 @@ function ShopContent() {
         <section className="flex-1">
           {/* INFO + SORT */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div className="min-h-[3.5rem] flex flex-col justify-center">
+            <div className="min-h-14 flex flex-col justify-center">
               <h1 className="text-base sm:text-lg font-medium">
                 Showing {filteredProducts.length} of {products.length} products
               </h1>
@@ -1046,7 +1046,7 @@ function ShopContent() {
             </div>
           </div>
           {/* ACTIVE FILTERS */}
-          <div className={`flex flex-wrap items-center gap-2 mb-6 min-h-[2.5rem] transition-all duration-300 ${hasActiveFilters ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+          <div className={`flex flex-wrap items-center gap-2 mb-6 min-h-10 transition-all duration-300 ${hasActiveFilters ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
             {hasActiveFilters && (
               <>
                 <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
