@@ -27,8 +27,13 @@ export default function Header() {
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [scrolledPast5, setScrolledPast5] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [guestMenuOpen, setGuestMenuOpen] = useState(false);
+  const [stickyUserMenuOpen, setStickyUserMenuOpen] = useState(false);
+  const [stickyGuestMenuOpen, setStickyGuestMenuOpen] = useState(false);
+  const stickyUserMenuRef = useRef<HTMLDivElement>(null);
+  const stickyGuestMenuRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -191,6 +196,24 @@ export default function Header() {
         setGuestMenuOpen(false);
       }
 
+      // Close sticky user menu if clicked outside
+      if (
+        stickyUserMenuOpen &&
+        stickyUserMenuRef.current &&
+        !stickyUserMenuRef.current.contains(target)
+      ) {
+        setStickyUserMenuOpen(false);
+      }
+
+      // Close sticky guest menu if clicked outside
+      if (
+        stickyGuestMenuOpen &&
+        stickyGuestMenuRef.current &&
+        !stickyGuestMenuRef.current.contains(target)
+      ) {
+        setStickyGuestMenuOpen(false);
+      }
+
       // Close search modal if clicked outside (though the overlay handles this usually)
        if (
         isSearchModalOpen &&
@@ -223,12 +246,14 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
       document.body.style.overflow = "unset";
     };
-  }, [cartOpen, userMenuOpen, guestMenuOpen, mobileMenuOpen, isSearchModalOpen]);
+  }, [cartOpen, userMenuOpen, guestMenuOpen, stickyUserMenuOpen, stickyGuestMenuOpen, mobileMenuOpen, isSearchModalOpen]);
 
   // Scroll effect for header (desktop only)
   useEffect(() => {
     const handleScroll = () => {
+      const threshold = window.innerHeight * 0.05;
       setScrolled(window.scrollY > 20);
+      setScrolledPast5(window.scrollY > threshold);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -241,6 +266,8 @@ export default function Header() {
         setCartOpen(false);
         setUserMenuOpen(false);
         setGuestMenuOpen(false);
+        setStickyUserMenuOpen(false);
+        setStickyGuestMenuOpen(false);
         setMobileMenuOpen(false);
         setIsSearchModalOpen(false);
       }
@@ -338,6 +365,7 @@ export default function Header() {
           className={`w-full hidden md:flex rounded-full px-8 lg:px-12 py-2
             items-center shadow-xl transition-all duration-500 z-30 relative
             ${scrolled ? "bg-[#EAD7B7]/95 backdrop-blur-md shadow-lg" : "bg-[#EAD7B7]"}
+            ${scrolledPast5 ? "opacity-0 pointer-events-none invisible" : "opacity-100 visible"}
           `}
         >
           {/* Logo */}
@@ -714,7 +742,7 @@ export default function Header() {
         <div
           ref={mobileMenuRef}
           className={`
-            fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-[#EAD7B7] z-40
+            fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-[#EAD7B7] z-55
             transform transition-transform duration-300 ease-out md:hidden
             ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"}
           `}
@@ -847,6 +875,136 @@ export default function Header() {
           </nav>
         </div>
       </div>
+
+      {/* SECONDARY STICKY HEADER - rendered outside NavbarWrapper's div to avoid visibility/z-index cascade */}
+      <header
+        className={`
+          hidden md:flex fixed top-0 left-0 right-0 z-60
+          px-8 lg:px-16 py-3 items-center
+          bg-[#EAD7B7]/95 backdrop-blur-md shadow-lg
+          transition-all duration-500
+          ${scrolledPast5 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}
+        `}
+      >
+        {/* Logo */}
+        <Link href="/" className="font-bold transition-transform hover:scale-105 active:scale-95 shrink-0">
+          <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-10 md:w-14" priority />
+        </Link>
+
+        <div className="flex-1" />
+
+        {/* Nav Links */}
+        <nav className="flex gap-4 lg:gap-6 absolute left-1/2 transform -translate-x-1/2">
+          {NAV_LINKS.map(({ label, href }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`group relative px-2 py-1 text-sm lg:text-base font-medium transition-all duration-300
+                ${isActive(href) ? "text-[#5A1E12]" : "text-gray-700 hover:text-[#5A1E12]"}
+              `}
+            >
+              {label}
+              <span
+                className={`pointer-events-none absolute left-0 bottom-0 h-0.5 w-full bg-[#5A1E12] rounded-full
+                  transition-transform duration-300 origin-left
+                  ${isActive(href) ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}
+                `}
+              />
+            </Link>
+          ))}
+        </nav>
+
+        {/* Right actions */}
+        <div className="flex items-center gap-2 justify-end relative">
+          {/* Cart */}
+          <button
+            ref={cartButtonRef}
+            onClick={toggleCart}
+            className="relative p-2 rounded-full hover:bg-white/30 transition-all duration-300 group"
+            aria-label={`Shopping cart with ${cartItemCount} items`}
+          >
+            <ShoppingCart className={`h-5 w-5 text-gray-800 transition-transform duration-300 ${cartOpen ? "rotate-12 scale-110" : "group-hover:scale-110"}`} />
+            {mounted && cartItemCount > 0 && (
+              <>
+                {!cartOpen && <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping opacity-75" />}
+                <span className={`absolute -top-1 -right-1 h-4 w-4 text-[10px] flex items-center justify-center bg-red-500 text-white rounded-full font-bold shadow-sm transition-transform duration-300 ${cartOpen ? "scale-125" : ""}`}>
+                  {cartItemCount > 9 ? "9+" : cartItemCount}
+                </span>
+              </>
+            )}
+          </button>
+
+          {/* Auth */}
+          {loading ? (
+            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+          ) : !user ? (
+            <div className="flex items-center gap-3">
+              <div className="relative" ref={stickyGuestMenuRef}>
+                <button
+                  onClick={() => setStickyGuestMenuOpen(!stickyGuestMenuOpen)}
+                  className={`p-2 rounded-full transition-all duration-300 ${stickyGuestMenuOpen ? "bg-[#5A1E12] text-white" : "hover:bg-white/30 text-gray-800"}`}
+                  aria-label="Account options"
+                >
+                  <User className="h-5 w-5" />
+                </button>
+                {stickyGuestMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn origin-top-right">
+                    <div className="py-1">
+                      <button onClick={() => { setStickyGuestMenuOpen(false); router.push("/login"); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium">Login</button>
+                      <button onClick={() => { setStickyGuestMenuOpen(false); router.push("/signup"); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium">Create new account</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <Link href="/sellerOnboarding" className="font-medium bg-[#5A1E12] text-white text-sm hover:bg-[#4a180f] hover:shadow-lg transition-all px-5 py-2 rounded-full shadow-md transform hover:-translate-y-0.5 active:translate-y-0">
+                Register as Seller
+              </Link>
+            </div>
+          ) : (
+            <div className="relative" ref={stickyUserMenuRef}>
+              <button
+                onClick={() => setStickyUserMenuOpen(!stickyUserMenuOpen)}
+                className="flex items-center gap-2 group"
+                aria-label="User menu"
+              >
+                <div className="relative">
+                  {user.profileImage ? (
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent group-hover:scale-110 transition-colors">
+                      <Image src={user.profileImage} alt={user.name || "User"} width={32} height={32} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </div>
+                <span className="font-medium text-gray-800 text-sm">{user.name?.split(" ")[0] || "User"}</span>
+                <svg className={`w-4 h-4 transition-transform ${stickyUserMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {stickyUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn">
+                  <div className="px-4 py-3 border-b border-gray-100 bg-linear-to-r from-[#EAD7B7]/10 to-transparent">
+                    <p className="font-semibold text-gray-900 truncate">{user.name}</p>
+                    <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                  </div>
+                  <div className="py-2">
+                    <button onClick={() => { setStickyUserMenuOpen(false); router.push("https://alpa-dashboard.vercel.app/dashboard/customer/profile"); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"><User className="w-4 h-4" /><span>My Profile</span></button>
+                    <button onClick={() => { setStickyUserMenuOpen(false); router.push("https://alpa-dashboard.vercel.app/dashboard/customer/orders"); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"><Package className="w-4 h-4" /><span>My Orders</span></button>
+                    {user.role === "admin" && (
+                      <button onClick={() => { setStickyUserMenuOpen(false); router.push("/admin"); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"><Settings className="w-4 h-4" /><span>Admin Dashboard</span></button>
+                    )}
+                    <div className="border-t border-gray-100 mt-2">
+                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-red-600 text-sm"><LogOut className="w-4 h-4" /><span>Logout</span></button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
     </>
   );
 }

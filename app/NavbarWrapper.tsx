@@ -10,7 +10,7 @@ export default function NavbarWrapper() {
   const hideNavbar =
     pathname === "/login" ||
     pathname === "/signup" ||
-    pathname === "/sellerOnboarding" || 
+    pathname === "/sellerOnboarding" ||
     pathname === "/login-verify-otp" ||
     pathname === "/shop/cart/single-page" ||
     pathname === "/shop/cart/checkout";
@@ -18,7 +18,7 @@ export default function NavbarWrapper() {
   if (hideNavbar) return null;
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full px-6">
+    <div className="absolute top-6 left-0 w-full px-6 z-50">
       <Navbar />
     </div>
   );
