@@ -25,7 +25,13 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
     return [...items].sort((a, b) => a.productId.localeCompare(b.productId));
   }, [cartData?.cart]);
   
-  const { subtotal } = calculateTotals;
+  const { subtotal: backendSubtotal } = calculateTotals;
+
+  // Derive subtotal directly from cartItems as a fallback so it's always
+  // accurate immediately after an optimistic add (before the backend re-fetch).
+  const subtotal = cartItems.length > 0 && backendSubtotal === 0
+    ? cartItems.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0)
+    : backendSubtotal;
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const router = useRouter();
 
@@ -86,47 +92,39 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 -top-5 pb-5 w-full sm:w-110 bg-linear-to-b from-white to-gray-50 z-50 flex flex-col shadow-2xl overflow-x-hidden">
+    <div className="h-full w-full bg-linear-to-b from-white to-gray-50 flex flex-col shadow-2xl overflow-x-hidden">
       
       {/* HEADER */}
-      <div className="relative bg-linear-to-r from-[#440C03] to-[#6F433A] px-6 py-6">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
-          aria-label="Close cart"
-        >
-          <X size={20} />
-        </button>
+      <div className="bg-linear-to-r from-[#440C03] to-[#6F433A] px-6 py-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 text-white">
+            <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+              <ShoppingBag size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">Shopping Cart</h2>
+              <p className="text-white/80 text-sm mt-0.5">
+                {loading ? (
+                  <span className="flex items-center gap-1">
+                    <Loader className="h-3 w-3 animate-spin" />
+                    Loading...
+                  </span>
+                ) : (
+                  <>
+                    {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
 
-        <button
-          onClick={() => fetchCartData(true)}
-          className="absolute top-4 right-16 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
-          aria-label="Refresh cart"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
-        
-        <div className="flex items-center gap-3 text-white">
-          <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
-            <ShoppingBag size={24} />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">Shopping Cart</h2>
-            <p className="text-white/80 text-sm mt-0.5">
-              {loading ? (
-                <span className="flex items-center gap-1">
-                  <Loader className="h-3 w-3 animate-spin" />
-                  Loading...
-                </span>
-              ) : (
-                <>
-                  {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
-                </>
-              )}
-            </p>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+            aria-label="Close cart"
+          >
+            <X size={20} />
+          </button>
         </div>
       </div>
 

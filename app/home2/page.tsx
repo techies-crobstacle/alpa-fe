@@ -1,20 +1,39 @@
 "use client";
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { useProducts } from "../hooks/useProducts";
 import OptimisticProductCard from "../components/cards/OptimisticProductCard";
 import Link from "next/link";
 
+const SLIDE_COUNT = 2;
+
 const Page = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
   const { data: products = [] } = useProducts();
   const limitedProducts = products.slice(0, 4);
 
-  const scrollByAmount = (amount: number) => {
+  const scrollToSlide = (index: number) => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
+      const slideWidth = scrollRef.current.offsetWidth;
+      scrollRef.current.scrollTo({
+        left: slideWidth * index,
+        behavior: "smooth",
+      });
+      setActiveSlide(index);
     }
   };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const index = Math.round(el.scrollLeft / el.offsetWidth);
+      setActiveSlide(index);
+    };
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#EAD7B7] ">
@@ -46,55 +65,14 @@ const Page = () => {
       </section>
 
       {/* ================= FEATURES & SPONSOR CAROUSEL ================= */}
-      <section className="relative bg-[#632013] p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-4xl mx-2 sm:mx-4 lg:mx-10 -mt-8 sm:-mt-12 lg:-mt-20 ">
+      <section className="relative bg-[#632013] p-4 sm:p-6 lg:p-8  lg:pt-12 rounded-2xl lg:rounded-4xl mx-2 sm:mx-4 lg:mx-10 -mt-8 sm:-mt-12 lg:-mt-20 ">
         <div className="flex flex-col w-full">
           {/* CAROUSEL WRAPPER */}
           <div className="relative group w-full px-0 sm:px-6">
-            {/* Arrows */}
-            <button
-              onClick={() => scrollByAmount(-400)}
-              className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full hidden md:block transition-all shadow-lg cursor-pointer"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-
-            <button
-              onClick={() => scrollByAmount(400)}
-              className="absolute -right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full hidden md:block transition-all shadow-lg cursor-pointer"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-
             {/* Scrolling Container */}
             <div
               ref={scrollRef}
-              className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth gap-4 pb-4"
+              className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth gap-4"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
               {/* SLIDE 1: Australia Post */}
@@ -175,11 +153,27 @@ const Page = () => {
                 </div>
               </div>
             </div>
-          </div>
-          </div>
 
-          {/* STATIC CARDS GRID */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-white">
+            {/* Dot Navigation */}
+            <div className="flex justify-center gap-2 mt-4">
+              {Array.from({ length: SLIDE_COUNT }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => scrollToSlide(i)}
+                  className={`transition-all duration-300 rounded-full ${
+                    activeSlide === i
+                      ? "w-6 h-2.5 bg-white"
+                      : "w-2.5 h-2.5 bg-white/40 hover:bg-white/70"
+                  }`}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* STATIC CARDS GRID */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-white">
             <div className="relative col-span-1 h-64 sm:h-72 lg:h-80 rounded-2xl lg:rounded-3xl overflow-hidden bg-[url('/images/woodenfluet.jpg')] bg-cover bg-center grayscale hover:grayscale-0 transition-all duration-500">
               <div className="absolute inset-0 bg-black/30"></div>
               <div className="relative z-10 p-6 h-full flex flex-col justify-end">
@@ -214,52 +208,51 @@ const Page = () => {
               </div>
             </div>
           </div> */}
-
-          
       </section>
 
+      {/* Fetch the Product cards dynamically  */}
       <section className="max-w-screen-2xl mx-auto py-20 px-12">
-        {/* Fetch the Product cards dynamically  */}
-          <div>
-            <h2 className="text-center text-4xl font-bold text-[#632013]">
-              Explore Our Products
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-10">
-              {limitedProducts.map((product) => (
-                <OptimisticProductCard
-                  key={product.id}
-                  id={product.id}
-                  photo={product.images?.[0] || "/images/placeholder.png"}
-                  name={product.title}
-                  description={product.description}
-                  amount={parseFloat(product.price)}
-                  stock={product.stock}
-                  slug={product.slug}
-                  rating={4.5} // Default rating since product doesn't have it
-                  tags={product.tags}
-                  featured={product.featured}
-                  artistName={product.artistName}
-                />
-              ))}
-            </div>
-            <div className="flex justify-center mt-10">
-              <Link 
-                href="/shop" 
-                className="px-8 py-2 bg-amber-900 text-white rounded-lg hover:bg-amber-800 transition"
-              >
-                View All
-              </Link>
-            </div>
-          </div>
-        
-
-        {/* STATIC VIDEO SECTION */}
-        <div className="flex flex-col justify-center items-center text-center mt-12 sm:mt-16 lg:mt-20">
-          <h2 className="font-bold text-white text-lg sm:text-xl lg:text-3xl max-w-4xl mb-8 leading-relaxed">
-            Journey through the heartof{" "}
-            <span className="text-amber-100">Arnhem Land.</span>
+        <div>
+          <h2 className="text-center text-4xl font-bold text-[#632013] mb-14">
+            Explore Our Products
           </h2>
-          <div className="relative w-full max-w-5xl h-48 sm:h-64 lg:h-96 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            {limitedProducts.map((product) => (
+              <OptimisticProductCard
+                key={product.id}
+                id={product.id}
+                photo={product.images?.[0] || "/images/placeholder.png"}
+                name={product.title}
+                description={product.description}
+                amount={parseFloat(product.price)}
+                stock={product.stock}
+                slug={product.slug}
+                rating={4.5} // Default rating since product doesn't have it
+                tags={product.tags}
+                featured={product.featured}
+                artistName={product.artistName}
+              />
+            ))}
+          </div>
+          <div className="flex justify-center mt-10">
+            <Link
+              href="/shop"
+              className="px-8 py-2 bg-amber-900 text-white rounded-lg hover:bg-amber-800 transition"
+            >
+              View All
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* STATIC VIDEO SECTION */}
+      <section className="max-w-screen-2xl mx-auto pb-20 px-12">
+        <div className="flex flex-col justify-center items-center text-center">
+          <h2 className="font-bold text-lg sm:text-xl lg:text-4xl max-w-4xl mb-8 leading-relaxed text-center text-[#762a1b]">
+            Journey through the heart of{" "}
+            <span className="text-[#52160a]">Arnhem Land.</span>
+          </h2>
+          <div className="relative w-full max-w-5xl h-48 sm:h-64 lg:h-96 rounded-2xl overflow-hidden shadow-2xl">
             <Image
               src="/images/video-temp.jpg"
               alt="Video preview"

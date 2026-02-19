@@ -330,9 +330,9 @@ export default function Header() {
       <div
         ref={cartRef}
         className={`
-          fixed -top-2 right-0 bottom-0 h-screen w-full sm:w-96
+          fixed top-0 right-0 h-screen w-full sm:w-96
           transform transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
-          z-50
+          z-70
           ${
             cartOpen
               ? "translate-x-0 opacity-100"

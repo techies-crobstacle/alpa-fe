@@ -452,9 +452,11 @@ export default function OptimisticProductCard({
     });
   }, [wishlistData, id, optimisticWishlist]);
 
-  // Sync Optimistic State
+  // Sync Optimistic State — reset in both directions:
+  // qty > 0 means real cart confirmed, clear optimistic flag
+  // qty === 0 means item was removed, revert CTA to "Add to Cart"
   useEffect(() => {
-    if (qty > 0) {
+    if (qty === 0) {
       setOptimisticAdded(false);
     }
   }, [qty]);

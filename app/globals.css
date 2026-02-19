@@ -29,6 +29,15 @@ html {
   scroll-behavior: smooth;
 }
 
+@keyframes slow-zoom {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+.animate-slow-zoom {
+  animation: slow-zoom 10s ease-in-out infinite alternate;
+}
+
 
 
 /*  for Navbar Hover____________________________________________ */
