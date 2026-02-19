@@ -667,9 +667,6 @@ export default function Header() {
                       </div>
                     )}
                   </div>
-                  <span className="font-medium text-gray-800 text-sm">
-                    {user.name?.split(" ")[0] || "User"}
-                  </span>
                   <svg
                     className={`w-4 h-4 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
                     fill="none"
@@ -689,7 +686,7 @@ export default function Header() {
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn">
                     {/* User Info */}
                     <div className="px-4 py-3 border-b border-gray-100 bg-linear-to-r from-[#EAD7B7]/10 to-transparent">
-                      <p className="font-semibold text-gray-900 truncate">{user.name}</p>
+                      <p className="font-semibold text-gray-900 truncate">Hi {user.name?.split(" ")[0] || "User"}</p>
                       <p className="text-sm text-gray-500 truncate">{user.email}</p>
                     </div>
 
@@ -978,7 +975,6 @@ export default function Header() {
                     </div>
                   )}
                 </div>
-                <span className="font-medium text-gray-800 text-sm">{user.name?.split(" ")[0] || "User"}</span>
                 <svg className={`w-4 h-4 transition-transform ${stickyUserMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -986,7 +982,7 @@ export default function Header() {
               {stickyUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn">
                   <div className="px-4 py-3 border-b border-gray-100 bg-linear-to-r from-[#EAD7B7]/10 to-transparent">
-                    <p className="font-semibold text-gray-900 truncate">{user.name}</p>
+                    <p className="font-semibold text-gray-900 truncate">Hi {user.name?.split(" ")[0] || "User"}</p>
                     <p className="text-sm text-gray-500 truncate">{user.email}</p>
                   </div>
                   <div className="py-2">
