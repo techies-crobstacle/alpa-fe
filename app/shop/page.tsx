@@ -37,7 +37,7 @@ function ShopContent() {
   const [showAllArtists, setShowAllArtists] = useState(false);
 
   const [page, setPage] = useState(1);
-  const PRODUCTS_PER_PAGE = 8;
+  const PRODUCTS_PER_PAGE = 9;
   const [totalPages, setTotalPages] = useState(1);
 
   // Show more states for filters
@@ -463,22 +463,17 @@ function ShopContent() {
       <div className="lg:hidden mx-auto px-4 md:px-8 py-4">
         <button
           onClick={() => setShowMobileFilters(true)}
-          className="w-full py-3 bg-white rounded-xl border shadow-sm flex items-center justify-center gap-2 font-medium"
+          className="w-full py-3 bg-[#5A1E12] text-white rounded-xl flex items-center justify-center gap-2 font-medium shadow-sm"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-            />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
-          Filters {hasActiveFilters && `(${activeFilters.length})`}
+          Filters
+          {hasActiveFilters && (
+            <span className="bg-white text-[#5A1E12] text-xs font-bold px-2 py-0.5 rounded-full">
+              {activeFilters.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -486,501 +481,447 @@ function ShopContent() {
       <section className="mx-auto px-4 md:px-8 lg:px-20 py-4 lg:py-10 flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* MOBILE FILTER DRAWER */}
         {showMobileFilters && (
-          <>
-            <div
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-              onClick={() => setShowMobileFilters(false)}
-            />
-            <aside className="fixed left-0 top-0 h-full w-80 bg-white z-50 p-6 overflow-y-auto lg:hidden">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="font-semibold text-xl">Filters</h2>
-                <button
-                  onClick={() => setShowMobileFilters(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Price Slider - Mobile */}
-              <div className="mb-8">
-                {loading ? (
-                  <FilterSkeleton />
-                ) : (
-                  <>
-                    <div className="flex justify-between mb-4 font-medium">
-                      <span>Price Range</span>
-                      <button
-                        onClick={() => {
-                          setPriceRange([minPrice, maxPrice]);
-                          setPage(1);
-                        }}
-                        className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
-                      >
-                        Reset
-                      </button>
-                    </div>
-
-                    {/* Dual Range Slider */}
-                    <div className="relative pt-2 pb-6">
-                      {/* Range Track Background */}
-                      <div className="absolute top-3 left-0 right-0 h-2 bg-gray-300 rounded-full pointer-events-none"></div>
-                      
-{/* Progress Track (Brown Gradient) */}
-                      <div
-                        className="absolute top-3 h-2 bg-linear-to-r from-[#973c00] to-[#c94930] rounded-full pointer-events-none"
-                        style={{
-                          left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
-                          right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
-                        }}
-                      ></div>
-
-                      {/* Min Price Input */}
-                      <input
-                        type="range"
-                        min={minPrice}
-                        max={maxPrice}
-                        value={priceRange[0]}
-                        onChange={(e) => {
-                          const val = Math.min(Number(e.target.value), priceRange[1] - 1);
-                          setPriceRange([val, priceRange[1]]);
-                          setPage(1);
-                        }}
-                        className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-30"
-                        style={{
-                          zIndex: priceRange[0] > (maxPrice - 100) ? 50 : 30,
-                        }}
-                      />
-
-                      {/* Max Price Input */}
-                      <input
-                        type="range"
-                        min={minPrice}
-                        max={maxPrice}
-                        value={priceRange[1]}
-                        onChange={(e) => {
-                          const val = Math.max(Number(e.target.value), priceRange[0] + 1);
-                          setPriceRange([priceRange[0], val]);
-                          setPage(1);
-                        }}
-                        className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-40"
-                      />
-
-                      <style>{`
-                        input[type="range"]::-webkit-slider-thumb {
-                          appearance: none;
-                          width: 20px;
-                          height: 20px;
-                          border-radius: 50%;
-                          background: #973c00;
-                          cursor: pointer;
-                          border: 3px solid white;
-                          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                          pointer-events: auto;
-                        }
-                        input[type="range"]::-moz-range-thumb {
-                          width: 20px;
-                          height: 20px;
-                          border-radius: 50%;
-                          background: #973c00;
-                          cursor: pointer;
-                          border: 3px solid white;
-                          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                          pointer-events: auto;
-                        }
-                      `}</style>
-
-                      {/* Labels Below Slider */}
-                      <div className="flex justify-between text-xs text-black font-semibold mt-8 px-2">
-                        <span>${priceRange[0]}</span>
-                        <span>${priceRange[1]}</span>
-                      </div>
-                    </div>
-
-                    {/* Price Display */}
-                    <div className="flex justify-between items-center bg-[#EBE3D5] rounded-lg p-3 mt-4">
-                      <div className="text-sm">
-                        <span className="text-gray-600">From: </span>
-                        <span className="font-bold text-lg text-[#973c00]">${priceRange[0]}</span>
-                      </div>
-                      <div className="text-gray-400">-</div>
-                      <div className="text-sm">
-                        <span className="text-gray-600">To: </span>
-                        <span className="font-bold text-lg text-[#973c00]">${priceRange[1]}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Artist Filter - Mobile */}
-              <div className="mb-8">
-                {loading ? (
-                  <FilterSkeleton />
-                ) : (
-                  <>
-                    <div className="flex justify-between mb-3 font-medium">
-                      <span>Artist</span>
-                      <button
-                        onClick={() => {
-                          setSelectedArtists([]);
-                          setShowAllArtists(false);
-                        }}
-                        className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto pr-2">
-                      {displayArtists.map((artist) => (
-                        <label
-                          key={artist.name}
-                          className="flex justify-between items-center text-2xl mb-3 cursor-pointer group"
-                        >
-                          <div className="flex gap-3 items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedArtists.includes(artist.name)}
-                              onChange={() =>
-                                toggleFilter(artist.name, setSelectedArtists)
-                              }
-                              className="accent-[#973c00] w-4 h-4"
-                            />
-                            <span className="group-hover:text-[#973c00] transition-colors">
-                              {artist.name}
-                            </span>
-                          </div>
-                          <span className="text-gray-500 text-sm">
-                            {artist.count}
-                          </span>
-                        </label>
-                      ))}
-
-                      {/* Show More/Less Button */}
-                      {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                        <button
-                          onClick={() => setShowAllArtists(!showAllArtists)}
-                          className="w-full text-center mt-2 text-[#973c00] hover:text-black text-sm py-1"
-                        >
-                          {showAllArtists
-                            ? "Show Less"
-                            : `Show More (${artistsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Category Filter - Mobile */}
-              <div className="mb-8">
-                {loading ? (
-                  <FilterSkeleton />
-                ) : (
-                  <>
-                    <div className="flex justify-between mb-3 text-sm font-medium">
-                      <span>Category</span>
-                      <button
-                        onClick={() => {
-                          setSelectedCategories([]);
-                          setShowAllCategories(false);
-                        }}
-                        className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto pr-2">
-                      <hr className="mb-3" />
-                      {displayCategories.map((category) => (
-                        <label
-                          key={category.name}
-                          className="flex justify-between items-center mb-3 cursor-pointer group"
-                        >
-                          <div className="flex gap-3 items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedCategories.includes(
-                                category.name,
-                              )}
-                              onChange={() =>
-                                toggleFilter(
-                                  category.name,
-                                  setSelectedCategories,
-                                )
-                              }
-                              className="accent-[#973c00] w-4 h-4"
-                            />
-                            <span className="group-hover:text-[#973c00] transition-colors">
-                              {category.name}
-                            </span>
-                          </div>
-                          <span className="text-gray-500 text-sm">
-                            {category.count}
-                          </span>
-                        </label>
-                      ))}
-
-                      {/* Show More/Less Button */}
-                      {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                        <button
-                          onClick={() =>
-                            setShowAllCategories(!showAllCategories)
-                          }
-                          className="w-full text-center mt-2 text-[#973c00] hover:text-black text-sm py-1"
-                        >
-                          {showAllCategories
-                            ? "Show Less"
-                            : `Show More (${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Apply Filters Button - Mobile */}
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="w-full py-3 bg-[#973c00] text-white rounded-lg font-medium mt-6"
-              >
-                Apply Filters
-              </button>
-            </aside>
-          </>
+          <div
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+            onClick={() => setShowMobileFilters(false)}
+          />
         )}
-
-        {/* LEFT SIDEBAR - Desktop */}
-        <aside className="hidden lg:block lg:w-64 shrink-0 lg:sticky lg:top-24 h-fit rounded-xl p-6">
-          <h2 className="font-semibold text-xl mb-6">Filters</h2>
-
-          
-          <div className="mb-8">
-            {loading ? (
-              <FilterSkeleton />
-            ) : (
-              <>
-                <div className="flex justify-between mb-4 font-medium">
-                  <span>Price Range</span>
-                  <button
-                    onClick={() => {
-                      setPriceRange([minPrice, maxPrice]);
-                      setPage(1);
-                    }}
-                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity text-sm underline"
-                  >
-                    Reset
-                  </button>
-                </div>
-
-                {/* Dual Range Slider */}
-                <div className="relative pt-2 pb-6">
-                  {/* Range Track Background */}
-                  <div className="absolute top-3 left-0 right-0 h-2 bg-gray-300 rounded-full pointer-events-none"></div>
-                  
-                  {/* Progress Track (Brown Gradient) */}
-                  <div
-                className="absolute top-3 h-2 bg-linear-to-r bg-[#973c00] to-[#c94930] rounded-full pointer-events-none"
-                    style={{
-                      left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
-                      right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
-                    }}
-                  ></div>
-
-                  {/* Min Price Input */}
-                  <input
-                    type="range"
-                    min={minPrice}
-                    max={maxPrice}
-                    value={priceRange[0]}
-                    onChange={(e) => {
-                      const val = Math.min(Number(e.target.value), priceRange[1] - 1);
-                      setPriceRange([val, priceRange[1]]);
-                      setPage(1);
-                    }}
-                    className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-30"
-                    style={{
-                      zIndex: priceRange[0] > ((maxPrice - 100)) ? 50 : 30
-                    }}
-                  />
-
-                  {/* Max Price Input */}
-                  <input
-                    type="range"
-                    min={minPrice}
-                    max={maxPrice}
-                    value={priceRange[1]}
-                    onChange={(e) => {
-                      const val = Math.max(Number(e.target.value), priceRange[0] + 1);
-                      setPriceRange([priceRange[0], val]);
-                      setPage(1);
-                    }}
-                    className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-40"
-                  />
-
-                  <style>{`
-                    input[type="range"]::-webkit-slider-thumb {
-                      appearance: none;
-                      width: 20px;
-                      height: 20px;
-                      border-radius: 50%;
-                      background: #973c00;
-                      cursor: pointer;
-                      border: 3px solid white;
-                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                      pointer-events: auto;
-                    }
-                    input[type="range"]::-moz-range-thumb {
-                      width: 20px;
-                      height: 20px;
-                      border-radius: 50%;
-                      background: #973c00;
-                      cursor: pointer;
-                      border: 3px solid white;
-                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                      pointer-events: auto;
-                    }
-                  `}</style>
-
-                  {/* Labels Below Slider */}
-                  <div className="flex justify-between text-xs text-black font-semibold mt-8 px-2">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
-                  </div>
-                </div>
-              </>
-            )}
+        <aside
+          className={`
+            fixed left-0 top-0 h-screen w-[320px] max-w-[90vw] z-50 flex flex-col bg-white lg:hidden
+            transform transition-transform duration-300 ease-out
+            ${showMobileFilters ? "translate-x-0" : "-translate-x-full"}
+          `}
+        >
+          {/* ── Header band ── */}
+          <div className="shrink-0 bg-[#5A1E12] px-5 pt-10 pb-5 flex items-start justify-between">
+            <div>
+              <h2 className="text-white font-bold text-lg leading-tight">Filters</h2>
+              {hasActiveFilters ? (
+                <p className="text-white/60 text-xs mt-0.5">{activeFilters.length} active filter{activeFilters.length > 1 ? "s" : ""}</p>
+              ) : (
+                <p className="text-white/60 text-xs mt-0.5">Narrow down your results</p>
+              )}
+            </div>
+            <button
+              onClick={() => setShowMobileFilters(false)}
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors mt-0.5"
+              aria-label="Close filters"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
 
-          {/* Artist Filter - Desktop */}
-          <div className="mb-8">
-            {loading ? (
-              <FilterSkeleton />
-            ) : (
-              <>
-                <div className="flex justify-between mb-3 font-medium">
-                  <span>Artist</span>
-                  <button
-                    onClick={() => {
-                      setSelectedArtists([]);
-                      setShowAllArtists(false);
-                    }}
-                    className="opacity-60 cursor-pointer text-sm underline hover:opacity-100 transition-opacity"
-                  >
-                    Reset
-                  </button>
-                </div>
-                <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                  {displayArtists.map((artist) => (
-                    <label
-                      key={artist.name}
-                      className="flex justify-between items-center text-sm mb-3 cursor-pointer group"
-                    >
-                      <div className="flex gap-3 items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedArtists.includes(artist.name)}
-                          onChange={() =>
-                            toggleFilter(artist.name, setSelectedArtists)
-                          }
-                          className="accent-[#973c00] w-4 h-4"
-                        />
-                        <span className="group-hover:text-[#973c00] transition-colors">
-                          {artist.name}
-                        </span>
-                      </div>
-                      <span className="text-gray-500 text-sm">
-                        {artist.count}
-                      </span>
-                    </label>
-                  ))}
+          {/* Active filter chips */}
+          {hasActiveFilters && (
+            <div className="shrink-0 px-5 py-3 bg-[#EAD7B7]/40 border-b border-gray-100 flex flex-wrap gap-1.5">
+              {activeFilters.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => removeActiveFilter(f)}
+                  className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#5A1E12]/20 text-[#5A1E12] text-xs rounded-full font-medium hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors"
+                >
+                  {f}
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              ))}
+              <button
+                onClick={() => { setSelectedArtists([]); setSelectedCategories([]); setPriceRange([minPrice, maxPrice]); setPage(1); }}
+                className="px-2.5 py-1 text-xs text-gray-400 hover:text-red-500 transition-colors font-medium"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
 
-                  {/* Show More/Less Button */}
-                  {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                    <button
-                      onClick={() => setShowAllArtists(!showAllArtists)}
-                      className="w-full text-center mt-2 text-[#973c00] hover:text-black text-sm py-1"
-                    >
-                      {showAllArtists
-                        ? "Show Less"
-                        : `Show More (${artistsWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
+          {/* ── Scrollable body ── */}
+          <div className="flex-1 overflow-y-auto">
+
+            {/* Price Range */}
+            <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price Range</p>
+                <button
+                  onClick={() => { setPriceRange([minPrice, maxPrice]); setPage(1); }}
+                  className="text-xs text-[#5A1E12] hover:underline"
+                >Reset</button>
+              </div>
+              {loading ? (
+                <div className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+              ) : (
+                <>
+                  {/* Dual Range Slider */}
+                  <div className="relative pt-2 pb-4">
+                    <style>{`
+                      input[type="range"]::-webkit-slider-thumb {
+                        appearance: none; width: 20px; height: 20px;
+                        border-radius: 50%; background: #5A1E12;
+                        cursor: pointer; border: 3px solid white;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.25); pointer-events: auto;
+                      }
+                      input[type="range"]::-moz-range-thumb {
+                        width: 20px; height: 20px; border-radius: 50%;
+                        background: #5A1E12; cursor: pointer; border: 3px solid white;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.25); pointer-events: auto;
+                      }
+                    `}</style>
+                    <div className="absolute top-3 left-0 right-0 h-2 bg-gray-200 rounded-full pointer-events-none" />
+                    <div
+                      className="absolute top-3 h-2 bg-[#5A1E12] rounded-full pointer-events-none"
+                      style={{
+                        left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
+                        right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
+                      }}
+                    />
+                    <input type="range" min={minPrice} max={maxPrice} value={priceRange[0]}
+                      onChange={(e) => { const v = Math.min(Number(e.target.value), priceRange[1] - 1); setPriceRange([v, priceRange[1]]); setPage(1); }}
+                      className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent"
+                      style={{ zIndex: priceRange[0] > maxPrice - 100 ? 50 : 30 }}
+                    />
+                    <input type="range" min={minPrice} max={maxPrice} value={priceRange[1]}
+                      onChange={(e) => { const v = Math.max(Number(e.target.value), priceRange[0] + 1); setPriceRange([priceRange[0], v]); setPage(1); }}
+                      className="absolute w-full h-2 top-3 pointer-events-none appearance-none bg-transparent z-40"
+                    />
+                    <div className="flex justify-between text-xs font-semibold text-gray-500 mt-8">
+                      <span>${priceRange[0]}</span>
+                      <span>${priceRange[1]}</span>
+                    </div>
+                  </div>
+                  {/* Price pill */}
+                  <div className="flex items-center justify-between bg-[#EAD7B7]/50 rounded-xl px-4 py-2.5 mt-1">
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wide">Min</p>
+                      <p className="font-bold text-[#5A1E12]">${priceRange[0]}</p>
+                    </div>
+                    <div className="w-8 h-px bg-[#5A1E12]/30" />
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wide">Max</p>
+                      <p className="font-bold text-[#5A1E12]">${priceRange[1]}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Categories */}
+            <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Categories</p>
+                {selectedCategories.length > 0 && (
+                  <button onClick={() => { setSelectedCategories([]); setShowAllCategories(false); }} className="text-xs text-[#5A1E12] hover:underline">Reset</button>
+                )}
+              </div>
+              {loading ? (
+                <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {displayCategories.map((category) => {
+                    const active = selectedCategories.includes(category.name);
+                    return (
+                      <button
+                        key={category.name}
+                        onClick={() => { toggleFilter(category.name, setSelectedCategories); setPage(1); }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
+                          active ? "bg-[#5A1E12] text-white font-medium" : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? "bg-white" : "bg-[#5A1E12]/30"}`} />
+                          {category.name}
+                        </div>
+                        <span className={`text-xs ${active ? "text-white/70" : "text-gray-400"}`}>{category.count}</span>
+                      </button>
+                    );
+                  })}
+                  {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                    <button onClick={() => setShowAllCategories(!showAllCategories)} className="text-xs text-[#5A1E12] hover:underline mt-1 text-center py-1">
+                      {showAllCategories ? "Show Less" : `+${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW} more`}
                     </button>
                   )}
                 </div>
-              </>
+              )}
+            </div>
+
+            {/* Artists */}
+            <div className="px-5 pt-5 pb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Artists</p>
+                {selectedArtists.length > 0 && (
+                  <button onClick={() => { setSelectedArtists([]); setShowAllArtists(false); }} className="text-xs text-[#5A1E12] hover:underline">Reset</button>
+                )}
+              </div>
+              {loading ? (
+                <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {displayArtists.map((artist) => {
+                    const active = selectedArtists.includes(artist.name);
+                    return (
+                      <button
+                        key={artist.name}
+                        onClick={() => { toggleFilter(artist.name, setSelectedArtists); setPage(1); }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
+                          active ? "bg-[#5A1E12] text-white font-medium" : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${active ? "bg-white/20" : "bg-[#EAD7B7]/60"}`}>
+                            <svg className={`w-3 h-3 ${active ? "text-white" : "text-[#5A1E12]"}`} fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                          </div>
+                          {artist.name}
+                        </div>
+                        <span className={`text-xs ${active ? "text-white/70" : "text-gray-400"}`}>{artist.count}</span>
+                      </button>
+                    );
+                  })}
+                  {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                    <button onClick={() => setShowAllArtists(!showAllArtists)} className="text-xs text-[#5A1E12] hover:underline mt-1 text-center py-1">
+                      {showAllArtists ? "Show Less" : `+${artistsWithCounts.length - INITIAL_ITEMS_TO_SHOW} more`}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Footer CTA ── */}
+          <div className="shrink-0 p-4 bg-white border-t border-gray-100 flex gap-3">
+            <button
+              onClick={() => { setSelectedArtists([]); setSelectedCategories([]); setPriceRange([minPrice, maxPrice]); setPage(1); }}
+              className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              Reset All
+            </button>
+            <button
+              onClick={() => setShowMobileFilters(false)}
+              className="flex-1 py-3 rounded-xl bg-[#5A1E12] text-white text-sm font-medium hover:bg-[#4a180f] transition-colors"
+            >
+              Show Results
+            </button>
+          </div>
+        </aside>
+
+        {/* LEFT SIDEBAR - Desktop */}
+        {/* LEFT SIDEBAR - Desktop Redesigned */}
+        <aside className="hidden lg:flex lg:flex-col lg:w-72 shrink-0 lg:sticky lg:top-24 h-fit rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+
+          {/* ── Header band ── */}
+          <div className="bg-[#5A1E12] px-5 py-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-white font-bold text-base leading-tight">Filters</h2>
+              <p className="text-white/60 text-xs mt-0.5">
+                {hasActiveFilters
+                  ? `${activeFilters.length} active filter${activeFilters.length !== 1 ? "s" : ""}`
+                  : "Narrow your results"}
+              </p>
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={() => { clearAll(); setPage(1); }}
+                className="text-xs text-white/80 hover:text-white border border-white/30 hover:border-white/60 px-3 py-1.5 rounded-full transition-all"
+              >
+                Clear all
+              </button>
             )}
           </div>
 
-          {/* Category Filter - Desktop */}
-          <div className="mb-8">
-            {loading ? (
-              <FilterSkeleton />
-            ) : (
-              <>
-                <div className="flex justify-between mb-3 font-medium">
-                  <span>Category</span>
+          {/* ── Body ── */}
+          <div className="bg-white divide-y divide-gray-100">
+
+            {/* Price Range */}
+            <div className="px-5 py-5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price Range</p>
+                {(priceRange[0] !== minPrice || priceRange[1] !== maxPrice) && (
                   <button
-                    onClick={() => {
-                      setSelectedCategories([]);
-                      setShowAllCategories(false);
-                    }}
-                    className="opacity-60 cursor-pointer hover:opacity-100 transition-opacity text-sm underline"
+                    onClick={() => { setPriceRange([minPrice, maxPrice]); setPage(1); }}
+                    className="text-xs text-[#5A1E12] hover:underline"
                   >
                     Reset
                   </button>
-                </div>
-                <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                  <hr className="mb-3" />
-                  {displayCategories.map((category) => (
-                    <label
-                      key={category.name}
-                      className="flex justify-between items-center mb-3 text-sm cursor-pointer group"
-                    >
-                      <div className="flex gap-3 items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(category.name)}
-                          onChange={() =>
-                            toggleFilter(category.name, setSelectedCategories)
-                          }
-                          className="accent-[#973c00] w-4 h-4"
-                        />
-                        <span className="group-hover:text-[#973c00] transition-colors">
-                          {category.name}
-                        </span>
-                      </div>
-                      <span className="text-gray-500 text-sm">
-                        {category.count}
-                      </span>
-                    </label>
-                  ))}
+                )}
+              </div>
+              {loading ? (
+                <FilterSkeleton />
+              ) : (
+                <>
+                  {/* Price pills */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-center">
+                      <p className="text-[10px] text-gray-400 mb-0.5">Min</p>
+                      <p className="text-sm font-semibold text-gray-800">${priceRange[0]}</p>
+                    </div>
+                    <div className="w-4 h-px bg-gray-300" />
+                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-center">
+                      <p className="text-[10px] text-gray-400 mb-0.5">Max</p>
+                      <p className="text-sm font-semibold text-gray-800">${priceRange[1]}</p>
+                    </div>
+                  </div>
 
-                  {/* Show More/Less Button */}
+                  {/* Dual Range Slider */}
+                  <div className="relative pt-2 pb-2">
+                    <div className="absolute top-3 left-0 right-0 h-1.5 bg-gray-200 rounded-full pointer-events-none"></div>
+                    <div
+                      className="absolute top-3 h-1.5 bg-[#5A1E12] rounded-full pointer-events-none"
+                      style={{
+                        left: `${((priceRange[0] - minPrice) / (maxPrice - minPrice)) * 100}%`,
+                        right: `${100 - ((priceRange[1] - minPrice) / (maxPrice - minPrice)) * 100}%`,
+                      }}
+                    />
+                    <input
+                      type="range"
+                      min={minPrice}
+                      max={maxPrice}
+                      value={priceRange[0]}
+                      onChange={(e) => {
+                        const val = Math.min(Number(e.target.value), priceRange[1] - 1);
+                        setPriceRange([val, priceRange[1]]);
+                        setPage(1);
+                      }}
+                      className="desktop-range absolute w-full h-1.5 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer"
+                      style={{ zIndex: priceRange[0] > maxPrice - 100 ? 50 : 30 }}
+                    />
+                    <input
+                      type="range"
+                      min={minPrice}
+                      max={maxPrice}
+                      value={priceRange[1]}
+                      onChange={(e) => {
+                        const val = Math.max(Number(e.target.value), priceRange[0] + 1);
+                        setPriceRange([priceRange[0], val]);
+                        setPage(1);
+                      }}
+                      className="desktop-range absolute w-full h-1.5 top-3 pointer-events-none appearance-none bg-transparent cursor-pointer z-40"
+                    />
+                    <style>{`
+                      .desktop-range::-webkit-slider-thumb {
+                        appearance: none;
+                        width: 18px;
+                        height: 18px;
+                        border-radius: 50%;
+                        background: #5A1E12;
+                        cursor: pointer;
+                        border: 2.5px solid white;
+                        box-shadow: 0 1px 4px rgba(90,30,18,0.35);
+                        pointer-events: auto;
+                      }
+                      .desktop-range::-moz-range-thumb {
+                        width: 18px;
+                        height: 18px;
+                        border-radius: 50%;
+                        background: #5A1E12;
+                        cursor: pointer;
+                        border: 2.5px solid white;
+                        box-shadow: 0 1px 4px rgba(90,30,18,0.35);
+                        pointer-events: auto;
+                      }
+                    `}</style>
+                    {/* spacer so the relative container has height */}
+                    <div className="h-5" />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Categories */}
+            <div className="px-5 py-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Categories</p>
+                {selectedCategories.length > 0 && (
+                  <button
+                    onClick={() => { setSelectedCategories([]); setShowAllCategories(false); setPage(1); }}
+                    className="text-xs text-[#5A1E12] hover:underline"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              {loading ? (
+                <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {displayCategories.map((category) => {
+                    const active = selectedCategories.includes(category.name);
+                    return (
+                      <button
+                        key={category.name}
+                        onClick={() => { toggleFilter(category.name, setSelectedCategories); setPage(1); }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
+                          active ? "bg-[#5A1E12] text-white font-medium" : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${active ? "bg-white/70" : "bg-[#EAD7B7]"}`} />
+                          <span className="text-left leading-tight">{category.name}</span>
+                        </div>
+                        <span className={`text-xs shrink-0 ml-2 ${active ? "text-white/70" : "text-gray-400"}`}>{category.count}</span>
+                      </button>
+                    );
+                  })}
                   {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
                     <button
                       onClick={() => setShowAllCategories(!showAllCategories)}
-                      className="w-full text-center mt-2 text-[#973c00] hover:text-black text-sm py-1"
+                      className="text-xs text-[#5A1E12] hover:underline mt-1 text-center py-1"
                     >
-                      {showAllCategories
-                        ? "Show Less"
-                        : `Show More (${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW})`}
+                      {showAllCategories ? "Show Less" : `+${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW} more`}
                     </button>
                   )}
                 </div>
-              </>
-            )}
+              )}
+            </div>
+
+            {/* Artists */}
+            <div className="px-5 py-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Artists</p>
+                {selectedArtists.length > 0 && (
+                  <button
+                    onClick={() => { setSelectedArtists([]); setShowAllArtists(false); setPage(1); }}
+                    className="text-xs text-[#5A1E12] hover:underline"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              {loading ? (
+                <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {displayArtists.map((artist) => {
+                    const active = selectedArtists.includes(artist.name);
+                    return (
+                      <button
+                        key={artist.name}
+                        onClick={() => { toggleFilter(artist.name, setSelectedArtists); setPage(1); }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
+                          active ? "bg-[#5A1E12] text-white font-medium" : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${active ? "bg-white/20" : "bg-[#EAD7B7]/60"}`}>
+                            <svg className={`w-3 h-3 ${active ? "text-white" : "text-[#5A1E12]"}`} fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+                            </svg>
+                          </div>
+                          <span>{artist.name}</span>
+                        </div>
+                        <span className={`text-xs ${active ? "text-white/70" : "text-gray-400"}`}>{artist.count}</span>
+                      </button>
+                    );
+                  })}
+                  {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
+                    <button
+                      onClick={() => setShowAllArtists(!showAllArtists)}
+                      className="text-xs text-[#5A1E12] hover:underline mt-1 text-center py-1"
+                    >
+                      {showAllArtists ? "Show Less" : `+${artistsWithCounts.length - INITIAL_ITEMS_TO_SHOW} more`}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </aside>
 
@@ -1035,52 +976,52 @@ function ShopContent() {
               </div>
             </div>
           </div>
-          {/* ACTIVE FILTERS */}
-          <div className={`flex flex-wrap items-center gap-2 mb-6 min-h-10 transition-all duration-300 ${hasActiveFilters ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-            {hasActiveFilters && (
-              <>
-                <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
-                  Active filters:
-                </span>
-                {debouncedSearchTerm && (
-                  <span
-                    className="inline-flex items-center gap-1 bg-[#fdf4ef] text-[#973c00] border border-[#973c00]/10 px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#fae8de] transition-colors"
-                    onClick={clearSearch}
-                  >
-                    Search: "{debouncedSearchTerm}"<span className="ml-1">×</span>
-                  </span>
-                )}
-                {(priceRange[0] > minPrice || priceRange[1] < maxPrice) && (
-                <span
-                  className="inline-flex items-center gap-1 bg-[#fdf4ef] text-[#973c00] border border-[#973c00]/10 px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#fae8de] transition-colors"
-                  onClick={() => {
-                    setPriceRange([minPrice, maxPrice]);
-                    setPage(1);
-                  }}
-                >
-                  Price: ${priceRange[0]} - ${priceRange[1]}
-                  <span className="ml-1">×</span>
-                </span>
-              )}
-                {activeFilters.map((filter) => (
-                  <span
-                    key={filter}
-                    className="inline-flex items-center gap-1 bg-[#fdf4ef] text-[#973c00] border border-[#973c00]/10 px-3 py-1.5 rounded-full text-xs sm:text-sm cursor-pointer hover:bg-[#fae8de] transition-colors"
-                    onClick={() => removeActiveFilter(filter)}
-                  >
-                    {filter}
-                    <span className="ml-1">×</span>
-                  </span>
-                ))}
+          {/* ACTIVE FILTERS — only renders when something is selected; no empty space otherwise */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 mb-5 px-4 py-3 bg-[#5A1E12]/5 rounded-2xl border border-[#5A1E12]/10">
+              <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest shrink-0">
+                Active filters:
+              </span>
+
+              {debouncedSearchTerm && (
                 <button
-                  onClick={clearAll}
-                  className="text-[#973c00] hover:text-black underline text-xs sm:text-sm font-medium"
+                  onClick={clearSearch}
+                  className="inline-flex items-center gap-1 bg-white text-[#5A1E12] border border-[#5A1E12]/20 px-2.5 py-1 rounded-full text-xs hover:bg-[#5A1E12] hover:text-white hover:border-[#5A1E12] transition-all"
                 >
-                  Clear all
+                  Search: &quot;{debouncedSearchTerm}&quot;
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-              </>
-            )}
-          </div>
+              )}
+
+              {(priceRange[0] > minPrice || priceRange[1] < maxPrice) && (
+                <button
+                  onClick={() => { setPriceRange([minPrice, maxPrice]); setPage(1); }}
+                  className="inline-flex items-center gap-1 bg-white text-[#5A1E12] border border-[#5A1E12]/20 px-2.5 py-1 rounded-full text-xs hover:bg-[#5A1E12] hover:text-white hover:border-[#5A1E12] transition-all"
+                >
+                  ${priceRange[0]} – ${priceRange[1]}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              )}
+
+              {activeFilters.map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => removeActiveFilter(filter)}
+                  className="inline-flex items-center gap-1 bg-white text-[#5A1E12] border border-[#5A1E12]/20 px-2.5 py-1 rounded-full text-xs hover:bg-[#5A1E12] hover:text-white hover:border-[#5A1E12] transition-all"
+                >
+                  {filter}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              ))}
+
+              <button
+                onClick={clearAll}
+                className="ml-auto text-xs font-semibold text-[#5A1E12] hover:underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
 
         
 
@@ -1129,50 +1070,86 @@ function ShopContent() {
 
               {/* PAGINATION */}
               {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 sm:mt-10">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className={`px-4 sm:px-5 py-2 sm:py-2.5 border rounded-lg transition-colors text-sm sm:text-base ${
-                      page === 1
-                        ? "border-gray-300 text-gray-400 cursor-not-allowed"
-                        : "border-[#973c00] text-[#973c00] hover:bg-[#973c00] hover:text-white"
-                    }`}
-                  >
-                    Previous
-                  </button>
+                <div className="mt-10 flex flex-col items-center gap-3">
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm sm:text-base text-gray-700">
-                      Page <span className="font-bold">{page}</span> of{" "}
-                      <span className="font-bold">{totalPages}</span>
-                    </span>
-                    <select
-                      value={page}
-                      onChange={(e) => setPage(Number(e.target.value))}
-                      className="border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 text-sm sm:text-base outline-none bg-white"
+                  {/* Controls row */}
+                  <div className="flex items-center gap-1">
+
+                    {/* Prev */}
+                    <button
+                      disabled={page === 1}
+                      onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                        page === 1
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      }`}
                     >
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                        (p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  </div>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                      <span className="hidden sm:inline">Prev</span>
+                    </button>
 
-                  <button
-                    disabled={page === totalPages}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    className={`px-4 sm:px-5 py-2 sm:py-2.5 border rounded-lg transition-colors text-sm sm:text-base ${
-                      page === totalPages
-                        ? "border-gray-300 text-gray-400 cursor-not-allowed"
-                        : "border-[#973c00] text-[#973c00] hover:bg-[#973c00] hover:text-white"
-                    }`}
-                  >
-                    Next
-                  </button>
+                    {/* Numbered pages with ellipsis */}
+                    {(() => {
+                      const pages: (number | "...")[] = [];
+                      if (totalPages <= 7) {
+                        for (let i = 1; i <= totalPages; i++) pages.push(i);
+                      } else {
+                        pages.push(1);
+                        if (page > 3) pages.push("...");
+                        for (
+                          let i = Math.max(2, page - 1);
+                          i <= Math.min(totalPages - 1, page + 1);
+                          i++
+                        ) pages.push(i);
+                        if (page < totalPages - 2) pages.push("...");
+                        pages.push(totalPages);
+                      }
+                      return pages.map((p, idx) =>
+                        p === "..." ? (
+                          <span
+                            key={`ellipsis-${idx}`}
+                            className="w-9 h-9 flex items-center justify-center text-gray-400 text-sm select-none"
+                          >
+                            …
+                          </span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => {
+                              setPage(p as number);
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${
+                              page === p
+                                ? "bg-[#5A1E12] text-white shadow-sm shadow-[#5A1E12]/30"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      );
+                    })()}
+
+                    {/* Next */}
+                    <button
+                      disabled={page === totalPages}
+                      onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                        page === totalPages
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      }`}
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )}
             </>

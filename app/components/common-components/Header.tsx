@@ -334,10 +334,10 @@ export default function Header() {
         />
       )} */}
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile/Tablet Menu Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/30 z-40 md:hidden animate-fadeIn"
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden animate-fadeIn"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -360,25 +360,44 @@ export default function Header() {
       </div>
 
       <div className="">
-        {/* MOBILE/Tablet: Only show menu button */}
-        <div className="md:hidden fixed top-4 right-4 z-50">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-3 rounded-full bg-[#5A1E12] text-white shadow-lg hover:bg-[#4a180f] transition-colors"
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
+        {/* MOBILE/TABLET: Top bar — Logo left, Cart + Hamburger right */}
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#EAD7B7]/95 backdrop-blur-md shadow-md px-4 py-3 flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="font-bold transition-transform hover:scale-105 active:scale-95">
+            <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-10" priority />
+          </Link>
+
+          {/* Right: Cart + Hamburger */}
+          <div className="flex items-center gap-2">
+            {/* Cart */}
+            <button
+              onClick={toggleCart}
+              className="relative p-2 rounded-full hover:bg-white/40 transition-colors"
+              aria-label={`Shopping cart with ${cartItemCount} items`}
+            >
+              <ShoppingCart className="h-6 w-6 text-gray-800" />
+              {mounted && cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 text-[10px] flex items-center justify-center bg-[#5A1E12] text-white rounded-full font-bold shadow-sm">
+                  {cartItemCount > 9 ? "9+" : cartItemCount}
+                </span>
+              )}
+            </button>
+
+            {/* Hamburger */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-full hover:bg-white/40 transition-colors text-gray-800"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
 
         {/* DESKTOP: Full Header (hidden on mobile/tablet) */}
         <header
-          className={`w-full hidden md:flex rounded-full px-8 lg:px-12 py-2
+          className={`w-full hidden lg:flex rounded-full px-8 lg:px-12 py-2
             items-center shadow-xl transition-all duration-500 z-30 relative
             ${scrolled ? "bg-[#EAD7B7]/95 backdrop-blur-md shadow-lg" : "bg-[#EAD7B7]"}
             ${scrolledPast5 ? "opacity-0 pointer-events-none invisible" : "opacity-100 visible"}
@@ -436,20 +455,20 @@ export default function Header() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-2 justify-end relative">
-            {/* Search — Inline Expanding Pill */}
-            <div ref={searchRef} className="relative flex items-center">
-              {/* Expanding pill container — collapses to icon, expands to 300px */}
+            {/* Search — Expanding Pill (grows leftward, never shifts nav) */}
+            <div ref={searchRef} className="relative w-10 h-9">
+              {/* Pill expands absolutely to the left — wrapper stays w-10 in flex flow */}
               <div
-                className={`flex items-center overflow-hidden rounded-full border transition-all duration-300 ease-in-out ${
+                className={`absolute right-0 top-0 h-9 flex items-center overflow-hidden rounded-full border transition-all duration-300 ease-in-out ${
                   isSearchModalOpen
-                    ? "border-gray-200 bg-white shadow-lg pl-3 pr-1 py-1"
-                    : "border-transparent bg-transparent pl-0 pr-0 py-0"
+                    ? "border-gray-200 bg-white shadow-lg"
+                    : "border-transparent bg-transparent"
                 }`}
                 style={{ width: isSearchModalOpen ? "300px" : "40px" }}
               >
                 <form
                   onSubmit={handleSearchSubmit}
-                  className={`flex-1 min-w-0 transition-opacity duration-200 ${isSearchModalOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                  className={`flex-1 min-w-0 pl-3 transition-opacity duration-200 ${isSearchModalOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                 >
                   <input
                     type="text"
@@ -460,14 +479,19 @@ export default function Header() {
                     autoFocus={isSearchModalOpen}
                   />
                 </form>
-                <button
-                  onClick={() => { setIsSearchModalOpen(!isSearchModalOpen); if (isSearchModalOpen) setSearchTerm(""); }}
-                  className={`shrink-0 p-1.5 rounded-full transition-all duration-300 ${isSearchModalOpen ? "bg-[#5A1E12] text-white" : "hover:bg-white/30 text-gray-800"}`}
-                  aria-label={isSearchModalOpen ? "Close search" : "Open search"}
-                >
-                  {isSearchModalOpen ? <X className="h-4 w-4" /> : <Search className="h-5 w-5" />}
-                </button>
+                {/* spacer so input doesn't slide under button */}
+                <div className="w-9 shrink-0" />
               </div>
+              {/* Toggle button — pinned to right edge of wrapper, always in same spot */}
+              <button
+                onClick={() => { setIsSearchModalOpen(!isSearchModalOpen); if (isSearchModalOpen) setSearchTerm(""); }}
+                className={`absolute right-0 top-0 z-10 w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 ${
+                  isSearchModalOpen ? "bg-[#5A1E12] text-white" : "hover:bg-white/30 text-gray-800"
+                }`}
+                aria-label={isSearchModalOpen ? "Close search" : "Open search"}
+              >
+                {isSearchModalOpen ? <X className="h-4 w-4" /> : <Search className="h-5 w-5" />}
+              </button>
 
               {/* Results dropdown — 300px, polished UI */}
               <div
@@ -769,148 +793,216 @@ export default function Header() {
           </div>
         </header>
 
-        {/* Mobile Menu Panel */}
+        {/* Mobile/Tablet Menu Drawer */}
         <div
           ref={mobileMenuRef}
           className={`
-            fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-[#EAD7B7] z-55
-            transform transition-transform duration-300 ease-out md:hidden
+            fixed top-0 right-0 h-screen w-[320px] max-w-[90vw] z-55
+            flex flex-col bg-white lg:hidden
+            transform transition-transform duration-300 ease-out
             ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"}
           `}
         >
-          {/* Mobile Header */}
-          <div className="p-6 border-b border-white/30 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          {/* ── TOP: User / Brand header ── */}
+          <div className="shrink-0 bg-[#5A1E12] px-5 pt-4 pb-5">
+            <div className="flex items-start justify-between">
               {user ? (
-                <>
-                  <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center overflow-hidden">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/40 shrink-0 bg-[#EAD7B7] flex items-center justify-center">
                     {user.profileImage ? (
-                      <Image
-                        src={user.profileImage}
-                        alt={user.name || "User"}
-                        width={40}
-                        height={40}
-                        className="rounded-full w-full h-full object-cover"
-                      />
+                      <Image src={user.profileImage} alt={user.name || "User"} width={48} height={48} className="w-full h-full object-cover" />
                     ) : (
-                      <User className="w-5 h-5 text-white" />
+                      <User className="w-6 h-6 text-[#5A1E12]" />
                     )}
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{user.name?.split(" ")[0] || "User"}</p>
-                    <p className="text-xs text-gray-600 truncate">{user.email}</p>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-white text-base leading-tight">Hi, {user.name?.split(" ")[0] || "User"}</p>
+                    <p className="text-xs text-white/60 truncate mt-0.5">{user.email}</p>
                   </div>
-                </>
+                </div>
               ) : (
-                <h3 className="font-bold text-lg text-gray-800">Menu</h3>
+                <div className="flex items-center gap-3">
+                  <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-9 brightness-0 invert" />
+                  <p className="font-bold text-white text-lg">Alpa</p>
+                </div>
               )}
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0 mt-0.5"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2 rounded-full hover:bg-white/30"
-              aria-label="Close menu"
+
+            {/* Search bar — lives inside the header band */}
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (searchTerm.trim()) { setMobileMenuOpen(false); setSearchTerm(""); router.push(`/shop?search=${encodeURIComponent(searchTerm.trim())}`); } }}
+              className="mt-4 relative"
             >
-              <X className="h-5 w-5" />
-            </button>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/40 outline-none focus:bg-white/20 focus:border-white/40 transition-all"
+              />
+            </form>
           </div>
 
-          {/* Mobile Navigation */}
-          <nav className="flex flex-col p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-120px)]">
-            {NAV_LINKS.map(({ label, href }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`
-                  px-4 py-3 rounded-xl text-base font-medium transition-all
-                  ${
-                    isActive(href)
-                      ? "bg-white text-[#5A1E12] shadow-sm"
-                      : "text-gray-700 hover:bg-white/50"
-                  }
-                `}
-              >
-                {label}
-              </Link>
-            ))}
+          {/* ── SCROLLABLE BODY ── */}
+          <div className="flex-1 overflow-y-auto">
 
-            {/* Mobile Cart Button */}
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                setCartOpen(true);
-              }}
-              className="px-4 py-3 rounded-xl text-base font-medium text-gray-700 hover:bg-white/50 transition-all flex items-center gap-3"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              <span>Cart ({cartItemCount})</span>
-            </button>
+            {/* Search results (only when typing) */}
+            {searchTerm.trim().length > 1 && (
+              <div className="mx-4 mt-3 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                {(segregatedSearchResults.products.length > 0 || segregatedSearchResults.categories.length > 0 || segregatedSearchResults.artists.length > 0) ? (
+                  <div>
+                    {segregatedSearchResults.products.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+                          <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">Products</span>
+                          <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                        </div>
+                        {segregatedSearchResults.products.slice(0, 4).map((product) => (
+                          <button key={product.id} onClick={() => { setMobileMenuOpen(false); handleSearchSelect(product); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#5A1E12]/5 transition-colors">
+                            <div className="w-9 h-9 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                              {product.images?.[0] ? <Image src={product.images[0]} alt={product.title} width={36} height={36} className="w-full h-full object-cover" /> : <Search className="w-4 h-4 text-gray-300 m-2" />}
+                            </div>
+                            <div className="flex-1 min-w-0 text-left">
+                              <p className="text-sm font-medium text-gray-800 truncate">{product.title}</p>
+                              <p className="text-xs text-[#5A1E12] font-semibold">${product.price}</p>
+                            </div>
+                            <svg className="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {segregatedSearchResults.categories.length > 0 && (
+                      <div className="px-4 pb-3">
+                        <div className="flex items-center gap-2 pt-2 pb-1.5">
+                          <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">Categories</span>
+                          <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {segregatedSearchResults.categories.map((cat) => (
+                            <button key={cat} onClick={() => { setMobileMenuOpen(false); handleCategorySelect(cat); }} className="text-xs px-3 py-1.5 rounded-full border border-[#5A1E12]/20 text-[#5A1E12] hover:bg-[#5A1E12] hover:text-white transition-all">{cat}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {segregatedSearchResults.artists.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 px-4 pt-2 pb-1">
+                          <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">Artists</span>
+                          <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                        </div>
+                        {segregatedSearchResults.artists.map((artist) => (
+                          <button key={artist} onClick={() => { setMobileMenuOpen(false); handleArtistSelect(artist); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#5A1E12]/5 transition-colors group">
+                            <div className="w-8 h-8 rounded-full bg-[#EAD7B7]/60 flex items-center justify-center shrink-0">
+                              <User className="w-3.5 h-3.5 text-[#5A1E12]" />
+                            </div>
+                            <span className="text-sm font-medium text-gray-700 group-hover:text-[#5A1E12] transition-colors truncate flex-1 text-left">{artist}</span>
+                            <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#5A1E12] transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button onClick={() => { setMobileMenuOpen(false); setSearchTerm(""); router.push(`/shop?search=${encodeURIComponent(searchTerm)}`); }} className="w-full flex items-center justify-between px-4 py-2.5 bg-[#5A1E12] text-white text-sm font-medium">
+                      <span>View all results</span>
+                      <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">{segregatedSearchResults.products.length + segregatedSearchResults.categories.length + segregatedSearchResults.artists.length}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="py-6 flex flex-col items-center gap-1">
+                    <Search className="w-5 h-5 text-gray-300" />
+                    <p className="text-sm text-gray-500">No results for &quot;{searchTerm}&quot;</p>
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Mobile Auth Buttons */}
-            <div className="pt-4 mt-4 border-t border-white/30">
+            {/* ── NAVIGATION ── */}
+            <div className="px-4 pt-5">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Navigation</p>
+              <nav className="flex flex-col gap-1">
+                {NAV_LINKS.map(({ label, href }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      isActive(href)
+                        ? "bg-[#5A1E12] text-white shadow-sm"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive(href) ? "bg-white" : "bg-[#5A1E12]/40"}`} />
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            {/* ── ACCOUNT ── */}
+            <div className="px-4 pt-5 pb-6">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Account</p>
               {!user ? (
                 <div className="flex flex-col gap-2">
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-center text-sm"
-                  >
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-[#5A1E12]/30 text-[#5A1E12] text-sm font-medium hover:bg-[#5A1E12]/5 transition-colors">
+                    <User className="w-4 h-4" />
                     Login
                   </Link>
-                  <Link
-                    href="/signup"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 rounded-xl bg-[#5A1E12] text-white hover:bg-[#4a180f] transition-colors text-center text-sm"
-                  >
-                    Sign Up
+                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#5A1E12] text-white text-sm font-medium hover:bg-[#4a180f] transition-colors">
+                    Create Account
+                  </Link>
+                  <Link href="/sellerOnboarding" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#EAD7B7] text-[#5A1E12] text-sm font-medium hover:bg-[#e0c9a0] transition-colors">
+                    Register as Seller
                   </Link>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2">
-                  <Link
-                    href="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-sm"
-                  >
-                    <User className="w-4 h-4" />
-                    <span>My Profile</span>
+                <div className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
+                  <Link href="https://alpa-dashboard.vercel.app/dashboard/customer/profile" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100">
+                    <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-[#5A1E12]" />
+                    </div>
+                    <span className="font-medium">My Profile</span>
+                    <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </Link>
-                  <Link
-                    href="/orders"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-sm"
-                  >
-                    <Package className="w-4 h-4" />
-                    <span>My Orders</span>
+                  <Link href="https://alpa-dashboard.vercel.app/dashboard/customer/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100">
+                    <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
+                      <Package className="w-4 h-4 text-[#5A1E12]" />
+                    </div>
+                    <span className="font-medium">My Orders</span>
+                    <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </Link>
                   {user.role === "admin" && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 text-gray-700 hover:bg-white transition-colors text-sm"
-                    >
-                      <Settings className="w-4 h-4" />
-                      <span>Admin Dashboard</span>
+                    <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100">
+                      <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
+                        <Settings className="w-4 h-4 text-[#5A1E12]" />
+                      </div>
+                      <span className="font-medium">Admin Dashboard</span>
+                      <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </Link>
                   )}
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Logout</span>
+                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-sm text-red-500">
+                    <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                      <LogOut className="w-4 h-4 text-red-500" />
+                    </div>
+                    <span className="font-medium">Logout</span>
                   </button>
                 </div>
               )}
             </div>
-          </nav>
+          </div>
         </div>
       </div>
 
       {/* SECONDARY STICKY HEADER - rendered outside NavbarWrapper's div to avoid visibility/z-index cascade */}
       <header
         className={`
-          hidden md:flex fixed top-0 left-0 right-0 z-60
+          hidden lg:flex fixed top-0 left-0 right-0 z-60
           px-8 lg:px-16 py-3 items-center
           bg-[#EAD7B7]/95 backdrop-blur-md shadow-lg
           transition-all duration-500
@@ -947,19 +1039,20 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-2 justify-end relative">
-          {/* Search — Inline Expanding Pill (sticky) */}
-          <div ref={stickySearchRef} className="relative flex items-center">
+          {/* Search — Expanding Pill (grows leftward, never shifts nav) */}
+          <div ref={stickySearchRef} className="relative w-10 h-9">
+            {/* Pill expands absolutely to the left — wrapper stays w-10 in flex flow */}
             <div
-              className={`flex items-center overflow-hidden rounded-full border transition-all duration-300 ease-in-out ${
+              className={`absolute right-0 top-0 h-9 flex items-center overflow-hidden rounded-full border transition-all duration-300 ease-in-out ${
                 isStickySearchOpen
-                  ? "border-gray-200 bg-white shadow-lg pl-3 pr-1 py-1"
-                  : "border-transparent bg-transparent pl-0 pr-0 py-0"
+                  ? "border-gray-200 bg-white shadow-lg"
+                  : "border-transparent bg-transparent"
               }`}
               style={{ width: isStickySearchOpen ? "300px" : "40px" }}
             >
               <form
                 onSubmit={handleSearchSubmit}
-                className={`flex-1 min-w-0 transition-opacity duration-200 ${isStickySearchOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                className={`flex-1 min-w-0 pl-3 transition-opacity duration-200 ${isStickySearchOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
               >
                 <input
                   type="text"
@@ -970,14 +1063,19 @@ export default function Header() {
                   autoFocus={isStickySearchOpen}
                 />
               </form>
-              <button
-                onClick={() => { setIsStickySearchOpen(!isStickySearchOpen); if (isStickySearchOpen) setSearchTerm(""); }}
-                className={`shrink-0 p-1.5 rounded-full transition-all duration-300 ${isStickySearchOpen ? "bg-[#5A1E12] text-white" : "hover:bg-white/30 text-gray-800"}`}
-                aria-label={isStickySearchOpen ? "Close search" : "Open search"}
-              >
-                {isStickySearchOpen ? <X className="h-4 w-4" /> : <Search className="h-5 w-5" />}
-              </button>
+              {/* spacer so input doesn't slide under button */}
+              <div className="w-9 shrink-0" />
             </div>
+            {/* Toggle button — pinned to right edge, always same position */}
+            <button
+              onClick={() => { setIsStickySearchOpen(!isStickySearchOpen); if (isStickySearchOpen) setSearchTerm(""); }}
+              className={`absolute right-0 top-0 z-10 w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 ${
+                isStickySearchOpen ? "bg-[#5A1E12] text-white" : "hover:bg-white/30 text-gray-800"
+              }`}
+              aria-label={isStickySearchOpen ? "Close search" : "Open search"}
+            >
+              {isStickySearchOpen ? <X className="h-4 w-4" /> : <Search className="h-5 w-5" />}
+            </button>
 
             {/* Results dropdown */}
             <div
