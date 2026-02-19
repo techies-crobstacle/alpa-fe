@@ -5,9 +5,9 @@
 // import Image from "next/image";
 // import Link from "next/link";
 // import { ShoppingCart, Minus, Plus, Heart, Star, Loader2, Check } from "lucide-react";
-// import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
-// import { useToggleWishlist } from "@/app/hooks/useWishlistMutations";
-// import { useWishlistQuery } from "@/app/hooks/useWishlist";
+// import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
+// import { useToggleWishlist } from "@/hooks/useWishlistMutations";
+// import { useWishlistQuery } from "@/hooks/useWishlist";
 // import { div } from "framer-motion/client";
 
 // interface OptimisticProductCardProps {
@@ -369,9 +369,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, Star, Loader2, Check, ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
-import { useToggleWishlist } from "@/app/hooks/useWishlistMutations";
-import { useWishlistQuery } from "@/app/hooks/useWishlist";
+import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
+import { useToggleWishlist } from "@/hooks/useWishlistMutations";
+import { useWishlistQuery } from "@/hooks/useWishlist";
 
 // --- INTERFACE DEFINITION (Fixes the TS Error) ---
 export interface OptimisticProductCardProps {

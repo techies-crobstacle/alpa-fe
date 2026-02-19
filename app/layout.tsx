@@ -2,12 +2,12 @@
 import NavbarWrapper from "./NavbarWrapper";
 import FooterWrapper from "./FooterWrapper";
 import "./globals.css";
-import { CartProvider } from "./context/CartContext";
-import { AuthProvider } from "./context/AuthContext";
-import QueryProvider from "./providers/QueryProvider";
-import { EnhancedCartProvider } from "./hooks/useSharedEnhancedCart";
-import { StickyLeftCouponDrawer } from "./components/common-components/StickyLeftCouponDrawer";
-import ToastProvider from "./providers/ToastProvider";
+import { CartProvider } from "@/context/CartContext";
+import { AuthProvider } from "@/context/AuthContext";
+import QueryProvider from "@/providers/QueryProvider";
+import { EnhancedCartProvider } from "@/hooks/useSharedEnhancedCart";
+import { StickyLeftCouponDrawer } from "@/components/common-components/StickyLeftCouponDrawer";
+import ToastProvider from "@/providers/ToastProvider";
 
 export const metadata = {
   title: "Arnhem  ",

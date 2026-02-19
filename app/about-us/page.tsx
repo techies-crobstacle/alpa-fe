@@ -1,7 +1,7 @@
 // "use client";
 // import React from "react";
 // import Image from "next/image";
-// import Counter from "../components/about-us/counter";
+// import Counter from "@/components/about-us/counter";
 
 // export default function Page() {
 //   return (

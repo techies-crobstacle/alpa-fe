@@ -8,9 +8,9 @@ import React, {
 } from "react";
 import { HiViewGrid } from "react-icons/hi";
 import { motion } from "framer-motion";
-import OptimisticProductCard from "../components/cards/OptimisticProductCard";
-import { useCart } from "../context/CartContext";
-import { useProducts, Product } from "../hooks/useProducts";
+import OptimisticProductCard from "@/components/cards/OptimisticProductCard";
+import { useCart } from "@/context/CartContext";
+import { useProducts, Product } from "@/hooks/useProducts";
 import { useSearchParams } from "next/navigation";
 
 function ShopContent() {

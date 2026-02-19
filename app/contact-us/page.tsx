@@ -1,7 +1,7 @@
 // "use client";
 // import React from "react";
 // import Image from "next/image";
-// import Testimonials from "../components/cards/Testimonials";
+// import Testimonials from "@/components/cards/Testimonials";
 
 // export default function Page() {
 //   return (
@@ -125,7 +125,7 @@
 "use client";
 import React from "react";
 import Image from "next/image";
-import Testimonials from "../components/cards/Testimonials";
+import Testimonials from "@/components/cards/Testimonials";
 // Ensure you have lucide-react installed: npm install lucide-react
 import { MapPin, Phone, Mail, Send, ArrowRight } from "lucide-react";
 

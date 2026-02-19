@@ -2,7 +2,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Navbar from "./components/common-components/Header";
+import Navbar from "@/components/common-components/Header";
 
 export default function NavbarWrapper() {
   const pathname = usePathname();
@@ -12,8 +12,9 @@ export default function NavbarWrapper() {
     pathname === "/signup" ||
     pathname === "/sellerOnboarding" ||
     pathname === "/login-verify-otp" ||
-    pathname === "/shop/cart/single-page" ||
-    pathname === "/shop/cart/checkout";
+    pathname === "/cart/single-page" ||
+    pathname === "/shop/cart/checkout" ||
+    pathname === "/checkout";
 
   if (hideNavbar) return null;
 

@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Component, Copy, Check } from "lucide-react";
-import { useCoupons } from "@/app/hooks/useCoupons";
+import { useCoupons } from "@/hooks/useCoupons";
 
 // Desktop Coupon Dropdown with text
 export function CouponDropdown() {

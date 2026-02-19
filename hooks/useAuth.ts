@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { authApi, User } from "@/app/lib/api";
+import { authApi, User } from "@/lib/api";
 
 // Query keys for caching
 export const authQueryKeys = {

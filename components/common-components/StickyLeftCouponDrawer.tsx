@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { X, Copy, Check, Tag } from "lucide-react";
-import { useCoupons } from "@/app/hooks/useCoupons";
+import { useCoupons } from "@/hooks/useCoupons";
 
 export function StickyLeftCouponDrawer() {
   const pathname = usePathname();
@@ -32,7 +32,7 @@ export function StickyLeftCouponDrawer() {
   };
 
   if (!mounted) return null;
-  if (pathname !== "/shop/cart" && pathname !== "/shop/cart/checkout") return null;
+  if (pathname !== "/cart" && pathname !== "/shop/cart/checkout" && pathname !== "/checkout") return null;
 
   return (
     <>

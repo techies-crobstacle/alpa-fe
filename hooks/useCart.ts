@@ -2,8 +2,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { cartApi } from "@/app/lib/api";
-import { CartItem } from "@/app/context/CartContext";
+import { cartApi } from "@/lib/api";
+import { CartItem } from "@/context/CartContext";
 
 export const cartQueryKeys = {
   cart: ["cart"] as const,

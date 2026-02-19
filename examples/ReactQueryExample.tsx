@@ -1,8 +1,8 @@
 // app/examples/ReactQueryExample.tsx
 "use client";
 
-import { useCoupons } from "@/app/hooks/useCoupons";
-import { useUser } from "@/app/hooks/useAuth";
+import { useCoupons } from "@/hooks/useCoupons";
+import { useUser } from "@/hooks/useAuth";
 
 export default function ReactQueryExample() {
   // Example 1: Fetch user data

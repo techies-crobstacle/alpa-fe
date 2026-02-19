@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { wishlistApi } from "@/app/lib/api";
+import { wishlistApi } from "@/lib/api";
 
 export const wishlistQueryKeys = {
   wishlist: ["wishlist"] as const,

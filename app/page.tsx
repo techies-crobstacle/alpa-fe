@@ -1,8 +1,8 @@
 "use client";
 import React, { useRef } from "react";
 import Image from "next/image";
-import { useProducts } from "./hooks/useProducts";
-import OptimisticProductCard from "./components/cards/OptimisticProductCard";
+import { useProducts } from "@/hooks/useProducts";
+import OptimisticProductCard from "@/components/cards/OptimisticProductCard";
 import Link from "next/link";
 
 const Page = () => {
@@ -176,43 +176,6 @@ const Page = () => {
               </div>
             </div>
           </div>
-
-          {/* STATIC CARDS GRID */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-white">
-            <div className="relative col-span-1 h-64 sm:h-72 lg:h-80 rounded-2xl lg:rounded-3xl overflow-hidden bg-[url('/images/woodenfluet.jpg')] bg-cover bg-center grayscale hover:grayscale-0 transition-all duration-500">
-              <div className="absolute inset-0 bg-black/30"></div>
-              <div className="relative z-10 p-6 h-full flex flex-col justify-end">
-                <h1 className="text-xl sm:text-2xl font-bold mb-2">
-                  Artisan Crafts
-                </h1>
-                <p className="text-xs opacity-90">
-                  Traditional techniques meets modern design.
-                </p>
-              </div>
-            </div>
-
-            <div className="relative col-span-1 h-64 sm:h-72 lg:h-80 rounded-2xl lg:rounded-3xl overflow-hidden bg-[url('/images/color-rock.jpg')] bg-cover bg-center grayscale hover:grayscale-0 transition-all duration-500">
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
-              <div className="relative z-10 p-6 h-full flex flex-col justify-end">
-                <h3 className="text-lg font-bold mb-2">Ancient Lore</h3>
-                <p className="text-xs opacity-90">
-                  Stories passed down through generations.
-                </p>
-              </div>
-            </div>
-
-            <div className="relative col-span-1 md:col-span-2 h-64 sm:h-72 lg:h-80 rounded-2xl lg:rounded-3xl overflow-hidden bg-[url('/images/mid3.jpg')] bg-cover bg-center hover:scale-[1.01] transition-all duration-500">
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
-              <div className="relative z-10 p-6 lg:p-10 h-full flex flex-col justify-end">
-                <h3 className="text-xl lg:text-3xl font-bold mb-2">
-                  Cultural Heritage
-                </h3>
-                <p className="text-sm opacity-90">
-                  Explore the oldest living culture on Earth.
-                </p>
-              </div>
-            </div>
-          </div> */}
 
           {/* Fetch the Product cards dynamically  */}
           <div>

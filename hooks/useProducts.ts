@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/app/lib/api";
+import { apiClient } from "@/lib/api";
 
 export interface Product {
   discount: boolean;

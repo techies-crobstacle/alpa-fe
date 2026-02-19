@@ -1,8 +1,8 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
 import Image from "next/image";
-import { useProducts } from "../hooks/useProducts";
-import OptimisticProductCard from "../components/cards/OptimisticProductCard";
+import { useProducts } from "@/hooks/useProducts";
+import OptimisticProductCard from "@/components/cards/OptimisticProductCard";
 import Link from "next/link";
 
 const SLIDE_COUNT = 2;

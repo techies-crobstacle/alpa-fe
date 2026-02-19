@@ -1,5 +1,5 @@
 // Guest cart utilities for localStorage management
-import { CartItem, CartProduct, ShippingOption } from '@/app/hooks/useEnhancedCart';
+import { CartItem, CartProduct, ShippingOption } from '@/hooks/useEnhancedCart';
 
 const GUEST_CART_KEY = 'guest_cart_items';
 const GUEST_CART_METADATA_KEY = 'guest_cart_metadata';

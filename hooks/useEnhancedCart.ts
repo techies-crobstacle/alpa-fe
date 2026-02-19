@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { guestCartUtils, getShippingMethods } from '@/app/lib/guestCartUtils';
+import { guestCartUtils, getShippingMethods } from '@/lib/guestCartUtils';
 
 export interface CartProduct {
   id: string;

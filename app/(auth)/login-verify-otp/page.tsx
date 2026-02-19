@@ -14,7 +14,7 @@ import {
   Lock,
   Mail,
 } from "lucide-react";
-import { useAuth } from "@/app/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 
 // Separate component that uses useSearchParams
 function OTPVerificationForm() {

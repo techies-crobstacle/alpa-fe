@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { couponsApi } from "@/app/lib/api";
+import { couponsApi } from "@/lib/api";
 
 export const couponQueryKeys = {
   coupons: ["coupons"] as const,

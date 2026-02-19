@@ -16,11 +16,11 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
-import { apiClient } from "@/app/lib/api";
-import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
-import { useToggleWishlist } from "@/app/hooks/useWishlistMutations";
-import { useWishlistCheck } from "@/app/hooks/useWishlist";
-import { useSingleProduct } from "@/app/hooks/useSingleProduct";
+import { apiClient } from "@/lib/api";
+import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
+import { useToggleWishlist } from "@/hooks/useWishlistMutations";
+import { useWishlistCheck } from "@/hooks/useWishlist";
+import { useSingleProduct } from "@/hooks/useSingleProduct";
 
 interface Product {
   id: string;

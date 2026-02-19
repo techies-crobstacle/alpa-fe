@@ -3,7 +3,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useCallback } from "react";
-import { wishlistApi } from "@/app/lib/api";
+import { wishlistApi } from "@/lib/api";
 import { wishlistQueryKeys } from "./useWishlist";
 
 interface WishlistItem {

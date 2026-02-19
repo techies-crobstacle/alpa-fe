@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useCallback, useRef, useState } from 'react';
 import { useEnhancedCart } from './useEnhancedCart';
-import { guestCartUtils } from '@/app/lib/guestCartUtils';
+import { guestCartUtils } from '@/lib/guestCartUtils';
 
 type SharedCartContextType = ReturnType<typeof useEnhancedCart> & {
   subscribeToUpdates: (callback: () => void) => () => void;

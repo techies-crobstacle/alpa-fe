@@ -5,7 +5,7 @@ import Image from "next/image";
 import { X, Plus, Minus, ShoppingBag, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
+import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 
 export default function MiniCart({ onClose }: { onClose: () => void }) {
   const {
@@ -92,7 +92,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="h-full w-full bg-linear-to-b from-white to-gray-50 flex flex-col shadow-2xl overflow-x-hidden">
+    <div className="h-full w-full bg-white flex flex-col shadow-2xl overflow-x-hidden">
       
       {/* HEADER */}
       <div className="bg-linear-to-r from-[#440C03] to-[#6F433A] px-6 py-6">
@@ -176,7 +176,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                     {/* IMAGE */}
                     <div 
                       className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-50 shrink-0 cursor-pointer group-hover:scale-[1.02] transition-transform"
-                      onClick={() => navigate(`/singleProduct/${item.productId}`)}
+                      onClick={() => navigate(`/shop/${item.productId}`)}
                     >
                       <Image
                         src={item.product.images?.[0] || "/images/placeholder.png"}
@@ -192,7 +192,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                       <h3
                         className="font-semibold text-gray-800 line-clamp-2 cursor-pointer hover:text-[#440C03] transition-colors mb-1 wrap-break-words max-w-full truncate"
                         style={{ maxWidth: '120px', overflowWrap: 'break-word', wordBreak: 'break-word' }}
-                        onClick={() => navigate(`/singleProduct/${item.productId}`)}
+                        onClick={() => navigate(`/shop/${item.productId}`)}
                       >
                         {item.product.title}
                       </h3>
@@ -255,46 +255,11 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
       {/* FOOTER */}
       {cartItems.length > 0 && (
         <div className="border-t bg-white px-6 py-6 space-y-4">
-          {/* Real-time status indicator */}
-          <div className="text-xs text-gray-500 text-center">
-            {updatingItems.size > 0 ? (
-              <span className="flex items-center justify-center gap-1">
-                <Loader className="h-3 w-3 animate-spin" />
-                Updating cart...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-1">
-                <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                Cart synced • Real-time updates enabled
-              </span>
-            )}
-          </div>
-
-          {/* Shipping Progress */}
-          {subtotal < 100 && (
-            <div className="relative">
-              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                <span className="flex-1">
-                  <span className="font-semibold">${(100 - subtotal).toFixed(2)}</span> away from free shipping! 🎉
-                </span>
-              </div>
-              <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-linear-to-r from-green-400 to-green-500 transition-all duration-300"
-                  style={{ width: `${Math.min((subtotal / 100) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Free Shipping Unlocked */}
-          {subtotal >= 100 && (
-            <div className="bg-green-100 border-2 border-green-400 text-green-800 px-4 py-3 rounded-xl text-sm flex items-center gap-3 animate-pulse">
-              <span className="text-2xl">🎉</span>
-              <span className="flex-1">
-                <span className="font-bold block">Congratulations!</span>
-                <span className="text-xs block mt-0.5">You've unlocked free shipping! 🚚</span>
-              </span>
+          {/* Updating indicator */}
+          {updatingItems.size > 0 && (
+            <div className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
+              <Loader className="h-3 w-3 animate-spin" />
+              Updating cart...
             </div>
           )}
 
@@ -309,7 +274,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
           {/* Secondary Actions */}
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => navigate("/shop/cart")}
+              onClick={() => navigate("/cart")}
               className="border-2 border-gray-300 py-3 rounded-xl hover:bg-gray-50 hover:border-[#A48068] transition font-medium text-sm"
             >
               View Cart

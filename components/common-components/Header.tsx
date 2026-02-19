@@ -8,9 +8,9 @@ import { ShoppingCart, Menu, X, User, LogOut, Package, Settings, Search } from "
 import MiniCart from "../cards/MiniCart";
 import OptimisticMiniCart from "../cards/OptimisticMiniCart";
 import { useAuth } from "../../context/AuthContext";
-import { useCart } from "@/app/context/CartContext";
-import { useSharedEnhancedCart } from "@/app/hooks/useSharedEnhancedCart";
-import { useProducts, Product } from "@/app/hooks/useProducts";
+import { useCart } from "@/context/CartContext";
+import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
+import { useProducts, Product } from "@/hooks/useProducts";
 
 
 const NAV_LINKS = [

@@ -3,8 +3,8 @@
 
 // import Image from "next/image";
 // import { X, Plus, Minus, ShoppingBag } from "lucide-react";
-// import { useCart } from "@/app/context/CartContext";
-// import { useOptimisticUpdateCart, useOptimisticRemoveFromCart } from "@/app/hooks/useCartMutations";
+// import { useCart } from "@/context/CartContext";
+// import { useOptimisticUpdateCart, useOptimisticRemoveFromCart } from "@/hooks/useCartMutations";
 // import { useRouter } from "next/navigation";
 // import { useEffect } from "react";
 
@@ -198,9 +198,9 @@
 
 import Image from "next/image";
 import { X, Plus, Minus, ShoppingBag } from "lucide-react";
-import { useCart } from "@/app/context/CartContext";
-import { useOptimisticUpdateCart, useOptimisticRemoveFromCart } from "@/app/hooks/useCartMutations";
-import { useDebouncedMutation } from "@/app/hooks/useDebouncedMutation";
+import { useCart } from "@/context/CartContext";
+import { useOptimisticUpdateCart, useOptimisticRemoveFromCart } from "@/hooks/useCartMutations";
+import { useDebouncedMutation } from "@/hooks/useDebouncedMutation";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -376,13 +376,13 @@ export default function OptimisticMiniCart({ onClose }: { onClose: () => void })
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
-              onClick={() => navigate("/shop/cart")}
+              onClick={() => navigate("/cart")}
               className="w-full py-3.5 border-2 border-[#440C03] text-[#440C03] rounded-xl font-medium hover:bg-[#440C03] hover:text-white transition-all duration-200 active:scale-95"
             >
               View Cart
             </button>
             <button
-              onClick={() => navigate("/shop/cart/checkout")}
+              onClick={() => navigate("/checkout")}
               className="w-full py-3.5 bg-[#440C03] text-white rounded-xl font-medium hover:bg-[#5A1E12] transform hover:scale-[1.02] transition-all duration-200 shadow-lg active:scale-95"
             >
               Checkout
