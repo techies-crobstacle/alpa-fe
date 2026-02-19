@@ -36,6 +36,7 @@ export default function Header() {
   const stickyGuestMenuRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isStickySearchOpen, setIsStickySearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const cartRef = useRef<HTMLDivElement>(null);
   const cartButtonRef = useRef<HTMLButtonElement>(null);
@@ -43,6 +44,7 @@ export default function Header() {
   const guestMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const stickySearchRef = useRef<HTMLDivElement>(null);
 
   const { user, logout, fetchUser, loading } = useAuth();
   const { cartItems, fetchCartFromBackend } = useCart();
@@ -123,6 +125,7 @@ export default function Header() {
   const handleSearchSelect = useCallback((product: Product) => {
     setSearchTerm("");
     setIsSearchModalOpen(false);
+    setIsStickySearchOpen(false);
     router.push(`/shop?search=${encodeURIComponent(product.title)}`);
   }, [router]);
 
@@ -130,6 +133,7 @@ export default function Header() {
   const handleCategorySelect = useCallback((category: string) => {
     setSearchTerm("");
     setIsSearchModalOpen(false);
+    setIsStickySearchOpen(false);
     router.push(`/shop?category=${encodeURIComponent(category)}`);
   }, [router]);
 
@@ -137,6 +141,7 @@ export default function Header() {
   const handleArtistSelect = useCallback((artist: string) => {
     setSearchTerm("");
     setIsSearchModalOpen(false);
+    setIsStickySearchOpen(false);
     router.push(`/shop?artist=${encodeURIComponent(artist)}`);
   }, [router]);
 
@@ -144,6 +149,7 @@ export default function Header() {
     e.preventDefault();
     if (searchTerm.trim()) {
       setIsSearchModalOpen(false);
+      setIsStickySearchOpen(false);
       router.push(`/shop?search=${encodeURIComponent(searchTerm.trim())}`);
     }
   }, [searchTerm, router]);
@@ -214,13 +220,22 @@ export default function Header() {
         setStickyGuestMenuOpen(false);
       }
 
-      // Close search modal if clicked outside (though the overlay handles this usually)
-       if (
+      // Close search modal if clicked outside
+      if (
         isSearchModalOpen &&
         searchRef.current &&
         !searchRef.current.contains(target)
       ) {
         setIsSearchModalOpen(false);
+      }
+
+      // Close sticky search if clicked outside
+      if (
+        isStickySearchOpen &&
+        stickySearchRef.current &&
+        !stickySearchRef.current.contains(target)
+      ) {
+        setIsStickySearchOpen(false);
       }
 
       // Close mobile menu if clicked outside
@@ -246,7 +261,7 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
       document.body.style.overflow = "unset";
     };
-  }, [cartOpen, userMenuOpen, guestMenuOpen, stickyUserMenuOpen, stickyGuestMenuOpen, mobileMenuOpen, isSearchModalOpen]);
+  }, [cartOpen, userMenuOpen, guestMenuOpen, stickyUserMenuOpen, stickyGuestMenuOpen, mobileMenuOpen, isSearchModalOpen, isStickySearchOpen]);
 
   // Scroll effect for header (desktop only)
   useEffect(() => {
@@ -270,6 +285,7 @@ export default function Header() {
         setStickyGuestMenuOpen(false);
         setMobileMenuOpen(false);
         setIsSearchModalOpen(false);
+        setIsStickySearchOpen(false);
       }
     };
 
@@ -931,6 +947,143 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-2 justify-end relative">
+          {/* Search — Inline Expanding Pill (sticky) */}
+          <div ref={stickySearchRef} className="relative flex items-center">
+            <div
+              className={`flex items-center overflow-hidden rounded-full border transition-all duration-300 ease-in-out ${
+                isStickySearchOpen
+                  ? "border-gray-200 bg-white shadow-lg pl-3 pr-1 py-1"
+                  : "border-transparent bg-transparent pl-0 pr-0 py-0"
+              }`}
+              style={{ width: isStickySearchOpen ? "300px" : "40px" }}
+            >
+              <form
+                onSubmit={handleSearchSubmit}
+                className={`flex-1 min-w-0 transition-opacity duration-200 ${isStickySearchOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+              >
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400"
+                  autoFocus={isStickySearchOpen}
+                />
+              </form>
+              <button
+                onClick={() => { setIsStickySearchOpen(!isStickySearchOpen); if (isStickySearchOpen) setSearchTerm(""); }}
+                className={`shrink-0 p-1.5 rounded-full transition-all duration-300 ${isStickySearchOpen ? "bg-[#5A1E12] text-white" : "hover:bg-white/30 text-gray-800"}`}
+                aria-label={isStickySearchOpen ? "Close search" : "Open search"}
+              >
+                {isStickySearchOpen ? <X className="h-4 w-4" /> : <Search className="h-5 w-5" />}
+              </button>
+            </div>
+
+            {/* Results dropdown */}
+            <div
+              className={`absolute top-full right-0 mt-3 bg-white rounded-2xl shadow-2xl overflow-hidden z-50 border border-gray-100 transition-all duration-300 origin-top-right ${
+                isStickySearchOpen && searchTerm.trim().length > 1
+                  ? "opacity-100 scale-100 translate-y-0 visible"
+                  : "opacity-0 scale-95 -translate-y-2 invisible pointer-events-none"
+              }`}
+              style={{ width: "300px" }}
+            >
+              {searchTerm.trim().length > 1 && (
+                <>
+                  {(segregatedSearchResults.products.length > 0 ||
+                    segregatedSearchResults.categories.length > 0 ||
+                    segregatedSearchResults.artists.length > 0) ? (
+                    <div>
+                      {segregatedSearchResults.products.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 px-4 pt-3 pb-1.5">
+                            <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">Products</span>
+                            <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                          </div>
+                          <div className="px-2 pb-1">
+                            {segregatedSearchResults.products.map((product) => (
+                              <button
+                                key={product.id}
+                                onClick={() => handleSearchSelect(product)}
+                                className="w-full text-left px-2 py-2 rounded-xl hover:bg-[#5A1E12]/5 transition-colors group flex items-center gap-3"
+                              >
+                                <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                                  {product.images?.[0] ? (
+                                    <Image src={product.images[0]} alt={product.title} width={40} height={40} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center"><Search className="w-4 h-4 text-gray-300" /></div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-800 text-sm group-hover:text-[#5A1E12] truncate transition-colors">{product.title}</div>
+                                  <div className="text-xs text-[#5A1E12] font-semibold mt-0.5">${product.price}</div>
+                                </div>
+                                <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#5A1E12] transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {segregatedSearchResults.categories.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 px-4 pt-2 pb-1.5">
+                            <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">Categories</span>
+                            <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                          </div>
+                          <div className="px-3 pb-2 flex flex-wrap gap-1.5">
+                            {segregatedSearchResults.categories.map((category) => (
+                              <button key={category} onClick={() => handleCategorySelect(category)} className="text-xs font-medium px-3 py-1.5 rounded-full border border-[#5A1E12]/20 text-[#5A1E12] hover:bg-[#5A1E12] hover:text-white transition-all">
+                                {category}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {segregatedSearchResults.artists.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 px-4 pt-2 pb-1.5">
+                            <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">Artists</span>
+                            <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                          </div>
+                          <div className="px-2 pb-1">
+                            {segregatedSearchResults.artists.map((artist) => (
+                              <button key={artist} onClick={() => handleArtistSelect(artist)} className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#5A1E12]/5 transition-colors group flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-full bg-[#EAD7B7]/50 flex items-center justify-center shrink-0">
+                                  <User className="w-3.5 h-3.5 text-[#5A1E12]" />
+                                </div>
+                                <span className="text-sm text-gray-700 group-hover:text-[#5A1E12] font-medium transition-colors truncate">{artist}</span>
+                                <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#5A1E12] transition-colors shrink-0 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="p-3 pt-2">
+                        <button
+                          onClick={() => { setIsStickySearchOpen(false); setSearchTerm(""); router.push(`/shop?search=${encodeURIComponent(searchTerm)}`); }}
+                          className="w-full flex items-center justify-between px-4 py-2.5 bg-[#5A1E12] hover:bg-[#4a180f] text-white rounded-xl transition-colors text-sm font-medium"
+                        >
+                          <span>View all results</span>
+                          <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
+                            {segregatedSearchResults.products.length + segregatedSearchResults.categories.length + segregatedSearchResults.artists.length}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-10 flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-1">
+                        <Search className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">No results found</p>
+                      <p className="text-xs text-gray-400">Try a different keyword</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Cart */}
           <button
             ref={cartButtonRef}
