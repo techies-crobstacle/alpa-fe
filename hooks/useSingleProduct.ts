@@ -10,6 +10,8 @@ export interface SingleProduct {
   description: string;
   price: string;
   images: string[];
+  featuredImage?: string;
+  galleryImages?: string[];
   stock: number;
   category?: string;
   brand?: string;
@@ -20,6 +22,12 @@ export interface SingleProduct {
   discount?: number | boolean;
   tags?: string[];
   featured?: boolean;
+  sellerId?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+  sellerUserName?: string;
   seller?: {
     id: string;
     name: string;
@@ -55,15 +63,16 @@ export function useSingleProduct(productId: string | undefined) {
     },
     // Only fetch if we have a productId
     enabled: !!productId,
-    // Cache product for 30 minutes since it's a specific product
-    staleTime: 1000 * 60 * 30,
-    // Keep in cache for 2 hours
-    gcTime: 1000 * 60 * 120,
-    // Never refetch automatically
-    refetchOnMount: false,
+    // Always fetch fresh data on mount so featuredImage / galleryImages are never stale
+    staleTime: 0,
+    // Keep in cache for 5 minutes to avoid re-fetching on rapid navigations
+    gcTime: 1000 * 60 * 5,
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     // Only retry once on failure
     retry: 1,
   });
 }
+
+

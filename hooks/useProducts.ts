@@ -13,12 +13,20 @@ export interface Product {
   category: string;
   stock: number;
   images: string[];
+  featuredImage?: string;
+  galleryImages?: string[];
   brand?: string;
   slug?: string;
   tags?: string[];
   featured?: boolean;
   artistName?: string;
   sellerName?: string;
+  sellerId?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+  sellerUserName?: string;
 }
 
 export const productQueryKeys = {

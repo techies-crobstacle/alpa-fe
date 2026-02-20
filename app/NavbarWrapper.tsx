@@ -14,7 +14,9 @@ export default function NavbarWrapper() {
     pathname === "/login-verify-otp" ||
     pathname === "/cart/single-page" ||
     pathname === "/shop/cart/checkout" ||
-    pathname === "/checkout";
+    pathname === "/checkout" ||
+    pathname === "/signup-otp";
+
 
   if (hideNavbar) return null;
 
