@@ -9,9 +9,10 @@ const SLIDE_COUNT = 2;
 
 const Page = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const productScrollRef = useRef<HTMLDivElement>(null);
   const [activeSlide, setActiveSlide] = useState(0);
-  const { data: products = [] } = useProducts();
-  const limitedProducts = products.slice(0, 4);
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const limitedProducts = products.slice(0, 12);
 
   const scrollToSlide = (index: number) => {
     if (scrollRef.current) {
@@ -35,8 +36,18 @@ const Page = () => {
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const scrollProductByOne = (direction: 1 | -1) => {
+    if (productScrollRef.current) {
+      const card = productScrollRef.current.children[0] as HTMLElement;
+      const gap = 24; // gap-6 = 1.5rem = 24px
+      const cardWidth = card ? card.offsetWidth + gap : 300;
+      productScrollRef.current.scrollBy({ left: direction * cardWidth, behavior: "smooth" });
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-[#EAD7B7] ">
+    <main className="min-h-screen bg-[#EAD7B7]">
+
       {/* ================= HERO ================= */}
       <section>
         <div className="relative min-h-screen overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
@@ -211,29 +222,218 @@ const Page = () => {
       </section>
 
       {/* Fetch the Product cards dynamically  */}
-      <section className="max-w-screen-2xl mx-auto py-20 px-12">
+      <section className="relative max-w-screen-2xl mx-auto py-20 px-12 overflow-hidden">
+
+        {/* ── ABORIGINAL PATTERN: TOP-RIGHT ── */}
+        <div className="absolute top-0 right-0 w-72 h-72 sm:w-96 sm:h-96 pointer-events-none opacity-[0.13]" aria-hidden="true">
+          <svg viewBox="0 0 380 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+            {[40,80,120,160,200,240,280,330].map((r, i) => (
+              <path
+                key={r}
+                d={`M ${380} ${380 - r} A ${r} ${r} 0 0 0 ${380 - r} ${380}`}
+                stroke="#632013"
+                strokeWidth={i % 2 === 0 ? 2.5 : 1.5}
+                strokeLinecap="round"
+              />
+            ))}
+            {Array.from({ length: 10 }).map((_, i) => {
+              const angle = (Math.PI / 2) * (i / 9);
+              const r = 60;
+              const cx = 380 - r * Math.cos(angle);
+              const cy = 380 - r * Math.sin(angle);
+              return <circle key={i} cx={cx} cy={cy} r="4" fill="#803512" />;
+            })}
+            {Array.from({ length: 14 }).map((_, i) => {
+              const angle = (Math.PI / 2) * (i / 13);
+              const r = 140;
+              const cx = 380 - r * Math.cos(angle);
+              const cy = 380 - r * Math.sin(angle);
+              return <circle key={i} cx={cx} cy={cy} r="3" fill="#632013" />;
+            })}
+            {Array.from({ length: 18 }).map((_, i) => {
+              const angle = (Math.PI / 2) * (i / 17);
+              const r = 220;
+              const cx = 380 - r * Math.cos(angle);
+              const cy = 380 - r * Math.sin(angle);
+              return <circle key={i} cx={cx} cy={cy} r="2.5" fill="#a0451a" />;
+            })}
+            {Array.from({ length: 6 }).map((_, i) => {
+              const angle = (Math.PI / 2) * ((i + 0.5) / 6);
+              const r = 100;
+              const cx = 380 - r * Math.cos(angle);
+              const cy = 380 - r * Math.sin(angle);
+              return (
+                <g key={i} transform={`translate(${cx},${cy}) rotate(${(angle * 180) / Math.PI - 45})`}>
+                  <line x1="-5" y1="0" x2="5" y2="0" stroke="#632013" strokeWidth="2" strokeLinecap="round" />
+                  <line x1="0" y1="-5" x2="0" y2="5" stroke="#632013" strokeWidth="2" strokeLinecap="round" />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* ── ABORIGINAL PATTERN: BOTTOM-LEFT ── */}
+        <div className="absolute bottom-0 left-0 w-72 h-72 sm:w-96 sm:h-96 pointer-events-none opacity-[0.13]" aria-hidden="true">
+          <svg viewBox="0 0 380 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+            {[0, 28, 56, 84, 112, 140, 168, 196].map((offset, i) => (
+              <path
+                key={offset}
+                d={`M -20 ${320 - offset} C 40 ${310 - offset}, 90 ${330 - offset}, 150 ${318 - offset} S 240 ${305 - offset}, 300 ${320 - offset} S 370 ${330 - offset}, 410 ${318 - offset}`}
+                stroke="#632013"
+                strokeWidth={i % 3 === 0 ? 3 : 1.8}
+                strokeLinecap="round"
+              />
+            ))}
+            {[
+              [30,295],[75,280],[130,300],[190,285],[250,295],[310,278],
+              [55,265],[115,252],[175,268],[235,255],[295,265],
+              [20,240],[80,228],[145,242],[210,230],[270,244],
+              [50,215],[110,200],[170,216],[240,205],[300,218],
+              [35,188],[100,175],[165,190],[225,178],[285,192],
+            ].map(([cx, cy], i) => (
+              <circle key={i} cx={cx} cy={cy} r={i % 4 === 0 ? 5 : 3} fill="#803512" />
+            ))}
+            {[[40,360],[90,355],[140,358]].map(([x, y], i) => (
+              <path
+                key={i}
+                d={`M ${x - 12} ${y - 20} Q ${x} ${y + 8} ${x + 12} ${y - 20}`}
+                stroke="#632013"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                fill="none"
+              />
+            ))}
+          </svg>
+        </div>
+
         <div>
           <h2 className="text-center text-4xl font-bold text-[#632013] mb-14">
             Explore Our Products
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {limitedProducts.map((product) => (
-              <OptimisticProductCard
-                key={product.id}
-                id={product.id}
-                photo={product.images?.[0] || "/images/placeholder.png"}
-                name={product.title}
-                description={product.description}
-                amount={parseFloat(product.price)}
-                stock={product.stock}
-                slug={product.slug}
-                rating={4.5} // Default rating since product doesn't have it
-                tags={product.tags}
-                featured={product.featured}
-                artistName={product.artistName}
-              />
-            ))}
+
+          {/* Product Carousel */}
+          <div className="relative">
+            {/* Left Arrow */}
+            <button
+              onClick={() => scrollProductByOne(-1)}
+              className="absolute -left-6 top-1/2 -translate-y-1/2 z-30 bg-[#632013] hover:bg-[#803512] text-white p-2 rounded-full hidden md:flex items-center justify-center transition-all shadow-lg cursor-pointer"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* Right Arrow */}
+            <button
+              onClick={() => scrollProductByOne(1)}
+              className="absolute -right-6 top-1/2 -translate-y-1/2 z-30 bg-[#632013] hover:bg-[#803512] text-white p-2 rounded-full hidden md:flex items-center justify-center transition-all shadow-lg cursor-pointer"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Scrollable Cards */}
+            <div
+              ref={productScrollRef}
+              className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 scroll-smooth"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {productsLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="shrink-0 snap-start w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)] animate-pulse rounded-xl border border-stone-100 shadow-sm overflow-hidden bg-white flex flex-col"
+                    >
+                      {/* ── IMAGE SECTION ── */}
+                      <div className="relative aspect-[6/4] bg-stone-100 overflow-hidden">
+                        {/* Logo placeholder (top-left) */}
+                        <div className="absolute top-3 left-3 z-10 w-10 h-10 rounded-md bg-stone-200" />
+                        {/* Full image wash */}
+                        <div className="absolute inset-0 bg-stone-200" />
+                      </div>
+
+                      {/* ── DETAILS SECTION ── */}
+                      <div className="flex flex-col grow p-4 bg-white gap-y-3">
+                        {/* Row: artist label + 5 stars */}
+                        <div className="flex justify-between items-center">
+                          <div className="h-2.5 w-20 rounded bg-stone-200" />
+                          <div className="flex gap-0.5">
+                            {Array.from({ length: 5 }).map((_, j) => (
+                              <div key={j} className="h-3 w-3 rounded-sm bg-stone-200" />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Title */}
+                        <div className="space-y-1.5">
+                          <div className="h-4 w-4/5 rounded bg-stone-200" />
+                          <div className="h-4 w-2/5 rounded bg-stone-200" />
+                        </div>
+
+                        {/* Description — 2 lines */}
+                        <div className="space-y-1.5">
+                          <div className="h-3 w-full rounded bg-stone-200" />
+                          <div className="h-3 w-3/4 rounded bg-stone-200" />
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex gap-1.5">
+                          <div className="h-5 w-14 rounded-sm bg-stone-200" />
+                          <div className="h-5 w-16 rounded-sm bg-stone-200" />
+                        </div>
+
+                        {/* Footer: price + buttons */}
+                        <div className="mt-auto pt-3 border-t border-stone-100 flex items-center justify-between">
+                          {/* Price block */}
+                          <div className="space-y-1">
+                            <div className="h-2.5 w-8 rounded bg-stone-200" />
+                            <div className="h-5 w-16 rounded bg-stone-200" />
+                          </div>
+                          {/* Wishlist circle + Cart pill */}
+                          <div className="flex items-center gap-2">
+                            <div className="h-9 w-9 rounded-full bg-stone-200" />
+                            <div className="h-10 w-24 rounded-full bg-stone-200" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                : limitedProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="shrink-0 snap-start w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
+                    >
+                      <OptimisticProductCard
+                        id={product.id}
+                        photo={product.images?.[0] || "/images/placeholder.png"}
+                        name={product.title}
+                        description={product.description}
+                        amount={parseFloat(product.price)}
+                        stock={product.stock}
+                        slug={product.slug}
+                        rating={4.5}
+                        tags={product.tags}
+                        featured={product.featured}
+                        artistName={product.artistName}
+                      />
+                    </div>
+                  ))}
+            </div>
           </div>
+
           <div className="flex justify-center mt-10">
             <Link
               href="/shop"
