@@ -15,7 +15,8 @@ export default function FooterWrapper() {
     pathname === "/sellerOnboarding" || 
     pathname === "/cart/single-page" ||
     pathname === "/shop/cart/checkout" ||
-    pathname === "/checkout";
+    pathname === "/checkout" ||
+    pathname === "/signup-otp";
 
   if (hideFooter) return null;
 
