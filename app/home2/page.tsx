@@ -310,7 +310,7 @@ const Page = () => {
           <h2 className="text-center text-4xl font-bold text-[#632013] mb-14">
             Explore Our Products
           </h2>
-
+            {/* Exmaple */}
           {/* Product Carousel */}
           <div className="relative">
             {/* Left Arrow */}
