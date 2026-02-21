@@ -33,19 +33,35 @@ interface PayPalButtonProps {
 /** Loads the PayPal JS SDK script once, resolves when ready. */
 function loadPayPalScript(): Promise<void> {
   return new Promise((resolve, reject) => {
+    // Guard: env var missing (not set on Vercel)
+    if (!PAYPAL_CLIENT_ID) {
+      reject(new Error("PayPal is not configured. Please contact support."));
+      return;
+    }
+
     // Already loaded
     if (window.paypal) {
       resolve();
       return;
     }
 
-    // Script already injected — wait for it
+    // Script already injected — check if it already loaded (race condition fix)
     const existing = document.querySelector(
       `script[data-paypal-sdk]`
     ) as HTMLScriptElement | null;
     if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("PayPal SDK failed to load")));
+      // If window.paypal not yet ready, poll until it is
+      const poll = setInterval(() => {
+        if (window.paypal) {
+          clearInterval(poll);
+          resolve();
+        }
+      }, 100);
+      // Bail out after 15 seconds
+      setTimeout(() => {
+        clearInterval(poll);
+        if (!window.paypal) reject(new Error("PayPal SDK timed out. Please refresh and try again."));
+      }, 15000);
       return;
     }
 
@@ -54,7 +70,7 @@ function loadPayPalScript(): Promise<void> {
     script.setAttribute("data-paypal-sdk", "true");
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("PayPal SDK failed to load"));
+    script.onerror = () => reject(new Error("PayPal SDK failed to load. Please check your connection and try again."));
     document.head.appendChild(script);
   });
 }
