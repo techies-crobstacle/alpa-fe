@@ -51,7 +51,6 @@ export default function CheckOutPage() {
   const [stripeAmount, setStripeAmount] = useState(0);
   const [stripeCurrency, setStripeCurrency] = useState("aud");
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
-  const [mobileNumber, setMobileNumber] = useState("");
 
   const { cartData, selectedShipping, calculateTotals } =
     useSharedEnhancedCart();
