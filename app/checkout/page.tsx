@@ -40,6 +40,8 @@ export default function CheckOutPage() {
   const [shippingCity, setShippingCity] = useState("");
   const [shippingState, setShippingState] = useState("");
   const [shippingZipCode, setShippingZipCode] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
@@ -152,6 +154,22 @@ export default function CheckOutPage() {
     setStep((s) => Math.min(3, s + 1));
   };
   const handleBack = () => setStep((s) => Math.max(1, s - 1));
+
+  const handleAddressChange = (data: {
+    address: string;
+    city: string;
+    zip: string;
+    state: string;
+    country: string;
+    phoneNumber: string;
+  }) => {
+    setShippingAddress(data.address);
+    setShippingCity(data.city);
+    setShippingZipCode(data.zip);
+    setShippingState(data.state);
+    setShippingCountry(data.country);
+    setMobileNumber(data.phoneNumber);
+  };
 
   const handlePromoSubmit = () => {
     console.log("Promo applied:", promoCode);
@@ -279,7 +297,15 @@ export default function CheckOutPage() {
         return;
       }
     } else {
-      if (!shippingAddress.trim() || !paymentMethod) {
+      if (
+        !shippingAddress.trim() ||
+        !paymentMethod ||
+        !shippingCity.trim() ||
+        !shippingState.trim() ||
+        !shippingZipCode.trim() ||
+        !shippingCountry.trim() ||
+        !mobileNumber.trim()
+      ) {
         toast.error("Please complete all required fields");
         return;
       }
@@ -348,6 +374,24 @@ export default function CheckOutPage() {
           return;
         }
 
+        const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } =
+          calculateTotals;
+
+        const orderSummary = {
+          subtotal: subtotal.toFixed(2),
+          gstAmount: gstAmount.toFixed(2),
+          grandTotal: grandTotal.toFixed(2),
+          gstDetails: cartData?.calculations?.gstDetails || cartData?.gst,
+          shippingCost: shippingCost.toFixed(2),
+          gstPercentage: gstPercentage.toFixed(2),
+          shippingMethod: {
+            id: selectedShipping?.id,
+            cost: parseFloat(selectedShipping?.cost || "0"),
+            name: selectedShipping?.name,
+            estimatedDays: selectedShipping?.estimatedDays,
+          },
+        };
+
         response = await fetch(
           "https://alpa-be-1.onrender.com/api/orders/create",
           {
@@ -358,13 +402,18 @@ export default function CheckOutPage() {
             },
             body: JSON.stringify({
               shippingAddress: {
-                street: shippingStreet,
-                suburb: shippingSuburb,
-                postcode: shippingPostcode,
-                fullAddress: shippingFullAddress,
+                address: shippingAddress,
               },
+              shippingAddressLine: shippingAddress,
+              shippingCity: shippingCity,
+              shippingState: shippingState,
+              shippingZipCode: shippingZipCode,
+              shippingCountry: shippingCountry,
+              shippingPhone: mobileNumber,
+              customerPhone: mobileNumber,
               paymentMethod: paymentMethod,
               shippingMethodId: shippingMethodId,
+              orderSummary: orderSummary,
               ...(gstId && { gstId }),
             }),
           },
@@ -613,7 +662,7 @@ export default function CheckOutPage() {
                         <div>
                           <AddressCart
                             key="address-cart-step2"
-                            onAddressChange={setShippingAddress}
+                            onAddressChange={handleAddressChange}
                           />
                         </div>
                       </motion.div>
