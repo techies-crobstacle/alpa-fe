@@ -9,7 +9,14 @@ declare global {
 }
 
 interface AddressCartProps {
-  onAddressChange: (address: string) => void;
+  onAddressChange: (data: {
+    address: string;
+    city: string;
+    zip: string;
+    state: string;
+    country: string;
+    phoneNumber: string;
+  }) => void;
 }
 
 // Country list: { code, flag, name, dialCode, digits: [min, max] }
@@ -246,9 +253,15 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
 
   // Update parent component whenever address fields change
   useEffect(() => {
-    const fullAddress = `${formData.address}, ${formData.city}, ${formData.state}, ${formData.country}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '');
-    onAddressChange(fullAddress);
-  }, [formData, onAddressChange]);
+    onAddressChange({
+      address: formData.address,
+      city: formData.city,
+      zip: formData.zip,
+      state: formData.state,
+      country: formData.country,
+      phoneNumber: `${selectedCountry.dialCode} ${phoneNumber}`.trim(),
+    });
+  }, [formData, phoneNumber, selectedCountry, onAddressChange]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

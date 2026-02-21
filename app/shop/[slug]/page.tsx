@@ -1319,11 +1319,11 @@ export default function ShopSlugPage() {
             {/* Price */}
             <div className="flex items-end gap-3">
               <span className="text-5xl font-black text-[#3b1a08] leading-none">
-                ₹{product.price}
+                ${product.price}
               </span>
               {discountPercentage > 0 && (
                 <span className="text-xl text-amber-400 line-through mb-1">
-                  ₹{(parseFloat(product.price) / (1 - discountPercentage / 100)).toFixed(2)}
+                  ${(parseFloat(product.price) / (1 - discountPercentage / 100)).toFixed(2)}
                 </span>
               )}
             </div>
@@ -1420,7 +1420,7 @@ export default function ShopSlugPage() {
             {/* Benefits strip */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { Icon: Truck, title: "Free Shipping", sub: "Orders over ₹1000" },
+                { Icon: Truck, title: "Free Shipping", sub: "Orders over $1000" },
                 { Icon: RotateCcw, title: "Easy Returns", sub: "30-day policy" },
                 { Icon: Shield, title: "Secure Pay", sub: "100% safe" },
               ].map(({ Icon, title, sub }) => (
