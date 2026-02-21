@@ -11,8 +11,16 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import EmailCart from "@/components/checkout/emailCart";
 import AddressCart from "@/components/checkout/addressCart";
-import PaymentCart from "@/components/checkout/paymentCart";
 import { motion, AnimatePresence } from "framer-motion";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+import StripePaymentForm from "@/components/checkout/StripePaymentForm";
+import PayPalButton from "@/components/checkout/PayPalButton";
+import { Loader2 } from "lucide-react";
+
+const stripePromise = loadStripe(
+  "pk_test_51SzBiiFXXR0MHwRIutvfNBi6ADMB8qZ5UNXswOwLzlIOgLfy1qVuTciKWGaBtWyJrDBkkZVVclg477Wv8KuEGdp800PKT4ny3K"
+);
 
 export default function CheckOutPage() {
   const router = useRouter();
@@ -34,6 +42,14 @@ export default function CheckOutPage() {
   const [shippingZipCode, setShippingZipCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+  // ── Stripe payment state ──────────────────────────────────────────────────
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [stripeAmount, setStripeAmount] = useState(0);
+  const [stripeCurrency, setStripeCurrency] = useState("aud");
+  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState("");
 
   const { cartData, selectedShipping, calculateTotals } =
     useSharedEnhancedCart();
@@ -139,6 +155,111 @@ export default function CheckOutPage() {
 
   const handlePromoSubmit = () => {
     console.log("Promo applied:", promoCode);
+  };
+
+  // ── Stripe: create payment intent ────────────────────────────────────────
+  const handleCreateIntent = async () => {
+    const currentToken = token || localStorage.getItem("token");
+    if (!currentToken) {
+      toast.error("Your session has expired. Please log in again.");
+      return;
+    }
+    if (!selectedShipping) {
+      toast.error("Please select a shipping method.");
+      return;
+    }
+    if (cartItems.length === 0) {
+      toast.error("Your cart is empty.");
+      return;
+    }
+
+    setIsCreatingIntent(true);
+    try {
+      // Read address details saved by AddressCart into localStorage
+      let addrLine  = shippingFullAddress || shippingStreet;
+      let addrCity  = shippingCity;
+      let addrState = shippingState;
+      let addrZip   = shippingZipCode || shippingPostcode;
+      let addrPhone = mobileNumber;
+      try {
+        const saved = localStorage.getItem("addressCartData");
+        if (saved) {
+          const d = JSON.parse(saved);
+          addrLine  = addrLine  || d.address      || "";
+          addrCity  = addrCity  || d.city         || "Sydney";
+          addrState = addrState || d.state        || "NSW";
+          addrZip   = addrZip   || d.zip          || "";
+          addrPhone = addrPhone || d.phoneNumber  || "";
+        }
+      } catch {}
+
+      const res = await fetch(
+        "https://alpa-be-1.onrender.com/api/payments/create-intent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentToken}`,
+          },
+          body: JSON.stringify({
+            shippingAddress: { addressLine: addrLine },
+            shippingMethodId: selectedShipping.id,
+            country: "Australia",
+            city: addrCity || "Sydney",
+            state: addrState || "NSW",
+            zipCode: addrZip,
+            mobileNumber: addrPhone,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        let msg = "Failed to create payment. Please try again.";
+        try {
+          const err = await res.json();
+          msg = err.message || err.error || msg;
+        } catch {}
+        toast.error(msg);
+        return;
+      }
+
+      const data = await res.json();
+      setClientSecret(data.clientSecret);
+      setPaymentIntentId(data.paymentIntentId);
+      setStripeAmount(data.amount);
+      setStripeCurrency(data.currency || "aud");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to initiate payment.");
+    } finally {
+      setIsCreatingIntent(false);
+    }
+  };
+
+  // ── PayPal: build address from state + AddressCart localStorage ─────────
+  const getPaypalAddress = () => {
+    let addrLine  = shippingFullAddress || shippingStreet;
+    let addrCity  = shippingCity;
+    let addrState = shippingState;
+    let addrZip   = shippingZipCode || shippingPostcode;
+    let addrPhone = mobileNumber;
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("addressCartData") : null;
+      if (saved) {
+        const d = JSON.parse(saved);
+        addrLine  = addrLine  || d.address      || "";
+        addrCity  = addrCity  || d.city         || "Sydney";
+        addrState = addrState || d.state        || "NSW";
+        addrZip   = addrZip   || d.zip          || "";
+        addrPhone = addrPhone || d.phoneNumber  || "";
+      }
+    } catch {}
+    return {
+      addressLine : addrLine,
+      city        : addrCity,
+      state       : addrState,
+      zipCode     : addrZip,
+      mobileNumber: addrPhone,
+    };
   };
 
   const handlePlaceOrder = async () => {
@@ -488,7 +609,7 @@ export default function CheckOutPage() {
                         <h2 className="text-2xl font-bold mb-2 text-[#5A1E12]">
                           Hi {(userName || user?.name || "").split(" ")[0] || "there"},
                         </h2>
-                        <p className="text-[#5A1E12]/70 mb-6 text-sm">Please provide us with your address details so that we could serve you.</p>
+                        <p className="text-[#5A1E12]/70 mb-6 text-sm">Please provide your address details so we can deliver to you.</p>
                         <div>
                           <AddressCart
                             key="address-cart-step2"
@@ -506,8 +627,171 @@ export default function CheckOutPage() {
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <h2 className="text-2xl font-bold mb-6 text-[#5A1E12]">Payment Details</h2>
-                        <PaymentCart onPaymentMethodChange={setPaymentMethod} />
+                        {clientSecret && paymentIntentId ? (
+                          // ── Stripe payment UI ──────────────────────────
+                          <div>
+                            <div className="mb-6">
+                              <h2 className="text-2xl font-bold text-[#5A1E12]">Complete Payment</h2>
+                              <p className="text-[#5A1E12]/60 text-sm mt-1">Enter your card details to securely complete your order</p>
+                            </div>
+                            <Elements
+                              stripe={stripePromise}
+                              options={{
+                                clientSecret,
+                                appearance: {
+                                  theme: "stripe",
+                                  variables: {
+                                    colorPrimary: "#5A1E12",
+                                    colorBackground: "#ffffff",
+                                    colorText: "#3b1a08",
+                                    borderRadius: "12px",
+                                    fontFamily: "inherit",
+                                  },
+                                },
+                              }}
+                            >
+                              <StripePaymentForm
+                                paymentIntentId={paymentIntentId}
+                                token={token || (typeof window !== "undefined" ? localStorage.getItem("token") : "") || ""}
+                                amount={stripeAmount}
+                                currency={stripeCurrency}
+                                onSuccess={(orderId) => {
+                                  localStorage.removeItem("checkoutStep");
+                                  localStorage.removeItem("showGuestForm");
+                                  localStorage.removeItem("guestCheckoutData");
+                                  localStorage.removeItem("promoCode");
+                                  localStorage.removeItem("paymentMethod");
+                                  localStorage.removeItem("addressCartData");
+                                  localStorage.removeItem("addressPlaceId");
+                                  localStorage.removeItem("addressValidated");
+                                  router.push(`/order-confirmation?orderId=${orderId}`);
+                                }}
+                                onError={(msg) => toast.error(msg)}
+                              />
+                            </Elements>
+                          </div>
+                        ) : (
+                          // ── Payment method selection ──────────────────────────
+                          <div>
+                            <div className="mb-8">
+                              <div className="flex items-center gap-3 mb-1">
+                                <div className="w-10 h-10 rounded-full bg-[#5A1E12]/10 flex items-center justify-center shrink-0">
+                                  <svg className="w-5 h-5 text-[#5A1E12]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <h2 className="text-2xl font-bold text-[#5A1E12]">Payment Method</h2>
+                                  <p className="text-[#5A1E12]/55 text-sm">Choose how you&apos;d like to complete your purchase</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              {/* Stripe / Credit Card */}
+                              <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                                paymentMethod === "stripe"
+                                  ? "border-[#5A1E12] bg-[#5A1E12]/5 shadow-sm"
+                                  : "border-[#5A1E12]/15 hover:border-[#5A1E12]/40 hover:bg-[#5A1E12]/2"
+                              }`}>
+                                <input
+                                  type="radio"
+                                  name="paymentMethodSelect"
+                                  value="stripe"
+                                  checked={paymentMethod === "stripe"}
+                                  onChange={() => setPaymentMethod("stripe")}
+                                  className="accent-[#5A1E12] w-4 h-4 shrink-0"
+                                />
+                                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#635bff] to-[#4a44cc] flex items-center justify-center shrink-0 shadow-sm">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-[#3b1a08] text-sm">Credit / Debit Card</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">Visa, Mastercard, Amex &middot; Powered by Stripe</p>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded tracking-wide">VISA</span>
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded tracking-wide">MC</span>
+                                </div>
+                              </label>
+
+                              {/* PayPal */}
+                              <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                                paymentMethod === "paypal"
+                                  ? "border-[#5A1E12] bg-[#5A1E12]/5 shadow-sm"
+                                  : "border-[#5A1E12]/15 hover:border-[#5A1E12]/40 hover:bg-[#5A1E12]/2"
+                              }`}>
+                                <input
+                                  type="radio"
+                                  name="paymentMethodSelect"
+                                  value="paypal"
+                                  checked={paymentMethod === "paypal"}
+                                  onChange={() => setPaymentMethod("paypal")}
+                                  className="accent-[#5A1E12] w-4 h-4 shrink-0"
+                                />
+                                <div className="w-10 h-10 rounded-lg bg-[#003087] flex items-center justify-center shrink-0 shadow-sm">
+                                  <span className="text-white font-extrabold text-xs tracking-tight">PP</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-[#3b1a08] text-sm">PayPal</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">Pay securely with your PayPal balance or linked card</p>
+                                </div>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-900/10 text-[#003087] rounded shrink-0 tracking-wide">PayPal</span>
+                              </label>
+
+                              {/* Cash on Delivery */}
+                              <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                                paymentMethod === "cod"
+                                  ? "border-[#5A1E12] bg-[#5A1E12]/5 shadow-sm"
+                                  : "border-[#5A1E12]/15 hover:border-[#5A1E12]/40 hover:bg-[#5A1E12]/2"
+                              }`}>
+                                <input
+                                  type="radio"
+                                  name="paymentMethodSelect"
+                                  value="cod"
+                                  checked={paymentMethod === "cod"}
+                                  onChange={() => setPaymentMethod("cod")}
+                                  className="accent-[#5A1E12] w-4 h-4 shrink-0"
+                                />
+                                <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-[#3b1a08] text-sm">Cash on Delivery</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">Pay in cash when your order arrives at the door</p>
+                                </div>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded shrink-0 tracking-wide">COD</span>
+                              </label>
+                            </div>
+
+                            {/* Security assurance */}
+                            <div className="mt-6 flex items-center gap-2 text-xs text-gray-400">
+                              <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              <span>All transactions are encrypted and secured with 256-bit SSL</span>
+                            </div>
+
+                            {/* ── PayPal smart buttons (rendered inline when PayPal is selected) ── */}
+                            {paymentMethod === "paypal" && (
+                              <div className="mt-6 pt-6 border-t border-[#5A1E12]/10">
+                                <p className="text-xs text-[#5A1E12]/50 mb-3 text-center uppercase tracking-widest font-medium">Complete payment with PayPal</p>
+                                <PayPalButton
+                                  token={token || (typeof window !== "undefined" ? localStorage.getItem("token") : "") || ""}
+                                  shippingMethodId={selectedShipping?.id || ""}
+                                  gstId={cartData?.gst?.id}
+                                  address={getPaypalAddress()}
+                                  onSuccess={(orderId) => router.push(`/order-confirmation?orderId=${orderId}`)}
+                                  onError={(msg) => toast.error(msg)}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -537,15 +821,39 @@ export default function CheckOutPage() {
                       >
                         Continue
                       </button>
-                    ) : (
-                      <button
-                        onClick={handlePlaceOrder}
-                        disabled={isPlacingOrder || !paymentMethod}
-                        className="px-8 py-3 bg-green-700 text-white rounded-lg font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
-                      >
-                        {isPlacingOrder ? "Placing Order..." : "Place Order"}
-                      </button>
-                    )}
+                    ) : !clientSecret ? (
+                      // PayPal: smart buttons appear inline above — no nav button needed
+                      paymentMethod === "paypal" ? null
+                      // COD: place order directly
+                      : paymentMethod === "cod" ? (
+                        <button
+                          onClick={handlePlaceOrder}
+                          disabled={isPlacingOrder || cartItems.length === 0}
+                          className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+                        >
+                          {isPlacingOrder ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" />Placing Order&hellip;</>
+                          ) : (
+                            "Place Order"
+                          )}
+                        </button>
+                      ) : (
+                        // Stripe: create payment intent
+                        <button
+                          onClick={handleCreateIntent}
+                          disabled={isCreatingIntent || cartItems.length === 0 || !paymentMethod}
+                          className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+                        >
+                          {isCreatingIntent ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" />Creating Order&hellip;</>
+                          ) : !paymentMethod ? (
+                            "Select a Payment Method"
+                          ) : (
+                            "Proceed to Pay"
+                          )}
+                        </button>
+                      )
+                    ) : null /* Stripe form has its own submit button */}
                   </div>
                 </div>
               )}
@@ -553,20 +861,46 @@ export default function CheckOutPage() {
               {/* Guest Payment Step */}
               {showGuestForm && step === 3 && (
                 <div className="border-t pt-8">
-                  <PaymentCart onPaymentMethodChange={setPaymentMethod} />
-                  <div className="flex justify-between mt-8 gap-4">
+                  <h3 className="text-lg font-semibold text-[#5A1E12] mb-4">Payment Method</h3>
+                  <div className="space-y-3 mb-6">
+                    {["Credit Card", "Debit Card", "PayPal"].map((method) => (
+                      <label
+                        key={method}
+                        className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          paymentMethod === method
+                            ? "border-[#5A1E12] bg-[#5A1E12]/5"
+                            : "border-[#5A1E12]/15 hover:border-[#5A1E12]/40"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="guestPayment"
+                          value={method}
+                          checked={paymentMethod === method}
+                          onChange={() => setPaymentMethod(method)}
+                          className="accent-[#5A1E12]"
+                        />
+                        <span className="text-sm font-medium text-[#3b1a08]">{method}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex justify-between gap-4">
                     <button
                       onClick={() => setStep(1)}
-                      className="px-6 py-3 border rounded-lg hover:bg-gray-50"
+                      className="px-6 py-3 border border-[#5A1E12]/20 rounded-lg text-[#5A1E12] hover:bg-[#5A1E12]/5 transition text-sm font-medium"
                     >
                       Back
                     </button>
                     <button
                       onClick={handlePlaceOrder}
                       disabled={isPlacingOrder || !paymentMethod}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                      className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all flex items-center gap-2"
                     >
-                      {isPlacingOrder ? "Placing Order..." : "Place Order"}
+                      {isPlacingOrder ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" />Placing Order…</>
+                      ) : (
+                        "Place Order"
+                      )}
                     </button>
                   </div>
                 </div>
