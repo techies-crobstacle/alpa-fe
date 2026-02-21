@@ -820,6 +820,7 @@ import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useToggleWishlist } from "@/hooks/useWishlistMutations";
 import { useWishlistCheck } from "@/hooks/useWishlist";
 import { useSingleProduct } from "@/hooks/useSingleProduct";
+import { useProducts } from "@/hooks/useProducts";
 
 interface Product {
   id: string;
@@ -856,10 +857,22 @@ export default function ShopSlugPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const id = params?.slug as string; // Using 'slug' param name but it's actually the ID now
+  const slugParam = params?.slug as string; // Title-based slug e.g. "rubber-toys"
+
+  // Resolve slug → product ID by matching against the full products list
+  const { data: allProducts, isLoading: allProductsLoading } = useProducts();
+  const resolvedProductId = useMemo(() => {
+    if (!allProducts || !slugParam) return undefined;
+    const match = allProducts.find((p) => {
+      const productSlug = p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      return productSlug === slugParam;
+    });
+    return match?.id;
+  }, [allProducts, slugParam]);
 
   // Use React Query hook for single product data
-  const { data: product, isLoading: loading, error: queryError } = useSingleProduct(id);
+  const { data: product, isLoading: productLoading, error: queryError } = useSingleProduct(resolvedProductId);
+  const loading = allProductsLoading || productLoading;
   const error = queryError?.message || null;
 
   const [addedToCart, setAddedToCart] = useState(false);
@@ -919,12 +932,12 @@ export default function ShopSlugPage() {
   // Fetch all ratings for this product
   useEffect(() => {
     const fetchRatings = async () => {
-      if (!id) return;
+      if (!product?.id) return;
       try {
         setRatingsLoading(true);
         setRatingsError(null);
         const response = await apiClient.get<any>(
-          `/ratings/products/${id}/ratings`
+          `/ratings/products/${product.id}/ratings`
         );
         if (response && Array.isArray(response.ratings)) {
           setRatings(response.ratings);
@@ -943,7 +956,7 @@ export default function ShopSlugPage() {
       }
     };
     fetchRatings();
-  }, [id]);
+  }, [product?.id]);
 
   // Update wishlisted state
   useEffect(() => {

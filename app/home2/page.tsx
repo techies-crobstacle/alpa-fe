@@ -418,7 +418,7 @@ const Page = () => {
                     >
                       <OptimisticProductCard
                         id={product.id}
-                        photo={product.images?.[0] || "/images/placeholder.png"}
+                        photo={product.featuredImage || product.images?.[0] || "/images/placeholder.png"}
                         name={product.title}
                         description={product.description}
                         amount={parseFloat(product.price)}
