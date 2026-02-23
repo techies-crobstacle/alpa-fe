@@ -757,7 +757,7 @@ export default function CheckOutPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-semibold text-[#3b1a08] text-sm">Credit / Debit Card</p>
-                                  <p className="text-xs text-gray-400 mt-0.5">Visa, Mastercard, Amex &middot; Powered by Stripe</p>
+                                  <p className="text-xs text-black mt-0.5">Visa, Mastercard, Amex &middot; Powered by Stripe</p>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded tracking-wide">VISA</span>
@@ -784,7 +784,7 @@ export default function CheckOutPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-semibold text-[#3b1a08] text-sm">PayPal</p>
-                                  <p className="text-xs text-gray-400 mt-0.5">Pay securely with your PayPal balance or linked card</p>
+                                  <p className="text-xs text-black mt-0.5">Pay securely with your PayPal balance or linked card</p>
                                 </div>
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-900/10 text-[#003087] rounded shrink-0 tracking-wide">PayPal</span>
                               </label>
@@ -810,34 +810,19 @@ export default function CheckOutPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-semibold text-[#3b1a08] text-sm">Cash on Delivery</p>
-                                  <p className="text-xs text-gray-400 mt-0.5">Pay in cash when your order arrives at the door</p>
+                                  <p className="text-xs text-black mt-0.5">Pay in cash when your order arrives at the door</p>
                                 </div>
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded shrink-0 tracking-wide">COD</span>
                               </label>
                             </div>
 
                             {/* Security assurance */}
-                            <div className="mt-6 flex items-center gap-2 text-xs text-gray-400">
+                            <div className="mt-6 flex items-center gap-2 text-xs text-black">
                               <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                               </svg>
                               <span>All transactions are encrypted and secured with 256-bit SSL</span>
                             </div>
-
-                            {/* ── PayPal smart buttons (rendered inline when PayPal is selected) ── */}
-                            {paymentMethod === "paypal" && (
-                              <div className="mt-6 pt-6 border-t border-[#5A1E12]/10">
-                                <p className="text-xs text-[#5A1E12]/50 mb-3 text-center uppercase tracking-widest font-medium">Complete payment with PayPal</p>
-                                <PayPalButton
-                                  token={token || (typeof window !== "undefined" ? localStorage.getItem("token") : "") || ""}
-                                  shippingMethodId={selectedShipping?.id || ""}
-                                  gstId={cartData?.gst?.id}
-                                  address={getPaypalAddress()}
-                                  onSuccess={(orderId) => router.push(`/order-confirmation?orderId=${orderId}`)}
-                                  onError={(msg) => toast.error(msg)}
-                                />
-                              </div>
-                            )}
                           </div>
                         )}
                       </motion.div>
@@ -845,7 +830,7 @@ export default function CheckOutPage() {
                   </AnimatePresence>
 
                   {/* NAV BUTTONS */}
-                  <div className="flex justify-between mt-8 pt-6">
+                  <div className="flex justify-between mt-8 pt-6 items-start">
                     <button
                       onClick={handleBack}
                       disabled={step === 1}
@@ -870,10 +855,7 @@ export default function CheckOutPage() {
                         Continue
                       </button>
                     ) : !clientSecret ? (
-                      // PayPal: smart buttons appear inline above — no nav button needed
-                      paymentMethod === "paypal" ? null
-                      // COD: place order directly
-                      : paymentMethod === "cod" ? (
+                      paymentMethod === "cod" ? (
                         <button
                           onClick={handlePlaceOrder}
                           disabled={isPlacingOrder || cartItems.length === 0}
@@ -885,8 +867,18 @@ export default function CheckOutPage() {
                             "Place Order"
                           )}
                         </button>
+                      ) : paymentMethod === "paypal" ? (
+                        <div className="w-52">
+                          <PayPalButton
+                            token={token || (typeof window !== "undefined" ? localStorage.getItem("token") : "") || ""}
+                            shippingMethodId={selectedShipping?.id || ""}
+                            gstId={cartData?.gst?.id}
+                            address={getPaypalAddress()}
+                            onSuccess={(orderId) => router.push(`/order-confirmation?orderId=${orderId}`)}
+                            onError={(msg) => toast.error(msg)}
+                          />
+                        </div>
                       ) : (
-                        // Stripe: create payment intent
                         <button
                           onClick={handleCreateIntent}
                           disabled={isCreatingIntent || cartItems.length === 0 || !paymentMethod}

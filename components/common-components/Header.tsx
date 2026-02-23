@@ -537,7 +537,7 @@ export default function Header() {
                         />
                       </div>
                     ) : (
-                      <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-linear-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                      <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
                         <User className="w-4 h-4 text-white" />
                       </div>
                     )}
