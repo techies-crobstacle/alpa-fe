@@ -66,7 +66,7 @@ function loadPayPalScript(): Promise<void> {
     }
 
     const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=AUD`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=AUD&disable-funding=card,credit,venmo`;
     script.setAttribute("data-paypal-sdk", "true");
     script.async = true;
     script.onload = () => resolve();
@@ -105,6 +105,7 @@ export default function PayPalButton({
 
     window.paypal
       .Buttons({
+        fundingSource: window.paypal.FUNDING.PAYPAL,
         style: {
           layout: "vertical",
           color: "gold",
