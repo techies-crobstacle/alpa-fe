@@ -358,7 +358,7 @@ const Page = () => {
                       className="shrink-0 snap-start w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)] animate-pulse rounded-xl border border-stone-100 shadow-sm overflow-hidden bg-white flex flex-col"
                     >
                       {/* ── IMAGE SECTION ── */}
-                      <div className="relative aspect-[6/4] bg-stone-100 overflow-hidden">
+                      <div className="relative aspect-[6/4 bg-stone-100 overflow-hidden">
                         {/* Logo placeholder (top-left) */}
                         <div className="absolute top-3 left-3 z-10 w-10 h-10 rounded-md bg-stone-200" />
                         {/* Full image wash */}
@@ -424,7 +424,7 @@ const Page = () => {
                         amount={parseFloat(product.price)}
                         stock={product.stock}
                         slug={product.slug}
-                        rating={4.5}
+                        rating={product.rating}
                         tags={product.tags}
                         featured={product.featured}
                         artistName={product.artistName}
