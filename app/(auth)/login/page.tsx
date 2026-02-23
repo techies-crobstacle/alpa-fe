@@ -50,7 +50,7 @@ export default function LoginPage() {
        * CASE 2: TOKEN ALREADY VALID (NO OTP)
        */
       if (data.token && data.user) {
-        localStorage.setItem("token", data.token);
+        localStorage.setItem("alpa_token", data.token);
         setUserDirect(data.user);
         router.push("/");
         return;
@@ -360,7 +360,7 @@ export default function LoginPage() {
 //        */
 //       if (data.success && data.token && data.user) {
 //         // Store JWT token
-//         localStorage.setItem("token", data.token);
+//         localStorage.setItem("alpa_token", data.token);
         
 //         // Store/update trusted device token if provided
 //         if (data.trustedDeviceToken) {

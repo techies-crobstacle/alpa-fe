@@ -13,7 +13,7 @@ export function useUser() {
   return useQuery({
     queryKey: authQueryKeys.user,
     queryFn: authApi.getProfile,
-    enabled: typeof window !== "undefined" && !!localStorage.getItem("token"), // Only fetch if token exists and we're on client
+    enabled: typeof window !== "undefined" && !!localStorage.getItem("alpa_token"), // Only fetch if token exists and we're on client
     retry: (failureCount, error: any) => {
       // Don't retry if unauthorized
       if (error?.message?.includes("401") || error?.message?.includes("unauthorized")) {
@@ -37,7 +37,7 @@ export function useLogout() {
       // Remove local storage
       if (typeof window !== "undefined") {
         localStorage.removeItem("user");
-        localStorage.removeItem("token");
+        localStorage.removeItem("alpa_token");
         // Redirect to home
         window.location.href = "/";
       }
@@ -47,7 +47,7 @@ export function useLogout() {
       queryClient.clear();
       if (typeof window !== "undefined") {
         localStorage.removeItem("user");
-        localStorage.removeItem("token");
+        localStorage.removeItem("alpa_token");
         window.location.href = "/";
       }
     },

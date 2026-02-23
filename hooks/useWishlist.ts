@@ -15,7 +15,7 @@ export function useWishlistQuery() {
   return useQuery({
     queryKey: wishlistQueryKeys.wishlist,
     queryFn: async () => {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const token = typeof window !== "undefined" ? localStorage.getItem("alpa_token") : null;
       if (!token) {
         return []; // Return empty array if not authenticated
       }
@@ -37,7 +37,7 @@ export function useWishlistCheck(productId: string | number) {
   return useCheckQuery({
     queryKey: wishlistQueryKeys.wishlistCheck(productId),
     queryFn: async () => {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const token = typeof window !== "undefined" ? localStorage.getItem("alpa_token") : null;
       if (!token || !productId) {
         return { inWishlist: false };
       }

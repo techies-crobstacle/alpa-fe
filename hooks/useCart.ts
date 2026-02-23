@@ -32,7 +32,7 @@ export function useCartQuery() {
 
       return items;
     },
-    enabled: typeof window !== "undefined" && !!localStorage.getItem("token"),
+    enabled: typeof window !== "undefined" && !!localStorage.getItem("alpa_token"),
     staleTime: 1000 * 60 * 2, // 2 minutes - shorter for cart data
     gcTime: 1000 * 60 * 5, // 5 minutes
     refetchOnMount: false,

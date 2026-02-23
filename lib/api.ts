@@ -11,7 +11,7 @@ export class ApiClient {
   }
 
   private getAuthHeaders(useAuth: boolean = true): Record<string, string> {
-    const token = (useAuth && typeof window !== "undefined") ? localStorage.getItem("token") : null;
+    const token = (useAuth && typeof window !== "undefined") ? localStorage.getItem("alpa_token") : null;
     return {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),

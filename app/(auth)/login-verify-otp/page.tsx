@@ -172,7 +172,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
 
     //  REAL LOGIN HAPPENS HERE
-    localStorage.setItem("token", data.token);
+    localStorage.setItem("alpa_token", data.token);
     
     // Store trusted device token if provided
     if (data.trustedDeviceToken) {

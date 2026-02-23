@@ -239,7 +239,7 @@ function OrderConfirmationContent() {
 
     const checkStatus = async () => {
       try {
-        const currentToken = token || localStorage.getItem("token");
+        const currentToken = token || localStorage.getItem("alpa_token");
         const res = await fetch(
           `https://alpa-be-1.onrender.com/api/payments/status/${orderId}`,
           { headers: { Authorization: `Bearer ${currentToken}` } }
