@@ -4,12 +4,14 @@
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Star, Loader2, Check, ShoppingBag } from "lucide-react";
+import { Heart, Star, Loader2, Check, ShoppingBag, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useToggleWishlist } from "@/hooks/useWishlistMutations";
 import { useWishlistQuery } from "@/hooks/useWishlist";
 import { apiClient } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 // --- INTERFACE DEFINITION (Fixes the TS Error) ---
 export interface OptimisticProductCardProps {
@@ -54,6 +56,7 @@ export default function OptimisticProductCard({
   const [syncTrigger, setSyncTrigger] = useState(0);
   const [realRating, setRealRating] = useState<number | null>(null);
 
+  const { token } = useAuth();
   const { data: wishlistData } = useWishlistQuery();
   const toggleWishlistMutation = useToggleWishlist();
 
@@ -153,6 +156,14 @@ export default function OptimisticProductCard({
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
+
+    if (!token) {
+      toast.info("Please log in to add items to your Wishlist", {
+        icon: () => <Info size={18} color="#EAD7B7" />,
+      });
+      return;
+    }
+
     if (isWishlisted) return;
 
     setIsHeartAnimating(true);
