@@ -87,7 +87,7 @@ export function useEnhancedCart() {
         setLoading(true);
       }
       
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("alpa_token");
       const currentSelectedShipping = selectedShippingRef.current; // Use ref to get latest value
 
       // Guest mode: load cart from localStorage
@@ -231,7 +231,7 @@ export function useEnhancedCart() {
   // Update quantity
   const updateQuantity = async (productId: string, newQuantity: number) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("alpa_token");
       
       // Guest mode: update in localStorage
       if (!token) {
@@ -279,7 +279,7 @@ export function useEnhancedCart() {
   // Remove item from cart
   const removeItem = async (productId: string) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("alpa_token");
       
       // Guest mode: remove from localStorage
       if (!token) {

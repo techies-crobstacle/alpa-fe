@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
+    const storedToken = localStorage.getItem("alpa_token");
     
     if (storedUser) {
       try {
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile using token
   const fetchUser = async () => {
-    const currentToken = localStorage.getItem("token");
+    const currentToken = localStorage.getItem("alpa_token");
     
     if (!currentToken) {
       setUser(null);
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setToken(null);
           localStorage.removeItem("user");
-          localStorage.removeItem("token");
+          localStorage.removeItem("alpa_token");
         }
         return;
       }
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
     if (authToken) {
       setToken(authToken);
-      localStorage.setItem("token", authToken);
+      localStorage.setItem("alpa_token", authToken);
     }
     localStorage.setItem("user", JSON.stringify(userData));
   };
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Proper logout
   const logout = async () => {
-    const currentToken = token || localStorage.getItem("token");
+    const currentToken = token || localStorage.getItem("alpa_token");
     
     try {
       // Call logout API if token exists
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setToken(null);
       localStorage.removeItem("user");
-      localStorage.removeItem("token");
+      localStorage.removeItem("alpa_token");
       
       // Redirect to home page
       if (typeof window !== "undefined") {

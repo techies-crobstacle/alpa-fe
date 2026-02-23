@@ -153,7 +153,7 @@ function OTPVerificationForm() {
 
       // Store token
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        localStorage.setItem("alpa_token", data.token);
       }
       
       if (data.user) {

@@ -176,7 +176,7 @@ export default function CheckOutPage() {
 
   // ── Stripe: create payment intent ────────────────────────────────────────
   const handleCreateIntent = async () => {
-    const currentToken = token || localStorage.getItem("token");
+    const currentToken = token || localStorage.getItem("alpa_token");
     if (!currentToken) {
       toast.error("Your session has expired. Please log in again.");
       return;
@@ -366,7 +366,7 @@ export default function CheckOutPage() {
           },
         );
       } else {
-        const currentToken = token || localStorage.getItem("token");
+        const currentToken = token || localStorage.getItem("alpa_token");
 
         if (!currentToken) {
           toast.error("Your session has expired. Please log in again.");
@@ -419,7 +419,7 @@ export default function CheckOutPage() {
       } else {
         if (response.status === 401 || response.status === 403) {
           toast.error("Session expired. Please log in again.");
-          localStorage.removeItem("token");
+          localStorage.removeItem("alpa_token");
           localStorage.removeItem("user");
           setTimeout(() => router.push("/login"), 2000);
           return;
@@ -677,7 +677,7 @@ export default function CheckOutPage() {
                             >
                               <StripePaymentForm
                                 paymentIntentId={paymentIntentId}
-                                token={token || (typeof window !== "undefined" ? localStorage.getItem("token") : "") || ""}
+                                token={token || (typeof window !== "undefined" ? localStorage.getItem("alpa_token") : "") || ""}
                                 amount={stripeAmount}
                                 currency={stripeCurrency}
                                 onSuccess={(orderId) => {
@@ -806,7 +806,7 @@ export default function CheckOutPage() {
                               <div className="mt-6 pt-6 border-t border-[#5A1E12]/10">
                                 <p className="text-xs text-[#5A1E12]/50 mb-3 text-center uppercase tracking-widest font-medium">Complete payment with PayPal</p>
                                 <PayPalButton
-                                  token={token || (typeof window !== "undefined" ? localStorage.getItem("token") : "") || ""}
+                                  token={token || (typeof window !== "undefined" ? localStorage.getItem("alpa_token") : "") || ""}
                                   shippingMethodId={selectedShipping?.id || ""}
                                   gstId={cartData?.gst?.id}
                                   address={getPaypalAddress()}

@@ -50,7 +50,7 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("alpa_token");
       
       // Guest mode: store in localStorage
       if (!token) {

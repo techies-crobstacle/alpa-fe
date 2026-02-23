@@ -45,7 +45,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   /* ---------- LOAD TOKEN ---------- */
   useEffect(() => {
-    setToken(localStorage.getItem("token"));
+    setToken(localStorage.getItem("alpa_token"));
   }, []);
 
   /* ---------- FETCH CART FROM BACKEND ---------- */
