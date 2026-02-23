@@ -10,8 +10,8 @@ export class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  private getAuthHeaders(): Record<string, string> {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  private getAuthHeaders(useAuth: boolean = true): Record<string, string> {
+    const token = (useAuth && typeof window !== "undefined") ? localStorage.getItem("token") : null;
     return {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -26,10 +26,10 @@ export class ApiClient {
     return response.json();
   }
 
-  async get<T>(endpoint: string): Promise<T> {
+  async get<T>(endpoint: string, useAuth: boolean = true): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "GET",
-      headers: this.getAuthHeaders(),
+      headers: this.getAuthHeaders(useAuth),
     });
     return this.handleResponse<T>(response);
   }
@@ -99,7 +99,7 @@ export const authApi = {
 
 export const couponsApi = {
   getCoupons: (): Promise<Coupon[]> => {
-    return apiClient.get("/admin/coupons").then((data: any) => {
+    return apiClient.get("/admin/coupons", false).then((data: any) => {
       // Handle different response formats
       return Array.isArray(data) ? data : data.coupons || [];
     });

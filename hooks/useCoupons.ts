@@ -12,7 +12,7 @@ export function useCoupons() {
   return useQuery({
     queryKey: couponQueryKeys.coupons,
     queryFn: couponsApi.getCoupons,
-    enabled: typeof window !== "undefined" && !!localStorage.getItem("token"), // Only fetch if authenticated and on client
+    enabled: typeof window !== "undefined", // Make public - fetch on client regardless of authentication
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 15, // 15 minutes
     retry: (failureCount, error: any) => {
