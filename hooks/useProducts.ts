@@ -22,6 +22,8 @@ export interface Product {
   artistName?: string;
   sellerName?: string;
   sellerId?: string;
+  rating?: number;
+  reviews?: number;
   status?: string;
   createdAt?: string;
   updatedAt?: string;

@@ -373,24 +373,6 @@ export default function CheckOutPage() {
           return;
         }
 
-        const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } =
-          calculateTotals;
-
-        const orderSummary = {
-          subtotal: subtotal.toFixed(2),
-          gstAmount: gstAmount.toFixed(2),
-          grandTotal: grandTotal.toFixed(2),
-          gstDetails: cartData?.calculations?.gstDetails || cartData?.gst,
-          shippingCost: shippingCost.toFixed(2),
-          gstPercentage: gstPercentage.toFixed(2),
-          shippingMethod: {
-            id: selectedShipping?.id,
-            cost: parseFloat(selectedShipping?.cost || "0"),
-            name: selectedShipping?.name,
-            estimatedDays: selectedShipping?.estimatedDays,
-          },
-        };
-
         response = await fetch(
           "https://alpa-be-1.onrender.com/api/orders/create",
           {
@@ -400,19 +382,14 @@ export default function CheckOutPage() {
               Authorization: `Bearer ${currentToken}`,
             },
             body: JSON.stringify({
-              shippingAddress: {
-                address: shippingAddress,
-              },
-              shippingAddressLine: shippingAddress,
-              shippingCity: shippingCity,
-              shippingState: shippingState,
-              shippingZipCode: shippingZipCode,
-              shippingCountry: shippingCountry,
-              shippingPhone: mobileNumber,
-              customerPhone: mobileNumber,
+              shippingAddress: shippingAddress,
+              city: shippingCity,
+              state: shippingState,
+              country: shippingCountry,
+              zipCode: shippingZipCode,
+              mobileNumber: mobileNumber,
               paymentMethod: paymentMethod,
               shippingMethodId: shippingMethodId,
-              orderSummary: orderSummary,
               ...(gstId && { gstId }),
             }),
           },

@@ -9,12 +9,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useToggleWishlist } from "@/hooks/useWishlistMutations";
 import { useWishlistQuery } from "@/hooks/useWishlist";
+import { apiClient } from "@/lib/api";
 
 // --- INTERFACE DEFINITION (Fixes the TS Error) ---
 export interface OptimisticProductCardProps {
   id: string;
   photo: string;
-  name: string;
+  name: string; 
   description: string;
   amount: number;
   stock?: number;
@@ -33,7 +34,7 @@ export default function OptimisticProductCard({
   amount,
   stock = 50,
   slug,
-  rating = 4.5,
+  rating = 0,
   tags = [],
   featured = false,
   artistName,
@@ -51,9 +52,32 @@ export default function OptimisticProductCard({
   const [optimisticAdded, setOptimisticAdded] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
+  const [realRating, setRealRating] = useState<number | null>(null);
 
   const { data: wishlistData } = useWishlistQuery();
   const toggleWishlistMutation = useToggleWishlist();
+
+  // Fetch real average rating
+  useEffect(() => {
+    const fetchRealRating = async () => {
+      try {
+        const response = await apiClient.get<any>(`/ratings/products/${id}/ratings`);
+        const ratingsArray = response?.ratings || response?.data?.ratings || [];
+        
+        if (Array.isArray(ratingsArray) && ratingsArray.length > 0) {
+          const avg = ratingsArray.reduce((acc: number, curr: any) => acc + (curr.rating || 0), 0) / ratingsArray.length;
+          setRealRating(avg);
+        } else {
+          setRealRating(rating || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching rating for product", id, error);
+        setRealRating(rating || 0);
+      }
+    };
+
+    fetchRealRating();
+  }, [id, rating]);
 
   // Subscribe to cart updates
   useEffect(() => {
@@ -228,7 +252,7 @@ export default function OptimisticProductCard({
            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
              {artistName || "Collection"}
            </span>
-           {renderStars(rating)}
+           {renderStars(realRating !== null ? realRating : rating)}
         </div>
 
         {/* Title */}

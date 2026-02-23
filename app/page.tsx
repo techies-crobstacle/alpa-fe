@@ -193,7 +193,7 @@ const Page = () => {
                   amount={parseFloat(product.price)}
                   stock={product.stock}
                   slug={product.slug}
-                  rating={4.5} // Default rating since product doesn't have it
+                  rating={product.rating}
                   tags={product.tags}
                   featured={product.featured}
                   artistName={product.artistName}

@@ -1061,6 +1061,7 @@ function ShopContent() {
                     amount={parseFloat(product.price)}
                     stock={product.stock}
                     slug={product.slug}
+                    rating={product.rating}
                     tags={product.tags}
                     featured={product.featured}
                     artistName={product.artistName}
