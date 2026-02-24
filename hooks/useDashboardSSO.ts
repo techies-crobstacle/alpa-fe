@@ -33,6 +33,7 @@ export function useDashboardSSO() {
     }
 
     setIsRedirecting(true);
+    console.log("[SSO] Step 1: Token found, calling create-ticket...");
 
     try {
       const res = await fetch(`${API_BASE_URL}/auth/create-ticket`, {
@@ -43,15 +44,22 @@ export function useDashboardSSO() {
         },
       });
 
+      console.log("[SSO] Step 2: create-ticket response status:", res.status);
+
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        console.error("[SSO] FAILED at create-ticket:", res.status, errData);
         throw new Error(errData.message || `Server error: ${res.status}`);
       }
 
       const data = await res.json();
+      console.log("[SSO] Step 3: Raw response from backend:", data);
+
       const ticketId: string = data.ticketId ?? data.ticket ?? data.id;
+      console.log("[SSO] Step 4: Extracted ticketId:", ticketId);
 
       if (!ticketId) {
+        console.error("[SSO] FAILED: No ticketId found in response. Keys received:", Object.keys(data));
         throw new Error("No ticketId returned from server.");
       }
 
@@ -60,11 +68,11 @@ export function useDashboardSSO() {
       callbackUrl.searchParams.set("ticket", ticketId);
       callbackUrl.searchParams.set("redirectTo", redirectTo);
 
+      console.log("[SSO] Step 5: Redirecting to:", callbackUrl.toString());
       window.location.href = callbackUrl.toString();
     } catch (err) {
-      console.error("[useDashboardSSO] Failed to create SSO ticket:", err);
-      // Graceful fallback: send them straight to the dashboard
-      // (they may be prompted to log in there)
+      console.error("[SSO] FALLBACK triggered because of error:", err);
+      console.warn("[SSO] Sending user directly to dashboard (no SSO) — they will be asked to log in there.");
       window.location.href = `${DASHBOARD_BASE_URL}${redirectTo}`;
     } finally {
       setIsRedirecting(false);
