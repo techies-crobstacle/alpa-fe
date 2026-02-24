@@ -398,7 +398,14 @@ export default function CheckOutPage() {
 
       if (response.ok) {
         toast.dismiss();
-        toast.success("Order placed successfully!");
+        toast.success("Order placed successfully!, Redirecting...");
+
+        const responseData = await response.json().catch(() => ({}));
+        const orderId =
+          responseData.orderId ||
+          responseData.order?.id ||
+          responseData.id ||
+          "";
 
         if (showGuestForm) {
           guestCartUtils.clearGuestCart();
@@ -414,7 +421,9 @@ export default function CheckOutPage() {
         localStorage.removeItem("addressValidated");
 
         setTimeout(() => {
-          router.push("/");
+          router.push(
+            orderId ? `/order-confirmation?orderId=${orderId}&paymentMethod=${paymentMethod}` : "/"
+          );
         }, 2500);
       } else {
         if (response.status === 401 || response.status === 403) {

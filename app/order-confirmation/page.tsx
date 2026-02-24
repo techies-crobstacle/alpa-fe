@@ -230,6 +230,8 @@ function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const { token, user } = useAuth();
   const orderId = searchParams.get("orderId");
+  const paymentMethodParam = searchParams.get("paymentMethod");
+  const isCOD = paymentMethodParam === "cod";
 
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -246,12 +248,26 @@ function OrderConfirmationContent() {
         );
         if (res.ok) {
           const data = await res.json();
-          setOrderStatus({ orderId, status: data.status || "Confirmed", paymentStatus: data.paymentStatus || "PAID" });
+          setOrderStatus({
+            orderId,
+            status: data.status || "Confirmed",
+            paymentStatus: isCOD
+              ? "Cash on Delivery"
+              : data.paymentStatus || "Paid",
+          });
         } else {
-          setOrderStatus({ orderId, status: "CONFIRMED", paymentStatus: "PAID" });
+          setOrderStatus({
+            orderId,
+            status: "Confirmed",
+            paymentStatus: isCOD ? "Cash on Delivery" : "Paid",
+          });
         }
       } catch {
-        setOrderStatus({ orderId, status: "CONFIRMED", paymentStatus: "PAID" });
+        setOrderStatus({
+          orderId,
+          status: "Confirmed",
+          paymentStatus: isCOD ? "Cash on Delivery" : "Paid",
+        });
       } finally {
         setLoading(false);
       }
@@ -344,7 +360,9 @@ function OrderConfirmationContent() {
                 <div className="flex items-center justify-between py-3">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Payment</span>
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#EAD7B7]">
-                    <CheckCircle className="w-3 h-3" />
+                    {isCOD
+                      ? <Package className="w-3 h-3" />
+                      : <CheckCircle className="w-3 h-3" />}
                     {orderStatus.paymentStatus}
                   </span>
                 </div>
