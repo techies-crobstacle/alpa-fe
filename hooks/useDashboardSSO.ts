@@ -42,6 +42,7 @@ export function useDashboardSSO() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({}),
       });
 
       console.log("[SSO] Step 2: create-ticket response status:", res.status);
