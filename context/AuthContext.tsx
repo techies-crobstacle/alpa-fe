@@ -124,6 +124,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserDirect(userData, authToken);
   };
 
+  // Cross-domain logout — loads a hidden iframe on the other platform so it
+  // can clear its own localStorage, then posts "alpa-logout-done" back when done.
+  const triggerCrossDomainLogout = (iframeUrl: string): Promise<void> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined") { resolve(); return; }
+
+      const iframe = document.createElement("iframe");
+      iframe.src = iframeUrl;
+      iframe.style.cssText = "display:none;width:0;height:0;border:none;position:absolute;";
+      document.body.appendChild(iframe);
+
+      // Safety timeout — never block logout for more than 2 seconds
+      const timer = setTimeout(() => {
+        window.removeEventListener("message", handler);
+        if (document.body.contains(iframe)) document.body.removeChild(iframe);
+        resolve();
+      }, 2000);
+
+      function handler(e: MessageEvent) {
+        if (e.data === "alpa-logout-done") {
+          clearTimeout(timer);
+          window.removeEventListener("message", handler);
+          if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          resolve();
+        }
+      }
+      window.addEventListener("message", handler);
+    });
+  };
+
   // Proper logout
   const logout = async () => {
     const currentToken = token || localStorage.getItem("alpa_token");
@@ -142,6 +172,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } finally {
+      // Clear Dashboard session via hidden iframe first
+      await triggerCrossDomainLogout("https://alpa-dashboard.vercel.app/logout-callback");
+
       // Clear client-side state
       setUser(null);
       setToken(null);
