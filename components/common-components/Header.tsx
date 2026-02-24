@@ -12,6 +12,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useProducts, Product } from "@/hooks/useProducts";
+import { useDashboardSSO } from "@/hooks/useDashboardSSO";
 
 
 const NAV_LINKS = [
@@ -45,11 +46,12 @@ export default function Header() {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { user, logout, fetchUser, loading } = useAuth();
+  const { user, logout, fetchUser } = useAuth();
   const { cartItems, fetchCartFromBackend } = useCart();
   const { cartData, subscribeToUpdates, loading: cartLoading } = useSharedEnhancedCart();
   const { data: products = [] } = useProducts();
   const router = useRouter();
+  const { redirectToDashboard, isRedirecting: isDashboardRedirecting } = useDashboardSSO();
 
   // Local state for real-time cart updates
   const [cartUpdateTrigger, setCartUpdateTrigger] = useState(0);
@@ -475,11 +477,9 @@ export default function Header() {
             </button>
 
             {/* User Authentication */}
-            {loading ? (
-              <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse"></div>
-            ) : !user ? (
+            {!user ? (
               <div className="flex items-center gap-3">
-                {/* Guest Menu Dropdown */}
+              {/* Guest Menu Dropdown */}
                 <div className="relative" ref={guestMenuRef}>
                   <button
                     onClick={() => setGuestMenuOpen(!guestMenuOpen)}
@@ -491,31 +491,45 @@ export default function Header() {
                   </button>
 
                   {guestMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn origin-top-right">
-                      <div className="py-1">
+                    <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden z-50 border border-gray-100 origin-top-right">
+                      {/* Header */}
+                      <div className="px-4 py-3 bg-[#5A1E12]/5 border-b border-gray-100">
+                        <p className="text-xs font-semibold text-[#5A1E12] uppercase tracking-widest">My Account</p>
+                      </div>
+                      <div className="p-1.5 flex flex-col gap-0.5">
                         <button
                           onClick={() => handleNavigation("/login")}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group"
                         >
+                          <span className="w-7 h-7 rounded-lg bg-gray-100 group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                            <User className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#5A1E12]" />
+                          </span>
                           Login
                         </button>
                         <button
                           onClick={() => handleNavigation("/signup")}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group"
                         >
-                          Create new account
+                          <span className="w-7 h-7 rounded-lg bg-gray-100 group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                            <Settings className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#5A1E12]" />
+                          </span>
+                          Create account
                         </button>
+                        <div className="pt-1 mt-0.5 border-t border-gray-100">
+                          <button
+                            onClick={() => handleNavigation("/sellerOnboarding")}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#5A1E12] hover:bg-[#4a180f] transition-colors text-white text-sm font-medium"
+                          >
+                            <span className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                              <Package className="w-3.5 h-3.5 text-white" />
+                            </span>
+                            Register as Seller
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
-
-                <Link
-                  href="/sellerOnboarding"
-                  className="font-medium bg-[#5A1E12] text-white text-sm hover:bg-[#4a180f] hover:shadow-lg transition-all px-6 py-2 rounded-full shadow-md transform hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  Register as Seller
-                </Link>
               </div>
             ) : (
               <div className="relative" ref={userMenuRef}>
@@ -526,21 +540,9 @@ export default function Header() {
                   aria-expanded={userMenuOpen}
                 >
                   <div className="relative">
-                    {user.profileImage ? (
-                      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-transparent group-hover:scale-110  transition-colors">
-                        <Image
-                          src={user.profileImage}
-                          alt={user.name || "User"}
-                          width={36}
-                          height={36}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                    )}
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
                   </div>
                   <svg
                     className={`w-4 h-4 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
@@ -558,48 +560,63 @@ export default function Header() {
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn">
-                    {/* User Info */}
-                    <div className="px-4 py-3 border-b border-gray-100 bg-linear-to-r from-[#EAD7B7]/10 to-transparent">
-                      <p className="font-semibold text-gray-900 truncate">Hi {user.name?.split(" ")[0] || "User"}</p>
-                      <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                  <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden z-50 border border-gray-100">
+                    {/* User Info Header */}
+                    <div className="flex items-center gap-3 px-4 py-3.5 bg-[#5A1E12] ">
+                      <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-white text-sm truncate">Hi, {user.name?.split(" ")[0] || "User"}</p>
+                        <p className="text-xs text-white/60 truncate">{user.email}</p>
+                      </div>
                     </div>
 
                     {/* Menu Items */}
-                    <div className="py-2">
+                    <div className="p-1.5 flex flex-col gap-0.5">
                       <button
-                        onClick={() => handleNavigation("https://alpa-dashboard.vercel.app/dashboard/customer/profile")}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"
+                        onClick={() => { setUserMenuOpen(false); redirectToDashboard("/dashboard/customer/profile"); }}
+                        disabled={isDashboardRedirecting}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
                       >
-                        <User className="w-4 h-4" />
-                        <span>My Profile</span>
+                        <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                          <User className="w-3.5 h-3.5 text-[#5A1E12]" />
+                        </span>
+                        My Profile
                       </button>
 
                       <button
-                        onClick={() => handleNavigation("https://alpa-dashboard.vercel.app/dashboard/customer/orders")}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"
+                        onClick={() => { setUserMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }}
+                        disabled={isDashboardRedirecting}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
                       >
-                        <Package className="w-4 h-4" />
-                        <span>My Orders</span>
+                        <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                          <Package className="w-3.5 h-3.5 text-[#5A1E12]" />
+                        </span>
+                        {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
                       </button>
 
                       {user.role === "admin" && (
                         <button
                           onClick={() => handleNavigation("/admin")}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group"
                         >
-                          <Settings className="w-4 h-4" />
-                          <span>Admin Dashboard</span>
+                          <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                            <Settings className="w-3.5 h-3.5 text-[#5A1E12]" />
+                          </span>
+                          Admin Dashboard
                         </button>
                       )}
 
-                      <div className="border-t border-gray-100 mt-2">
+                      <div className="pt-1 mt-0.5 border-t border-gray-100">
                         <button
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-red-600 text-sm"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-50 transition-colors text-red-500 text-sm font-medium group"
                         >
-                          <LogOut className="w-4 h-4" />
-                          <span>Logout</span>
+                          <span className="w-7 h-7 rounded-lg bg-red-50 group-hover:bg-red-100 flex items-center justify-center transition-colors">
+                            <LogOut className="w-3.5 h-3.5 text-red-500" />
+                          </span>
+                          Logout
                         </button>
                       </div>
                     </div>
@@ -625,12 +642,8 @@ export default function Header() {
             <div className="flex items-start justify-between">
               {user ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/40 shrink-0 bg-[#EAD7B7] flex items-center justify-center">
-                    {user.profileImage ? (
-                      <Image src={user.profileImage} alt={user.name || "User"} width={48} height={48} className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-6 h-6 text-[#5A1E12]" />
-                    )}
+                  <div className="w-12 h-12 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-white/40 shrink-0">
+                    <User className="w-6 h-6 text-white" />
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-white text-base leading-tight">Hi, {user.name?.split(" ")[0] || "User"}</p>
@@ -774,26 +787,26 @@ export default function Header() {
                   <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#5A1E12] text-white text-sm font-medium hover:bg-[#4a180f] transition-colors">
                     Create Account
                   </Link>
-                  <Link href="/sellerOnboarding" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#EAD7B7] text-[#5A1E12] text-sm font-medium hover:bg-[#e0c9a0] transition-colors">
+                  <Link href="/sellerOnboarding" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#5A1E12] text-white text-sm font-medium hover:bg-[#4a180f] transition-colors">
                     Register as Seller
                   </Link>
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
-                  <Link href="https://alpa-dashboard.vercel.app/dashboard/customer/profile" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100">
+                  <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/dashboard/customer/profile"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
                     <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
                       <User className="w-4 h-4 text-[#5A1E12]" />
                     </div>
                     <span className="font-medium">My Profile</span>
                     <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </Link>
-                  <Link href="https://alpa-dashboard.vercel.app/dashboard/customer/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100">
+                  </button>
+                  <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
                     <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
                       <Package className="w-4 h-4 text-[#5A1E12]" />
                     </div>
-                    <span className="font-medium">My Orders</span>
+                    <span className="font-medium">{isDashboardRedirecting ? "Redirecting…" : "My Orders"}</span>
                     <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </Link>
+                  </button>
                   {user.role === "admin" && (
                     <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100">
                       <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
@@ -884,9 +897,7 @@ export default function Header() {
           </button>
 
           {/* Auth */}
-          {loading ? (
-            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-          ) : !user ? (
+          {!user ? (
             <div className="flex items-center gap-3">
               <div className="relative" ref={stickyGuestMenuRef}>
                 <button
@@ -897,17 +908,35 @@ export default function Header() {
                   <User className="h-5 w-5" />
                 </button>
                 {stickyGuestMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn origin-top-right">
-                    <div className="py-1">
-                      <button onClick={() => { setStickyGuestMenuOpen(false); router.push("/login"); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium">Login</button>
-                      <button onClick={() => { setStickyGuestMenuOpen(false); router.push("/signup"); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium">Create new account</button>
+                  <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden z-50 border border-gray-100 origin-top-right">
+                    <div className="px-4 py-3 bg-[#5A1E12]/5 border-b border-gray-100">
+                      <p className="text-xs font-semibold text-[#5A1E12] uppercase tracking-widest">My Account</p>
+                    </div>
+                    <div className="p-1.5 flex flex-col gap-0.5">
+                      <button onClick={() => { setStickyGuestMenuOpen(false); router.push("/login"); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group">
+                        <span className="w-7 h-7 rounded-lg bg-gray-100 group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                          <User className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#5A1E12]" />
+                        </span>
+                        Login
+                      </button>
+                      <button onClick={() => { setStickyGuestMenuOpen(false); router.push("/signup"); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group">
+                        <span className="w-7 h-7 rounded-lg bg-gray-100 group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                          <Settings className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#5A1E12]" />
+                        </span>
+                        Create account
+                      </button>
+                      <div className="pt-1 mt-0.5 border-t border-gray-100">
+                        <button onClick={() => { setStickyGuestMenuOpen(false); router.push("/sellerOnboarding"); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#5A1E12] hover:bg-[#4a180f] transition-colors text-white text-sm font-medium">
+                          <span className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                            <Package className="w-3.5 h-3.5 text-white" />
+                          </span>
+                          Register as Seller
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
-              <Link href="/sellerOnboarding" className="font-medium bg-[#5A1E12] text-white text-sm hover:bg-[#4a180f] hover:shadow-lg transition-all px-5 py-2 rounded-full shadow-md transform hover:-translate-y-0.5 active:translate-y-0">
-                Register as Seller
-              </Link>
             </div>
           ) : (
             <div className="relative" ref={stickyUserMenuRef}>
@@ -917,34 +946,45 @@ export default function Header() {
                 aria-label="User menu"
               >
                 <div className="relative">
-                  {user.profileImage ? (
-                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent group-hover:scale-110 transition-colors">
-                      <Image src={user.profileImage} alt={user.name || "User"} width={32} height={32} className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                  )}
+                  <div className="w-8 h-8 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
                 </div>
                 <svg className={`w-4 h-4 transition-transform ${stickyUserMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               {stickyUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100 animate-fadeIn">
-                  <div className="px-4 py-3 border-b border-gray-100 bg-linear-to-r from-[#EAD7B7]/10 to-transparent">
-                    <p className="font-semibold text-gray-900 truncate">Hi {user.name?.split(" ")[0] || "User"}</p>
-                    <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden z-50 border border-gray-100">
+                  <div className="flex items-center gap-3 px-4 py-3.5 bg-[#5A1E12]">
+                    <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-white text-sm truncate">Hi, {user.name?.split(" ")[0] || "User"}</p>
+                      <p className="text-xs text-white/60 truncate">{user.email}</p>
+                    </div>
                   </div>
-                  <div className="py-2">
-                    <button onClick={() => { setStickyUserMenuOpen(false); router.push("https://alpa-dashboard.vercel.app/dashboard/customer/profile"); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"><User className="w-4 h-4" /><span>My Profile</span></button>
-                    <button onClick={() => { setStickyUserMenuOpen(false); router.push("https://alpa-dashboard.vercel.app/dashboard/customer/orders"); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"><Package className="w-4 h-4" /><span>My Orders</span></button>
+                  <div className="p-1.5 flex flex-col gap-0.5">
+                    <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/dashboard/customer/profile"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
+                      <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><User className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
+                      My Profile
+                    </button>
+                    <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
+                      <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Package className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
+                      {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
+                    </button>
                     {user.role === "admin" && (
-                      <button onClick={() => { setStickyUserMenuOpen(false); router.push("/admin"); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 text-sm"><Settings className="w-4 h-4" /><span>Admin Dashboard</span></button>
+                      <button onClick={() => { setStickyUserMenuOpen(false); router.push("/admin"); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group">
+                        <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Settings className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
+                        Admin Dashboard
+                      </button>
                     )}
-                    <div className="border-t border-gray-100 mt-2">
-                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-red-600 text-sm"><LogOut className="w-4 h-4" /><span>Logout</span></button>
+                    <div className="pt-1 mt-0.5 border-t border-gray-100">
+                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-50 transition-colors text-red-500 text-sm font-medium group">
+                        <span className="w-7 h-7 rounded-lg bg-red-50 group-hover:bg-red-100 flex items-center justify-center transition-colors"><LogOut className="w-3.5 h-3.5 text-red-500" /></span>
+                        Logout
+                      </button>
                     </div>
                   </div>
                 </div>

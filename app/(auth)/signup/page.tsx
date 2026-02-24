@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://alpa-be-1.onrender.com";
@@ -19,6 +20,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
   const role = "customer";
@@ -171,31 +174,53 @@ export default function SignupPage() {
 
             <div className="space-y-1">
               <p className="text-white/90 text-sm font-medium">Password</p>
-              <input
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Create a password (min 6 characters)"
-                type="password"
-                required
-                minLength={6}
-                className="w-120 rounded-full px-4 py-3 bg-[#873007]  text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
-              />
+              <div className="relative">
+                <input
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Create a password (min 6 characters)"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={6}
+                  className="w-120 rounded-full px-4 py-3 pr-12 bg-[#873007] text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1">
               <p className="text-white/90 text-sm font-medium">
                 Confirm Password
               </p>
-              <input
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                type="password"
-                required
-                className="w-120 rounded-full px-4 py-3 bg-[#873007]  text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
-              />
+              <div className="relative">
+                <input
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm your password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  className="w-120 rounded-full px-4 py-3 pr-12 bg-[#873007] text-white placeholder-gray-400 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             {error && (
