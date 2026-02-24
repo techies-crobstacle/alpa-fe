@@ -18,49 +18,66 @@ export class ApiClient {
     };
   }
 
-  private async handleResponse<T>(response: Response): Promise<T> {
+  private async handleResponse<T>(response: Response, hadToken: boolean = false): Promise<T> {
     if (!response.ok) {
+      // Only redirect on 401 when a token was actually sent — meaning the token
+      // is expired / invalid. Skip the redirect for guest / unauthenticated calls.
+      if (response.status === 401 && hadToken) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("user");
+          localStorage.removeItem("alpa_token");
+          window.location.href = "/";
+        }
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
     return response.json();
   }
 
+  private hasToken(): boolean {
+    return typeof window !== "undefined" && !!localStorage.getItem("alpa_token");
+  }
+
   async get<T>(endpoint: string, useAuth: boolean = true): Promise<T> {
+    const hadToken = useAuth && this.hasToken();
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "GET",
       headers: this.getAuthHeaders(useAuth),
     });
-    return this.handleResponse<T>(response);
+    return this.handleResponse<T>(response, hadToken);
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<T> {
+  async post<T>(endpoint: string, data?: any, useAuth: boolean = true): Promise<T> {
     console.log(`API POST to ${endpoint}:`, data);
+    const hadToken = useAuth && this.hasToken();
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "POST",
-      headers: this.getAuthHeaders(),
+      headers: this.getAuthHeaders(useAuth),
       body: data ? JSON.stringify(data) : undefined,
     });
-    const result = await this.handleResponse<T>(response);
+    const result = await this.handleResponse<T>(response, hadToken);
     console.log(`API POST ${endpoint} response:`, result);
     return result;
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<T> {
+  async put<T>(endpoint: string, data?: any, useAuth: boolean = true): Promise<T> {
+    const hadToken = useAuth && this.hasToken();
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "PUT",
-      headers: this.getAuthHeaders(),
+      headers: this.getAuthHeaders(useAuth),
       body: data ? JSON.stringify(data) : undefined,
     });
-    return this.handleResponse<T>(response);
+    return this.handleResponse<T>(response, hadToken);
   }
 
-  async delete<T>(endpoint: string): Promise<T> {
+  async delete<T>(endpoint: string, useAuth: boolean = true): Promise<T> {
+    const hadToken = useAuth && this.hasToken();
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "DELETE",
-      headers: this.getAuthHeaders(),
+      headers: this.getAuthHeaders(useAuth),
     });
-    return this.handleResponse<T>(response);
+    return this.handleResponse<T>(response, hadToken);
   }
 }
 

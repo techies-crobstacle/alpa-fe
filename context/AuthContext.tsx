@@ -70,12 +70,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (!res.ok) {
-        // If unauthorized, clear everything
+        // If unauthorized, clear everything and redirect to home
         if (res.status === 401) {
           setUser(null);
           setToken(null);
           localStorage.removeItem("user");
           localStorage.removeItem("alpa_token");
+          if (typeof window !== "undefined") {
+            window.location.href = "/";
+          }
         }
         return;
       }
