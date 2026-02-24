@@ -26,6 +26,7 @@ type CartContextType = {
   itemCount: number;
   getItemQuantity: (productId: string) => number;
   isHydrated: boolean;
+  isMergingCart: boolean;
   fetchCartFromBackend: () => Promise<void>;
 };
 
@@ -41,20 +42,36 @@ const baseUrl = "https://alpa-be-1.onrender.com";
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isMergingCart, setIsMergingCart] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+
+  // Tracks previous token to detect the null → value transition (login event)
+  const prevTokenRef = useRef<string | null>(undefined as any);
 
   /* ---------- LOAD TOKEN ---------- */
   useEffect(() => {
     setToken(localStorage.getItem("alpa_token"));
   }, []);
 
+  /* ---------- LISTEN FOR TOKEN CHANGES (e.g. login from another tab / context) ---------- */
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "alpa_token") {
+        setToken(e.newValue);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   /* ---------- FETCH CART FROM BACKEND ---------- */
-  const fetchCartFromBackend = async () => {
-    if (!token) return;
+  const fetchCartFromBackend = async (authToken?: string) => {
+    const activeToken = authToken ?? token;
+    if (!activeToken) return;
 
     try {
       const res = await fetch(`${baseUrl}/api/cart/my-cart`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${activeToken}` },
       });
 
       if (!res.ok) return;
@@ -82,14 +99,80 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /* ---------- MERGE GUEST CART → BACKEND (Shopify-style on login) ---------- */
+  const mergeGuestCartToBackend = async (authToken: string) => {
+    // Collect items from both guest storage keys
+    const cartRaw = localStorage.getItem("cart");
+    const guestRaw = localStorage.getItem("guest_cart_items");
+
+    const localItems: CartItem[] = cartRaw ? JSON.parse(cartRaw) : [];
+    const guestItems: Array<{ productId: string; quantity: number }> = guestRaw
+      ? JSON.parse(guestRaw)
+      : [];
+
+    // Build a merged map: productId → total quantity
+    const mergeMap = new Map<string, number>();
+    localItems.forEach((item) =>
+      mergeMap.set(item.id, (mergeMap.get(item.id) ?? 0) + item.qty)
+    );
+    guestItems.forEach((item) =>
+      mergeMap.set(
+        item.productId,
+        (mergeMap.get(item.productId) ?? 0) + item.quantity
+      )
+    );
+
+    if (mergeMap.size === 0) {
+      // Nothing to merge — just fetch the backend cart
+      await fetchCartFromBackend(authToken);
+      return;
+    }
+
+    setIsMergingCart(true);
+
+    // Push all guest items to backend in parallel
+    await Promise.allSettled(
+      Array.from(mergeMap.entries()).map(([productId, quantity]) =>
+        fetch(`${baseUrl}/api/cart/add`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ productId, quantity }),
+        })
+      )
+    );
+
+    // Clear guest cart keys — backend is now the source of truth
+    localStorage.removeItem("cart");
+    localStorage.removeItem("guest_cart_items");
+    localStorage.removeItem("guest_cart_metadata");
+
+    // Fetch the fully merged cart from backend
+    await fetchCartFromBackend(authToken);
+    setIsMergingCart(false);
+  };
+
   /* ---------- INIT CART ---------- */
   useEffect(() => {
     const init = async () => {
+      // Show guest cart immediately while we work in the background
       const local = localStorage.getItem("cart");
       setCartItems(local ? JSON.parse(local) : []);
 
-      if (token) await fetchCartFromBackend();
+      if (token) {
+        const isFirstLogin = prevTokenRef.current === null || prevTokenRef.current === undefined;
+        if (isFirstLogin && prevTokenRef.current !== token) {
+          // null → token: user just logged in → merge guest → backend
+          await mergeGuestCartToBackend(token);
+        } else {
+          // token was already set (page refresh, re-render) → just fetch
+          await fetchCartFromBackend(token);
+        }
+      }
 
+      prevTokenRef.current = token;
       setIsHydrated(true);
     };
 
@@ -255,6 +338,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         itemCount,
         getItemQuantity,
         isHydrated,
+        isMergingCart,
         fetchCartFromBackend,
       }}
     >
