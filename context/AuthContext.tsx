@@ -108,6 +108,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("alpa_token", authToken);
     }
     localStorage.setItem("user", JSON.stringify(userData));
+    // Notify CartContext (and any other listeners) that a login just happened.
+    // StorageEvent does NOT fire within the same tab, so we use a custom event.
+    const newToken = authToken ?? localStorage.getItem("alpa_token");
+    if (newToken) {
+      window.dispatchEvent(new CustomEvent("alpa-login", { detail: { token: newToken } }));
+    }
   };
 
   // Login function
@@ -138,7 +144,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(null);
       localStorage.removeItem("user");
       localStorage.removeItem("alpa_token");
-      
+
+      // Notify CartContext to clear guest state immediately (same-tab)
+      window.dispatchEvent(new CustomEvent("alpa-logout"));
+
       // Redirect to home page
       if (typeof window !== "undefined") {
         window.location.href = "/";
