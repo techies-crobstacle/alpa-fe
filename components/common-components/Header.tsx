@@ -47,7 +47,7 @@ export default function Header() {
 
   const { user, logout, fetchUser, loading } = useAuth();
   const { cartItems, fetchCartFromBackend } = useCart();
-  const { cartData, subscribeToUpdates } = useSharedEnhancedCart();
+  const { cartData, subscribeToUpdates, loading: cartLoading } = useSharedEnhancedCart();
   const { data: products = [] } = useProducts();
   const router = useRouter();
 
@@ -356,7 +356,7 @@ export default function Header() {
               aria-label={`Shopping cart with ${cartItemCount} items`}
             >
               <ShoppingCart className="h-6 w-6 text-gray-800" />
-              {mounted && cartItemCount > 0 && (
+              {mounted && !cartLoading && cartItemCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 text-[10px] flex items-center justify-center bg-[#5A1E12] text-white rounded-full font-bold shadow-sm">
                   {cartItemCount > 9 ? "9+" : cartItemCount}
                 </span>
@@ -458,7 +458,7 @@ export default function Header() {
                 }`}
               />
 
-              {mounted && cartItemCount > 0 && (
+              {mounted && !cartLoading && cartItemCount > 0 && (
                 <>
                   {!cartOpen && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#5A1E12] rounded-full animate-ping opacity-75" />
@@ -873,7 +873,7 @@ export default function Header() {
             aria-label={`Shopping cart with ${cartItemCount} items`}
           >
             <ShoppingCart className={`h-5 w-5 text-gray-800 transition-transform duration-300 ${cartOpen ? "rotate-12 scale-110" : "group-hover:scale-110"}`} />
-            {mounted && cartItemCount > 0 && (
+            {mounted && !cartLoading && cartItemCount > 0 && (
               <>
                 {!cartOpen && <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#5A1E12] rounded-full animate-ping opacity-75" />}
                 <span className={`absolute -top-1 -right-1 h-4 w-4 text-[10px] flex items-center justify-center bg-[#5A1E12] text-white rounded-full font-bold shadow-sm transition-transform duration-300 ${cartOpen ? "scale-125" : ""}`}>
@@ -922,7 +922,7 @@ export default function Header() {
                       <Image src={user.profileImage} alt={user.name || "User"} width={32} height={32} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#EAD7B7] to-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
                       <User className="w-4 h-4 text-white" />
                     </div>
                   )}

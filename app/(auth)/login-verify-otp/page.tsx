@@ -15,10 +15,14 @@ import {
   Mail,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 
 // Separate component that uses useSearchParams
 function OTPVerificationForm() {
   const { setUserDirect } = useAuth();
+  const { notifyLogin } = useCart();
+  const { fetchCartData } = useSharedEnhancedCart();
   const router = useRouter();
   const searchParams = useSearchParams();
   const url = "https://alpa-be-1.onrender.com";
@@ -173,13 +177,16 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     //  REAL LOGIN HAPPENS HERE
     localStorage.setItem("alpa_token", data.token);
-    
+
     // Store trusted device token if provided
     if (data.trustedDeviceToken) {
       localStorage.setItem("trustedDeviceToken", data.trustedDeviceToken);
     }
-    
+
     setUserDirect(data.user);
+    // Reload server cart into both cart stores.
+    await notifyLogin(data.token);
+    await fetchCartData(true);
 
     setSuccess("Verification successful! Redirecting...");
 

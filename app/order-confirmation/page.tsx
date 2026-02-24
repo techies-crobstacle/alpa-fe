@@ -1,10 +1,21 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, Package, Loader2, ArrowRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import {
+  CheckCircle,
+  Package,
+  Loader2,
+  ArrowRight,
+  Star,
+  Send,
+  ShoppingBag,
+  Home,
+  MessageSquare,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 
 interface OrderStatus {
@@ -13,43 +24,250 @@ interface OrderStatus {
   paymentStatus: string;
 }
 
+// ─── Feedback Form ───────────────────────────────────────────────────────────
+function FeedbackForm({ defaultName, defaultEmail }: { defaultName: string; defaultEmail: string }) {
+  const [name, setName] = useState(defaultName);
+  const [email, setEmail] = useState(defaultEmail);
+  const [rating, setRating] = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const ratingLabels = ["", "Poor", "Fair", "Good", "Very Good", "Excellent"];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rating) { setError("Please select a star rating."); return; }
+    if (!name.trim()) { setError("Please enter your name."); return; }
+    if (!email.trim()) { setError("Please enter your email."); return; }
+    setError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("https://alpa-be-1.onrender.com/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          rating: String(rating),
+          comment: comment.trim(),
+        }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.message || "Something went wrong. Please try again.");
+      }
+    } catch {
+      setError("Unable to submit feedback. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center h-full text-center px-6 gap-5 py-12"
+      >
+        <div className="w-20 h-20 rounded-full bg-[#5A1E12]/10 flex items-center justify-center">
+          <CheckCircle className="w-10 h-10 text-[#5A1E12]" strokeWidth={1.5} />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-[#3b1a08] mb-1">Thank you!</h3>
+          <p className="text-sm text-[#973c00]/70 leading-relaxed max-w-xs mx-auto">
+            Your feedback means the world to us. We&apos;re constantly improving to give you a better experience.
+          </p>
+        </div>
+        <div className="flex gap-1.5">
+          {[1, 2, 3, 4, 5].map((s) => (
+            <Star
+              key={s}
+              size={20}
+              className={s <= rating ? "fill-[#973c00] text-[#973c00]" : "fill-[#EAD7B7] text-[#EAD7B7]"}
+            />
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5 h-full">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-[#5A1E12]/10 flex items-center justify-center shrink-0">
+          <MessageSquare className="w-5 h-5 text-[#5A1E12]" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-[#3b1a08] leading-tight">How was your experience?</h2>
+          <p className="text-xs text-[#973c00]/60 mt-0.5">Your feedback helps us improve for everyone</p>
+        </div>
+      </div>
+
+      {/* Star Rating */}
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-semibold text-[#973c00]/70 uppercase tracking-wider">
+          Overall Rating <span className="text-[#973c00]">*</span>
+        </label>
+        <div className="flex items-center gap-1.5">
+          {[1, 2, 3, 4, 5].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onMouseEnter={() => setHovered(s)}
+              onMouseLeave={() => setHovered(0)}
+              onClick={() => setRating(s)}
+              className="transition-transform duration-150 hover:scale-110 active:scale-95 focus:outline-none"
+              aria-label={`Rate ${s} out of 5`}
+            >
+              <Star
+                size={32}
+                className={`transition-colors duration-150 ${
+                  s <= (hovered || rating)
+                    ? "fill-[#973c00] text-[#973c00]"
+                    : "fill-stone-200 text-stone-200"
+                }`}
+              />
+            </button>
+          ))}
+          <AnimatePresence mode="wait">
+            {(hovered || rating) > 0 && (
+              <motion.span
+                key={hovered || rating}
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                className="ml-2 text-sm font-semibold text-[#5A1E12]"
+              >
+                {ratingLabels[hovered || rating]}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Name + Email row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-[#973c00]/70 uppercase tracking-wider">
+            Name <span className="text-[#973c00]">*</span>
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-[#973c00]/20 bg-white/70 text-[#3b1a08] placeholder-[#973c00]/30 outline-none focus:border-[#5A1E12] focus:ring-2 focus:ring-[#5A1E12]/10 transition-all"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-[#973c00]/70 uppercase tracking-wider">
+            Email <span className="text-[#973c00]">*</span>
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your@email.com"
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-[#973c00]/20 bg-white/70 text-[#3b1a08] placeholder-[#973c00]/30 outline-none focus:border-[#5A1E12] focus:ring-2 focus:ring-[#5A1E12]/10 transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Comment */}
+      <div className="flex flex-col gap-1.5 flex-1">
+        <label className="text-xs font-semibold text-[#973c00]/70 uppercase tracking-wider">
+          Your Comment
+        </label>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Tell us about your experience — what went well, what could be better…"
+          rows={4}
+          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-[#973c00]/20 bg-white/70 text-[#3b1a08] placeholder-[#973c00]/30 outline-none focus:border-[#5A1E12] focus:ring-2 focus:ring-[#5A1E12]/10 transition-all resize-none leading-relaxed"
+        />
+      </div>
+
+      {/* Error */}
+      <AnimatePresence>
+        {error && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg"
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
+
+      {/* Submit */}
+      <button
+        type="submit"
+        disabled={submitting}
+        className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-[#5A1E12] text-white text-sm font-bold hover:bg-[#3b1a08] active:scale-[0.98] transition-all shadow-md shadow-[#5A1E12]/20 disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        {submitting ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Send className="w-4 h-4" />
+        )}
+        {submitting ? "Submitting…" : "Submit Feedback"}
+      </button>
+    </form>
+  );
+}
+
+// ─── Main Content ─────────────────────────────────────────────────────────────
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const orderId = searchParams.get("orderId");
+  const paymentMethodParam = searchParams.get("paymentMethod");
+  const isCOD = paymentMethodParam === "cod";
 
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!orderId) {
-      setError("No order ID found.");
-      setLoading(false);
-      return;
-    }
+    if (!orderId) { return; }
 
     const checkStatus = async () => {
       try {
         const currentToken = token || localStorage.getItem("alpa_token");
         const res = await fetch(
           `https://alpa-be-1.onrender.com/api/payments/status/${orderId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${currentToken}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${currentToken}` } }
         );
         if (res.ok) {
           const data = await res.json();
-          setOrderStatus({ orderId, status: data.status, paymentStatus: data.paymentStatus });
+          setOrderStatus({
+            orderId,
+            status: data.status || "Confirmed",
+            paymentStatus: isCOD
+              ? "Cash on Delivery"
+              : data.paymentStatus || "Paid",
+          });
         } else {
-          // Even if status fetch fails, we know order was placed
-          setOrderStatus({ orderId, status: "CONFIRMED", paymentStatus: "PAID" });
+          setOrderStatus({
+            orderId,
+            status: "Confirmed",
+            paymentStatus: isCOD ? "Cash on Delivery" : "Paid",
+          });
         }
       } catch {
-        setOrderStatus({ orderId, status: "CONFIRMED", paymentStatus: "PAID" });
+        setOrderStatus({
+          orderId,
+          status: "Confirmed",
+          paymentStatus: isCOD ? "Cash on Delivery" : "Paid",
+        });
       } finally {
         setLoading(false);
       }
@@ -57,6 +275,9 @@ function OrderConfirmationContent() {
 
     checkStatus();
   }, [orderId, token]);
+
+  // No orderId → render nothing while the redirect fires (avoids spinner flash)
+  if (!orderId) return null;
 
   if (loading) {
     return (
@@ -70,66 +291,134 @@ function OrderConfirmationContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#ebe3d5] flex flex-col items-center justify-center px-4 py-16">
-      {/* Logo */}
-      <Link href="/" className="mb-10">
-        <Image src="/images/navbarLogo.png" width={64} height={64} alt="Logo" className="w-14" />
-      </Link>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* ── LEFT: Order Success (35%) ─────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.45 }}
+        className="lg:w-[35%] bg-[#5A1E12] text-white flex flex-col items-center justify-between px-10 py-12 gap-8 relative overflow-hidden"
+      >
 
-      <div className="w-full max-w-md text-center">
-        {/* Success icon */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="w-24 h-24 rounded-full bg-[#5A1E12]/8 flex items-center justify-center">
-            <CheckCircle className="w-12 h-12 text-[#5A1E12]" strokeWidth={1.5} />
-          </div>
-        </div>
+          {/* subtle decorative rings */}
+          <div className="absolute -top-16 -left-16 w-56 h-56 rounded-full border border-white/5" />
+          <div className="absolute -top-6 -left-6 w-40 h-40 rounded-full border border-white/5" />
+          <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full border border-white/5" />
 
-        <h1 className="text-3xl font-extrabold text-[#3b1a08] mb-2">Order Confirmed!</h1>
-        <p className="text-[#973c00]/70 mb-8">
-          Thank you for your purchase. Your payment was successful and your order is being processed.
-        </p>
-
-        {orderStatus && (
-          <div className="divide-y divide-[#973c00]/10 mb-8 text-left">
-            <div className="flex items-center justify-between py-3">
-              <span className="text-xs font-semibold text-[#973c00]/50 uppercase tracking-wider">Order ID</span>
-              <span className="text-sm font-bold text-[#3b1a08] font-mono">{orderStatus.orderId.slice(-8).toUpperCase()}</span>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-xs font-semibold text-[#973c00]/50 uppercase tracking-wider">Status</span>
-              <span className="text-sm font-semibold text-[#5A1E12]">{orderStatus.status}</span>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-xs font-semibold text-[#973c00]/50 uppercase tracking-wider">Payment</span>
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#5A1E12]">
-                <CheckCircle className="w-3.5 h-3.5" />
-                {orderStatus.paymentStatus}
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3">
-          <Link
-            href="/shop"
-            className="w-full py-4 bg-[#5A1E12] text-white font-bold rounded-2xl hover:bg-[#3b1a08] transition-all shadow-md shadow-[#5A1E12]/15 flex items-center justify-center gap-2"
-          >
-            Continue Shopping
-            <ArrowRight className="w-4 h-4" />
+          {/* Logo */}
+          <Link href="/" className="z-10 self-start">
+            <Image
+              src="/images/navbarLogo.png"
+              width={120}
+              height={120}
+              alt="Logo"
+              className="w-16"
+            />
           </Link>
-          <Link
-            href="/"
-            className="w-full py-3.5 text-[#5A1E12] font-semibold rounded-2xl border border-[#973c00]/20 hover:bg-[#5A1E12]/5 transition text-sm"
+
+          {/* Success centre */}
+          <div className="flex flex-col items-center text-center gap-5 z-10 flex-1 justify-center">
+            <motion.div
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 14 }}
+              className="w-24 h-24 rounded-full bg-white/10 border border-white/20 flex items-center justify-center"
+            >
+              <CheckCircle className="w-12 h-12 text-white" strokeWidth={1.5} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/50 mb-1">Order Placed</p>
+              <h1 className="text-3xl font-extrabold leading-tight mb-2">Order Confirmed!</h1>
+              <p className="text-sm text-white/65 leading-relaxed max-w-55 mx-auto">
+                Thank you for your purchase. Your payment was successful and your order is being processed.
+              </p>
+            </motion.div>
+
+            {/* Order details */}
+            {orderStatus && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="w-full divide-y divide-white/10 bg-white/5 rounded-2xl px-4 border border-white/10"
+              >
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Order ID</span>
+                  <span className="text-sm font-bold font-mono text-white">
+                    #{orderStatus.orderId.slice(-8).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Status</span>
+                  <span className="text-xs font-semibold text-[#EAD7B7]">{orderStatus.status}</span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Payment</span>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#EAD7B7]">
+                    {isCOD
+                      ? <Package className="w-3 h-3" />
+                      : <CheckCircle className="w-3 h-3" />}
+                    {orderStatus.paymentStatus}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.65 }}
+            className="flex flex-col gap-2.5 w-full z-10"
           >
-            Back to Home
-          </Link>
+            <Link
+              href="/shop"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white text-[#5A1E12] text-sm font-bold hover:bg-[#EAD7B7] transition-all shadow-sm active:scale-[0.97]"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Continue Shopping
+            </Link>
+            <Link
+              href="/"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-all active:scale-[0.97]"
+            >
+              <Home className="w-4 h-4" />
+              Back to Home
+            </Link>
+          </motion.div>
+
+          {/* Footer note */}
+          <div className="flex items-center gap-1.5 text-white/30 text-[11px] z-10">
+            <Package className="w-3 h-3" />
+            A confirmation email will be sent shortly
+          </div>
+      </motion.div>
+
+      {/* ── RIGHT: Feedback (65%) ─────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.25, duration: 0.45 }}
+        className="lg:w-[65%] bg-[#fdf8f3] px-10 lg:px-16 py-12 flex flex-col justify-center"
+      >
+        {/* Decorative top strip */}
+        <div className="flex items-center gap-2 mb-8">
+          <div className="h-px flex-1 bg-[#973c00]/10" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#973c00]/40">Share your experience</span>
+          <div className="h-px flex-1 bg-[#973c00]/10" />
         </div>
 
-        <div className="flex items-center justify-center gap-1.5 mt-8 text-[#973c00]/40 text-xs">
-          <Package className="w-3.5 h-3.5" />
-          A confirmation email will be sent to you shortly
-        </div>
-      </div>
+        <FeedbackForm
+          defaultName={user?.name || ""}
+          defaultEmail={user?.email || ""}
+        />
+      </motion.div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ export default function NavbarWrapper() {
     pathname === "/cart/single-page" ||
     pathname === "/shop/cart/checkout" ||
     pathname === "/checkout" ||
+    pathname === "/order-confirmation" ||
     pathname === "/signup-otp";
 
 

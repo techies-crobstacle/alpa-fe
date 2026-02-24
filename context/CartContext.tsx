@@ -27,6 +27,8 @@ type CartContextType = {
   getItemQuantity: (productId: string) => number;
   isHydrated: boolean;
   fetchCartFromBackend: () => Promise<void>;
+  /** Call this immediately after a successful login to reload the cart. */
+  notifyLogin: (newToken: string) => Promise<void>;
 };
 
 /* =======================
@@ -43,18 +45,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
 
-  /* ---------- LOAD TOKEN ---------- */
-  useEffect(() => {
-    setToken(localStorage.getItem("alpa_token"));
-  }, []);
-
-  /* ---------- FETCH CART FROM BACKEND ---------- */
-  const fetchCartFromBackend = async () => {
-    if (!token) return;
+  /* ---------- FETCH CART FROM BACKEND ----------
+   * Accepts an explicit token so it can be called before the `token`
+   * state has had a chance to propagate (avoids stale-closure bugs).
+   * ----------------------------------------------------------------- */
+  const fetchCartFromBackend = async (overrideToken?: string) => {
+    const t = overrideToken ?? token;
+    if (!t) return;
 
     try {
       const res = await fetch(`${baseUrl}/api/cart/my-cart`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${t}` },
       });
 
       if (!res.ok) return;
@@ -82,19 +83,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  /* ---------- INIT CART ---------- */
+  /* ---------- INIT CART — runs ONCE on mount ----------
+   * Reads localStorage immediately (guest or cached cart), then does a
+   * single fetch if the user is already logged in. Never re-runs on
+   * token state changes to avoid duplicate API calls.
+   * ----------------------------------------------------------------- */
   useEffect(() => {
-    const init = async () => {
-      const local = localStorage.getItem("cart");
-      setCartItems(local ? JSON.parse(local) : []);
+    // Hydrate from localStorage only — the EnhancedCartProvider is the
+    // authoritative server-data fetcher. Making an independent API call here
+    // duplicates the request on every page load (×2 with StrictMode).
+    const storedToken = localStorage.getItem("alpa_token");
+    if (storedToken) setToken(storedToken);
 
-      if (token) await fetchCartFromBackend();
-
-      setIsHydrated(true);
-    };
-
-    init();
-  }, [token]);
+    const local = localStorage.getItem("cart");
+    setCartItems(local ? JSON.parse(local) : []);
+    setIsHydrated(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ← intentionally empty: one hydration on load, then only on login
 
   /* ---------- SYNC LOCAL STORAGE ---------- */
   useEffect(() => {
@@ -133,9 +138,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               quantity: 1,
             }),
           });
-          if (response.ok) {
-            await fetchCartFromBackend();
-          } else {
+          if (!response.ok) {
             console.error("Failed to add item to cart:", response.statusText);
           }
         } catch (error) {
@@ -173,9 +176,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               method: "DELETE",
               headers: { Authorization: `Bearer ${token}` },
             });
-            if (response.ok) {
-              await fetchCartFromBackend();
-            } else {
+            if (!response.ok) {
               console.error("Failed to remove item from cart:", response.statusText);
             }
           } else {
@@ -190,9 +191,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 quantity: newQty,
               }),
             });
-            if (response.ok) {
-              await fetchCartFromBackend();
-            } else {
+            if (!response.ok) {
               console.error("Failed to update cart:", response.statusText);
             }
           }
@@ -205,6 +204,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   /* ---------- REMOVE ---------- */
   const removeFromCart = async (productId: string) => {
+    // Optimistic update first — remove locally regardless of auth state.
+    setCartItems((prev) => prev.filter((i) => i.id !== productId));
+
     if (token) {
       try {
         const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
@@ -212,24 +214,61 @@ export function CartProvider({ children }: { children: ReactNode }) {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (response.ok) {
-          await fetchCartFromBackend();
-        } else {
+        if (!response.ok) {
           console.error("Failed to remove item from cart:", response.statusText);
         }
       } catch (error) {
         console.error("Error removing from cart:", error);
       }
-      return;
     }
-
-    setCartItems((prev) => prev.filter((i) => i.id !== productId));
   };
 
   /* ---------- CLEAR ---------- */
   const clearCart = () => {
     setCartItems([]);
     localStorage.removeItem("cart");
+  };
+
+  /* ---------- NOTIFY LOGIN ----------
+   * Called right after a successful login. Updates the token in state
+   * and fetches the user's server-side cart immediately so the cart page
+   * and side-cart reflect the real data without a page reload.
+   * ------------------------------------------------------------------ */
+  const notifyLogin = async (newToken: string) => {
+    // Persist the token so future operations (addToCart, updateQty …) work.
+    setToken(newToken);
+
+    // We must use `newToken` directly here because setToken is async —
+    // the `token` closure still holds the old (null) value at this point.
+    try {
+      const res = await fetch(`${baseUrl}/api/cart/my-cart`, {
+        headers: { Authorization: `Bearer ${newToken}` },
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      const items: CartItem[] = data.cart.map((item: any) => ({
+        cartId: item.id || item.cartId || "",
+        id: item.productId,
+        name: item.product.title,
+        price: Number(item.product.price),
+        image: item.product.images?.[0] || "/images/placeholder.png",
+        qty: item.quantity,
+        stock: item.product.stock,
+        slug: item.product.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-"),
+      }));
+
+      // Replace guest cart with the authoritative server cart.
+      // The existing localStorage sync useEffect will write it back.
+      localStorage.removeItem("cart");
+      setCartItems(items);
+    } catch (err) {
+      console.error("notifyLogin cart fetch failed", err);
+    }
   };
 
   /* ---------- HELPERS ---------- */
@@ -256,6 +295,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         getItemQuantity,
         isHydrated,
         fetchCartFromBackend,
+        notifyLogin,
       }}
     >
       {children}

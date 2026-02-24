@@ -346,7 +346,7 @@ export default function Page() {
                         <span className="font-medium text-[#4A3728]">${shippingCost.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-[#6D5443]">
-                        <span>GST <span className="text-xs">({gstPercentage?.toFixed(1)}%)</span></span>
+                        <span>GST <span className="text-xs">(incl. {gstPercentage?.toFixed(1)}%)</span></span>
                         <span className="font-medium text-[#4A3728]">${gstAmount.toFixed(2)}</span>
                     </div>
                     

@@ -219,12 +219,12 @@ export function useEnhancedCart() {
 
     const subtotal = parseFloat(cartData.calculations.subtotal || '0');
     const shippingCost = parseFloat(currentShipping.cost || '0');
-    const gstPercentage = parseFloat(cartData.calculations.gstPercentage || '10');
+    const gstPercentage = 10; // GST rate for display — prices are already GST-inclusive
     
-    // Calculate GST on subtotal + shipping
-    const taxableAmount = subtotal + shippingCost;
-    const gstAmount = (taxableAmount * gstPercentage) / 100;
-    const grandTotal = taxableAmount + gstAmount;
+    // Prices are GST-inclusive. Extract the GST component (Price ÷ 11).
+    // Grand total = subtotal + shipping (no additional GST added on top).
+    const grandTotal = subtotal + shippingCost;
+    const gstAmount = grandTotal / 11;
 
     return {
       subtotal,
@@ -315,13 +315,8 @@ export function useEnhancedCart() {
 
   useEffect(() => {
     fetchCartData();
-    
-    // Set up real-time updates every 30 seconds
-    const interval = setInterval(() => {
-      fetchCartData(true);
-    }, 30000);
-
-    return () => clearInterval(interval);
+    // No polling interval — cart data is refreshed after every user action
+    // (add, update, remove). Polling was causing redundant API calls.
   }, []);
 
   // Refetch when shipping changes to get updated calculations

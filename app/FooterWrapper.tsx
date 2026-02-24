@@ -13,8 +13,7 @@ export default function FooterWrapper() {
     pathname === "/login-verify-otp" ||
     pathname === "/cart"|| 
     pathname === "/sellerOnboarding" || 
-    pathname === "/cart/single-page" ||
-    pathname === "/shop/cart/checkout" ||
+    pathname === "/order-confirmation" ||
     pathname === "/checkout" ||
     pathname === "/signup-otp";
 

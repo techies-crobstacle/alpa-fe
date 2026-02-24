@@ -1,6 +1,8 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +18,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   const { setUserDirect } = useAuth(); // Use setUserDirect instead of fetchUser
+  const { notifyLogin } = useCart();
+  const { fetchCartData } = useSharedEnhancedCart();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +56,9 @@ export default function LoginPage() {
       if (data.token && data.user) {
         localStorage.setItem("alpa_token", data.token);
         setUserDirect(data.user);
+        // Reload server cart into both cart stores.
+        await notifyLogin(data.token);
+        await fetchCartData(true);
         router.push("/");
         return;
       }
