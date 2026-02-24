@@ -308,13 +308,8 @@ export function useEnhancedCart() {
 
   useEffect(() => {
     fetchCartData();
-    
-    // Set up real-time updates every 30 seconds
-    const interval = setInterval(() => {
-      fetchCartData(true);
-    }, 30000);
-
-    return () => clearInterval(interval);
+    // No polling interval — cart data is refreshed after every user action
+    // (add, update, remove). Polling was causing redundant API calls.
   }, []);
 
   // Refetch when shipping changes to get updated calculations

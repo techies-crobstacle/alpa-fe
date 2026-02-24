@@ -22,8 +22,9 @@ export interface Product {
   artistName?: string;
   sellerName?: string;
   sellerId?: string;
+  avgRating?: number;
+  ratingCount?: number;
   rating?: number;
-  reviews?: number;
   status?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -48,6 +49,7 @@ export function useProducts() {
         stock: product.stock ?? 0, // Ensure stock is always present
         brand: product.brand || product.title.split(" ")[0],
         slug: product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        rating: product.avgRating ?? 0,
       }));
     },
     // Cache products for 20 minutes since they don't change frequently
