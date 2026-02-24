@@ -997,7 +997,7 @@ export default function CheckOutPage() {
                   <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">GST ({gstPercentage?.toFixed(1)}%)</span>
+                  <span className="text-gray-600">GST (incl. {gstPercentage?.toFixed(1)}%)</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
 
