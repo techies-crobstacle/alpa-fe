@@ -160,6 +160,13 @@ export function useEnhancedCart() {
       });
 
       if (!response.ok) {
+        // Token expired / invalid — log out and redirect home
+        if (response.status === 401) {
+          localStorage.removeItem("user");
+          localStorage.removeItem("alpa_token");
+          window.location.href = "/";
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
