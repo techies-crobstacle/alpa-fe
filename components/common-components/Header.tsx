@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { ShoppingCart, Menu, X, User, LogOut, Package, Settings, Search } from "lucide-react";
+import { ShoppingCart, Menu, X, User, LogOut, Package, Settings, Search, Heart, Store } from "lucide-react";
 import MiniCart from "../cards/MiniCart";
 import OptimisticMiniCart from "../cards/OptimisticMiniCart";
 import { useAuth } from "../../context/AuthContext";
@@ -48,10 +48,21 @@ export default function Header() {
 
   const { user, logout, fetchUser } = useAuth();
   const { cartItems, fetchCartFromBackend } = useCart();
-  const { cartData, subscribeToUpdates, loading: cartLoading } = useSharedEnhancedCart();
+  const { cartData, subscribeToUpdates } = useSharedEnhancedCart();
   const { data: products = [] } = useProducts();
   const router = useRouter();
   const { redirectToDashboard, isRedirecting: isDashboardRedirecting } = useDashboardSSO();
+
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [persistedCartCount, setPersistedCartCount] = useState(0);
+
+  // Seed badge count from localStorage immediately on mount (shows during
+  // loading and persists through logout + page reload)
+  useEffect(() => {
+    const stored = parseInt(localStorage.getItem("alpa_cart_count") || "0", 10);
+    if (!isNaN(stored)) setPersistedCartCount(stored);
+  }, []);
 
   // Local state for real-time cart updates
   const [cartUpdateTrigger, setCartUpdateTrigger] = useState(0);
@@ -77,10 +88,13 @@ export default function Header() {
     if (cartData && cartData.cart) {
       return cartData.cart.reduce((total, item) => total + (item.quantity || 0), 0);
     }
-    
     // Priority 2: Fallback to context cart items
-    return cartItems.reduce((total, item) => total + (item.qty || 0), 0);
-  }, [cartData, cartItems, cartData?.cart]);
+    if (cartItems.length > 0) {
+      return cartItems.reduce((total, item) => total + (item.qty || 0), 0);
+    }
+    // Priority 3: Persisted count from localStorage (instant on mount / post-logout)
+    return persistedCartCount;
+  }, [cartData, cartItems, cartData?.cart, persistedCartCount]);
 
   // Search functionality with segregated results (Products, Categories, Artists)
   const segregatedSearchResults = useMemo(() => {
@@ -287,12 +301,18 @@ export default function Header() {
     setCartOpen(!cartOpen);
   }, [cartOpen]);
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = useCallback(() => {
     setUserMenuOpen(false);
+    setStickyUserMenuOpen(false);
     setMobileMenuOpen(false);
+    setLogoutModalOpen(true);
+  }, []);
+
+  const confirmLogout = useCallback(async () => {
+    setIsLoggingOut(true);
     await logout();
-    // After logout, cart should automatically sync to guest cart
-    // because token will be removed and CartContext will handle it
+    // logout() redirects via window.location.href so the spinner stays
+    // visible until the page fully unloads
   }, [logout]);
 
   const handleNavigation = useCallback((href: string) => {
@@ -308,7 +328,69 @@ export default function Header() {
 
   return (
     <>
-      {/* Mobile Menu Overlay */}
+      {/* ── Logout Confirmation / Loading Modal ── */}
+      <AnimatePresence>
+        {logoutModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 16 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="bg-white rounded-3xl shadow-2xl w-[90vw] max-w-sm overflow-hidden"
+            >
+              {isLoggingOut ? (
+                /* ── Loading state ── */
+                <div className="flex flex-col items-center justify-center px-8 py-12 gap-5">
+                  <div className="w-16 h-16 rounded-full bg-[#5A1E12]/10 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-[#5A1E12] animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-gray-800 text-lg">Logging you out…</p>
+                    <p className="text-sm text-gray-400 mt-1">Please wait a moment</p>
+                  </div>
+                </div>
+              ) : (
+                /* ── Confirm state ── */
+                <>
+                  <div className="bg-[#5A1E12] px-6 pt-6 pb-5 text-center">
+                    <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                      <LogOut className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="text-white font-bold text-lg leading-snug">
+                      Hi {user?.name?.split(" ")[0] || "there"} 👋
+                    </p>
+                    <p className="text-white/70 text-sm mt-1">Are you sure you want to logout?</p>
+                  </div>
+                  <div className="p-5 flex flex-col gap-2.5">
+                    <button
+                      onClick={confirmLogout}
+                      className="w-full py-3 rounded-2xl bg-[#5A1E12] hover:bg-[#4a180f] text-white font-semibold text-sm transition-colors"
+                    >
+                      Yes, Logout
+                    </button>
+                    <button
+                      onClick={() => setLogoutModalOpen(false)}
+                      className="w-full py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* {cartOpen && (
         <div
           className="fixed inset-0 bg-black/20 z-40 animate-fadeIn"
@@ -358,7 +440,7 @@ export default function Header() {
               aria-label={`Shopping cart with ${cartItemCount} items`}
             >
               <ShoppingCart className="h-6 w-6 text-gray-800" />
-              {mounted && !cartLoading && cartItemCount > 0 && (
+              {mounted && cartItemCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 text-[10px] flex items-center justify-center bg-[#5A1E12] text-white rounded-full font-bold shadow-sm">
                   {cartItemCount > 9 ? "9+" : cartItemCount}
                 </span>
@@ -460,7 +542,7 @@ export default function Header() {
                 }`}
               />
 
-              {mounted && !cartLoading && cartItemCount > 0 && (
+              {mounted && cartItemCount > 0 && (
                 <>
                   {!cartOpen && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#5A1E12] rounded-full animate-ping opacity-75" />
@@ -585,16 +667,63 @@ export default function Header() {
                         My Profile
                       </button>
 
-                      <button
-                        onClick={() => { setUserMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }}
-                        disabled={isDashboardRedirecting}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
-                      >
-                        <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
-                          <Package className="w-3.5 h-3.5 text-[#5A1E12]" />
-                        </span>
-                        {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
-                      </button>
+                      {user.role?.toLowerCase() === "seller" ? (
+                        <>
+                          <button
+                            onClick={() => { setUserMenuOpen(false); redirectToDashboard("/dashboard"); }}
+                            disabled={isDashboardRedirecting}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
+                          >
+                            <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                              <Settings className="w-3.5 h-3.5 text-[#5A1E12]" />
+                            </span>
+                            Dashboard
+                          </button>
+                          <button
+                            onClick={() => { setUserMenuOpen(false); redirectToDashboard("/dashboard/orders"); }}
+                            disabled={isDashboardRedirecting}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
+                          >
+                            <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                              <Package className="w-3.5 h-3.5 text-[#5A1E12]" />
+                            </span>
+                            {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
+                          </button>
+                          <button
+                            onClick={() => { setUserMenuOpen(false); redirectToDashboard("/dashboard/products"); }}
+                            disabled={isDashboardRedirecting}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
+                          >
+                            <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                              <Store className="w-3.5 h-3.5 text-[#5A1E12]" />
+                            </span>
+                            My Products
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => { setUserMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }}
+                            disabled={isDashboardRedirecting}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
+                          >
+                            <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                              <Package className="w-3.5 h-3.5 text-[#5A1E12]" />
+                            </span>
+                            {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
+                          </button>
+                          <button
+                            onClick={() => { setUserMenuOpen(false); redirectToDashboard("/dashboard/customer/wishlist"); }}
+                            disabled={isDashboardRedirecting}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
+                          >
+                            <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                              <Heart className="w-3.5 h-3.5 text-[#5A1E12]" />
+                            </span>
+                            My Wishlist
+                          </button>
+                        </>
+                      )}
 
                       {user.role === "admin" && (
                         <button
@@ -800,13 +929,48 @@ export default function Header() {
                     <span className="font-medium">My Profile</span>
                     <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </button>
-                  <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
-                    <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
-                      <Package className="w-4 h-4 text-[#5A1E12]" />
-                    </div>
-                    <span className="font-medium">{isDashboardRedirecting ? "Redirecting…" : "My Orders"}</span>
-                    <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </button>
+                  {user.role?.toLowerCase() === "seller" ? (
+                    <>
+                      <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/dashboard"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
+                        <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
+                          <Settings className="w-4 h-4 text-[#5A1E12]" />
+                        </div>
+                        <span className="font-medium">Dashboard</span>
+                        <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                      <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/dashboard/orders"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
+                        <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
+                          <Package className="w-4 h-4 text-[#5A1E12]" />
+                        </div>
+                        <span className="font-medium">{isDashboardRedirecting ? "Redirecting…" : "My Orders"}</span>
+                        <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                      <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/dashboard/products"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
+                        <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
+                          <Store className="w-4 h-4 text-[#5A1E12]" />
+                        </div>
+                        <span className="font-medium">My Products</span>
+                        <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
+                        <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
+                          <Package className="w-4 h-4 text-[#5A1E12]" />
+                        </div>
+                        <span className="font-medium">{isDashboardRedirecting ? "Redirecting…" : "My Orders"}</span>
+                        <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                      <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/dashboard/customer/wishlist"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
+                        <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
+                          <Heart className="w-4 h-4 text-[#5A1E12]" />
+                        </div>
+                        <span className="font-medium">My Wishlist</span>
+                        <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                    </>
+                  )}
                   {user.role === "admin" && (
                     <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100">
                       <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
@@ -886,7 +1050,7 @@ export default function Header() {
             aria-label={`Shopping cart with ${cartItemCount} items`}
           >
             <ShoppingCart className={`h-5 w-5 text-gray-800 transition-transform duration-300 ${cartOpen ? "rotate-12 scale-110" : "group-hover:scale-110"}`} />
-            {mounted && !cartLoading && cartItemCount > 0 && (
+            {mounted && cartItemCount > 0 && (
               <>
                 {!cartOpen && <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#5A1E12] rounded-full animate-ping opacity-75" />}
                 <span className={`absolute -top-1 -right-1 h-4 w-4 text-[10px] flex items-center justify-center bg-[#5A1E12] text-white rounded-full font-bold shadow-sm transition-transform duration-300 ${cartOpen ? "scale-125" : ""}`}>
@@ -970,10 +1134,33 @@ export default function Header() {
                       <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><User className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
                       My Profile
                     </button>
-                    <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
-                      <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Package className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
-                      {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
-                    </button>
+                    {user.role?.toLowerCase() === "seller" ? (
+                      <>
+                        <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/dashboard"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
+                          <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Settings className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
+                          Dashboard
+                        </button>
+                        <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/dashboard/orders"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
+                          <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Package className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
+                          {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
+                        </button>
+                        <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/dashboard/products"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
+                          <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Store className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
+                          My Products
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/dashboard/customer/orders"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
+                          <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Package className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
+                          {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
+                        </button>
+                        <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/dashboard/customer/wishlist"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
+                          <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Heart className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
+                          My Wishlist
+                        </button>
+                      </>
+                    )}
                     {user.role === "admin" && (
                       <button onClick={() => { setStickyUserMenuOpen(false); router.push("/admin"); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group">
                         <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Settings className="w-3.5 h-3.5 text-[#5A1E12]" /></span>

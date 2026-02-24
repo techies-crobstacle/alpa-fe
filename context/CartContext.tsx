@@ -105,6 +105,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isHydrated) {
       localStorage.setItem("cart", JSON.stringify(cartItems));
+      // Persist the total count separately so the header can read it
+      // immediately on next mount (survives logout + page reload).
+      const count = cartItems.reduce((s, i) => s + i.qty, 0);
+      localStorage.setItem("alpa_cart_count", String(count));
     }
   }, [cartItems, isHydrated]);
 

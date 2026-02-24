@@ -3,6 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const { setUserDirect } = useAuth(); // Use setUserDirect instead of fetchUser
   const { notifyLogin } = useCart();
@@ -27,6 +29,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setShowModal(true);
 
     try {
       const res = await fetch(`${url}/api/auth/login`, {
@@ -41,6 +44,7 @@ export default function LoginPage() {
 
       if (!res.ok) {
         setError(data.message || "Login failed");
+        setShowModal(false);
         return;
       }
 
@@ -71,6 +75,7 @@ export default function LoginPage() {
       setError("Unexpected login response");
     } catch (err) {
       setError("Something went wrong");
+      setShowModal(false);
     } finally {
       setLoading(false);
     }
@@ -78,6 +83,39 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen w-full flex overflow-hidden">
+      {/* ── Login Loading Modal ── */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 16 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="bg-white rounded-3xl shadow-2xl w-[90vw] max-w-sm overflow-hidden"
+            >
+              <div className="flex flex-col items-center justify-center px-8 py-12 gap-5">
+                <div className="w-16 h-16 rounded-full bg-[#5A1E12]/10 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-[#5A1E12] animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-gray-800 text-lg">Logging you in…</p>
+                  <p className="text-sm text-gray-400 mt-1">Please wait a moment</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* LEFT PANEL */}
       <section
         className="relative w-1/2 flex flex-col justify-center px-20 text-white
