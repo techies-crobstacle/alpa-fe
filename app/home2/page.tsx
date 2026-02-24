@@ -146,7 +146,7 @@ const Page = () => {
             >
               <Link
                 href="/shop"
-                className="group relative inline-flex items-center gap-2 px-8 py-3.5 bg-[#803512] hover:bg-[#a0451a] text-white font-semibold text-sm tracking-wide uppercase rounded-sm transition-all duration-300 shadow-[0_8px_24px_rgba(128,53,18,0.45)] hover:shadow-[0_12px_32px_rgba(128,53,18,0.55)] hover:-translate-y-0.5 active:translate-y-0"
+                className="group relative inline-flex items-center gap-2 px-8 py-3.5 bg-[#5A1E12] hover:bg-[#7a2a1a] text-white font-semibold text-sm tracking-wide uppercase rounded-full transition-all duration-300 shadow-[0_8px_24px_rgba(90,30,18,0.45)] hover:shadow-[0_12px_32px_rgba(90,30,18,0.55)] hover:-translate-y-0.5 active:translate-y-0"
               >
                 Start Your Journey
                 <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -155,7 +155,7 @@ const Page = () => {
               </Link>
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-2 px-8 py-3.5 border border-white/30 hover:border-white/70 text-white/80 hover:text-white font-medium text-sm tracking-wide uppercase rounded-sm transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center gap-2 px-8 py-3.5 border border-white/30 hover:border-white/70 text-white/80 hover:text-white font-medium text-sm tracking-wide uppercase rounded-full transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Explore Art
               </Link>
@@ -239,7 +239,7 @@ const Page = () => {
                         Connecting you to more of what you love. Making every
                         delivery count across the country.
                       </p>
-                      <button className="bg-white text-[#803512] px-8 py-3 rounded-full text-xs font-bold uppercase shadow-lg hover:bg-orange-50 transition-colors">
+                      <button className="bg-[#5A1E12] text-white px-8 py-3 rounded-full text-xs font-bold uppercase shadow-lg hover:bg-[#7a2a1a] transition-colors">
                         View Now
                       </button>
                     </div>
@@ -278,7 +278,7 @@ const Page = () => {
                         Accessing essential healthcare and community services.
                         We're here to support every Australian's health journey.
                       </p>
-                      <button className="bg-white text-[#803512] px-8 py-3 rounded-full text-xs font-bold uppercase shadow-lg hover:bg-orange-50 transition-colors">
+                      <button className="bg-[#5A1E12] text-white px-8 py-3 rounded-full text-xs font-bold uppercase shadow-lg hover:bg-[#7a2a1a] transition-colors">
                         Access Services
                       </button>
                     </div>
@@ -396,7 +396,7 @@ const Page = () => {
 
         {/* ── ABORIGINAL PATTERN: BOTTOM-LEFT ── */}
         <div className="absolute bottom-0 left-0 w-72 h-72 sm:w-96 sm:h-96 pointer-events-none opacity-[0.13]" aria-hidden="true">
-          <svg viewBox="0 0 380 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          {/* <svg viewBox="0 0 380 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
             {[0, 28, 56, 84, 112, 140, 168, 196].map((offset, i) => (
               <path
                 key={offset}
@@ -425,20 +425,28 @@ const Page = () => {
                 fill="none"
               />
             ))}
-          </svg>
+          </svg> */}
         </div>
 
         <div>
-          <h2 className="text-center text-4xl font-bold text-[#632013] mb-14">
-            Explore Our Products
-          </h2>
+          <div className="flex flex-col items-center text-center mb-12">
+            <span className="text-xs font-bold tracking-[0.3em] uppercase text-[#803512]/60 mb-3">Handpicked Collection</span>
+            <h2 className="text-4xl sm:text-5xl font-bold text-[#3a1208] leading-tight mb-3">
+              Explore Our <span className="text-[#803512]">Products</span>
+            </h2>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="w-10 h-px bg-[#803512]/40" />
+              <span className="w-2 h-2 rounded-full bg-[#803512]/50" />
+              <span className="w-10 h-px bg-[#803512]/40" />
+            </div>
+          </div>
             {/* Exmaple */}
           {/* Product Carousel */}
           <div className="relative">
             {/* Left Arrow */}
             <button
               onClick={() => scrollProductByOne(-1)}
-              className="absolute -left-6 top-1/2 -translate-y-1/2 z-30 bg-[#632013] hover:bg-[#803512] text-white p-2 rounded-full hidden md:flex items-center justify-center transition-all shadow-lg cursor-pointer"
+              className="absolute -left-6 top-1/2 -translate-y-1/2 z-30 bg-[#5A1E12] hover:bg-[#7a2a1a] text-white p-2 rounded-full hidden md:flex items-center justify-center transition-all shadow-lg cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -454,7 +462,7 @@ const Page = () => {
             {/* Right Arrow */}
             <button
               onClick={() => scrollProductByOne(1)}
-              className="absolute -right-6 top-1/2 -translate-y-1/2 z-30 bg-[#632013] hover:bg-[#803512] text-white p-2 rounded-full hidden md:flex items-center justify-center transition-all shadow-lg cursor-pointer"
+              className="absolute -right-6 top-1/2 -translate-y-1/2 z-30 bg-[#5A1E12] hover:bg-[#7a2a1a] text-white p-2 rounded-full hidden md:flex items-center justify-center transition-all shadow-lg cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -559,7 +567,7 @@ const Page = () => {
           <div className="flex justify-center mt-10">
             <Link
               href="/shop"
-              className="px-8 py-2 bg-amber-900 text-white rounded-lg hover:bg-amber-800 transition"
+              className="px-8 py-2.5 bg-[#5A1E12] text-white rounded-full hover:bg-[#7a2a1a] transition-all font-semibold text-sm tracking-wide"
             >
               View All
             </Link>
@@ -567,19 +575,159 @@ const Page = () => {
         </div>
       </section>
 
+      {/* ================= SPLIT EXPLORE STRIP ================= */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 min-h-64 overflow-hidden">
+
+        {/* ── LEFT: Explore Marketplace ── */}
+        <Link
+          href="/shop"
+          className="group relative flex flex-col justify-between p-6 md:p-8 bg-[#3a1208] overflow-hidden cursor-pointer"
+        >
+          {/* Animated dot-grid background */}
+          <svg aria-hidden="true" className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.12]" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <pattern id="dots-left" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1.5" fill="#EAD7B7" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dots-left)" />
+          </svg>
+
+          {/* Animated scan line */}
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-amber-400/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-amber-400/40 to-transparent translate-x-full group-hover:-translate-x-full transition-transform duration-700 ease-in-out delay-100" />
+          {/* Vertical scan line */}
+          <div className="absolute top-0 right-0 w-0.5 h-full bg-linear-to-b from-transparent via-amber-400/30 to-transparent -translate-y-full group-hover:translate-y-full transition-transform duration-700 ease-in-out delay-200" />
+
+          {/* Corner bracket top-left */}
+          <div className="relative z-10 flex items-start justify-between mb-auto">
+            <div className="flex flex-col gap-1">
+              <div className="w-8 h-0.5 bg-amber-400/60" />
+              <div className="w-0.5 h-8 bg-amber-400/60" />
+            </div>
+            <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-amber-400/50 mt-1">01 / Shop</span>
+          </div>
+
+          {/* Text block */}
+          <div className="relative z-10 mt-4">
+            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-amber-300/60 mb-2">
+              Discover Products
+            </p>
+            <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-2 group-hover:text-amber-100 transition-colors duration-300">
+              Explore the<br />
+              <span className="text-amber-300">Marketplace</span>
+            </h3>
+            <p className="text-sm text-white/50 max-w-xs leading-relaxed mb-4">
+              Thousands of authentic Aboriginal products like art, crafts, textiles, and more, curated with care.
+            </p>
+            <div className="inline-flex items-center gap-3 text-amber-300 text-sm font-semibold tracking-wide uppercase">
+              <span className="w-8 h-px bg-amber-400/60 group-hover:w-14 transition-all duration-400" />
+              Browse Now
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Corner bracket bottom-right */}
+          <div className="absolute bottom-4 right-4 flex flex-col items-end gap-1 opacity-40">
+            <div className="w-0.5 h-8 bg-amber-400" />
+            <div className="w-8 h-0.5 bg-amber-400" />
+          </div>
+        </Link>
+
+        {/* ── RIGHT: Explore Yolŋu Culture ── */}
+        <Link
+          href="/about-us"
+          className="group relative flex flex-col justify-between p-6 md:p-8 bg-[#803512] overflow-hidden cursor-pointer"
+        >
+          {/* Animated dot-grid background */}
+          <svg aria-hidden="true" className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.10]" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <pattern id="dots-right" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1.5" fill="#fff" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dots-right)" />
+          </svg>
+
+          {/* Aboriginal concentric ring — top right watermark */}
+          <svg aria-hidden="true" viewBox="0 0 160 160" fill="none" className="absolute -top-6 -right-6 w-40 h-40 text-white opacity-[0.07] pointer-events-none">
+            {[72,54,38,24,11].map((r, i) => (
+              <circle key={r} cx="80" cy="80" r={r} stroke="currentColor" strokeWidth="1.4" strokeDasharray="4 3" opacity={1 - i * 0.15} />
+            ))}
+            <circle cx="80" cy="80" r="5" fill="currentColor" />
+            {[[80,2],[80,158],[2,80],[158,80]].map(([cx,cy],i)=>(<circle key={i} cx={cx} cy={cy} r="3" fill="currentColor" />))}
+            {[[80,18],[80,142],[18,80],[142,80]].map(([cx,cy],i)=>(<circle key={i} cx={cx} cy={cy} r="2" fill="currentColor" />))}
+          </svg>
+
+          {/* Animated scan line */}
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-orange-200/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-orange-200/40 to-transparent translate-x-full group-hover:-translate-x-full transition-transform duration-700 ease-in-out delay-100" />
+          <div className="absolute top-0 left-0 w-0.5 h-full bg-linear-to-b from-transparent via-orange-200/30 to-transparent -translate-y-full group-hover:translate-y-full transition-transform duration-700 ease-in-out delay-200" />
+
+          {/* Corner bracket top-right */}
+          <div className="relative z-10 flex items-start justify-between mb-auto">
+            <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-orange-200/50 mt-1">02 / Culture</span>
+            <div className="flex flex-col items-end gap-1">
+              <div className="w-8 h-0.5 bg-orange-200/60" />
+              <div className="w-0.5 h-8 bg-orange-200/60 self-end" />
+            </div>
+          </div>
+
+          {/* Text block */}
+          <div className="relative z-10 mt-4">
+            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-orange-200/60 mb-2">
+              Living Heritage
+            </p>
+            <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-2 group-hover:text-orange-100 transition-colors duration-300">
+              Explore<br />
+              <span className="text-orange-200">Yolŋu Culture</span>
+            </h3>
+            <p className="text-sm text-white/50 max-w-xs leading-relaxed mb-4">
+              Dive into the world's oldest living culture — stories, ceremony, language, and land passed through generations.
+            </p>
+            <div className="inline-flex items-center gap-3 text-orange-200 text-sm font-semibold tracking-wide uppercase">
+              <span className="w-8 h-px bg-orange-300/60 group-hover:w-14 transition-all duration-400" />
+              Learn More
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Corner bracket bottom-left */}
+          <div className="absolute bottom-4 left-4 flex flex-col gap-1 opacity-40">
+            <div className="w-0.5 h-8 bg-orange-200" />
+            <div className="w-8 h-0.5 bg-orange-200" />
+          </div>
+        </Link>
+      </section>
+
       {/* STATIC VIDEO SECTION */}
-      <section className="max-w-screen-2xl mx-auto pb-20 px-12">
-        <div className="flex flex-col justify-center items-center text-center">
-          <h2 className="font-bold text-lg sm:text-xl lg:text-4xl max-w-4xl mb-8 leading-relaxed text-center text-[#762a1b]">
+      <section className=" mx-auto pb-20 px-12 bg-white py-14">
+        <div className="max-w-screen-2xl mx-auto flex flex-col justify-center items-center text-center">
+          <p className="text-xs font-bold tracking-[0.3em] uppercase text-[#803512]/60 mb-3">
+            Experience the Land
+          </p>
+          <h2 className="font-bold text-3xl sm:text-4xl lg:text-5xl max-w-3xl mb-4 leading-[1.1] tracking-tight text-[#3a1208]">
             Journey through the heart of{" "}
-            <span className="text-[#52160a]">Arnhem Land.</span>
+            <span className="relative inline-block">
+              <span className="relative z-10 text-[#803512]">Arnhem Land.</span>
+              <span className="absolute left-0 bottom-1 w-full h-1.5 bg-[#803512]/15 rounded-full z-0" />
+            </span>
           </h2>
-          <div className="relative w-full max-w-5xl h-48 sm:h-64 lg:h-96 rounded-2xl overflow-hidden shadow-2xl">
-            <Image
-              src="/images/video-temp.jpg"
-              alt="Video preview"
-              fill
-              className="object-cover"
+          <p className="text-sm text-[#803512]/55 max-w-xl mb-10 leading-relaxed">
+            Immerse yourself in the world's oldest living culture — ancient stories, sacred land, and timeless art.
+          </p>
+          <div className="relative max-w-5xl w-full h-120 rounded-2xl overflow-hidden shadow-2xl">
+            <iframe
+              src="https://www.youtube.com/embed/5Szjemb24QA?si=JsPlufnKMBD809G5"
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0"
             />
           </div>
         </div>

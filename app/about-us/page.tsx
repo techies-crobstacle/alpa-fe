@@ -161,9 +161,9 @@ export default function Page() {
       {/* ══════════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════════ */}
-      <section className="relative min-h-[80vh] flex items-center justify-center bg-[url('/images/main.png')] bg-cover bg-center">
+      <section className="relative min-h-[80vh] h-screen flex items-center justify-center bg-[url('/images/main.png')] bg-cover bg-center">
         <div className="absolute inset-0 bg-linear-to-b from-black/60 via-black/50 to-black/70" />
-        <div className="relative z-10 text-white text-center px-4 max-w-3xl mx-auto">
+        <div className="relative mt-16 z-10 text-white text-center px-4 max-w-3xl mx-auto">
           <p className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60 mb-4">
             Our Story
           </p>
@@ -174,7 +174,7 @@ export default function Page() {
           </h1>
           <p className="text-base md:text-lg text-white/75 max-w-xl mx-auto leading-relaxed">
             We started Alpa to make premium shopping accessible, honest, and
-            delightful — for everyone, everywhere in Australia.
+            delightful for everyone, everywhere in Australia.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link

@@ -492,11 +492,11 @@ export default function Header() {
               <Link
                 key={href}
                 href={href}
-                className={`group relative px-2 py-1 text-sm lg:text-base font-medium transition-all duration-300
+                className={`group relative px-2 py-1 text-sm lg:text-base transition-all duration-300
                   ${
                     isActive(href)
-                      ? "text-[#5A1E12] "
-                      : "text-gray-700 hover:text-[#5A1E12]"
+                      ? "text-[#5A1E12] font-medium"
+                      : "text-gray-700 hover:text-[#5A1E12] font-medium"
                   }
                 `}
               >
@@ -1017,8 +1017,8 @@ export default function Header() {
             <Link
               key={href}
               href={href}
-              className={`group relative px-2 py-1 text-sm lg:text-base font-medium transition-all duration-300
-                ${isActive(href) ? "text-[#5A1E12]" : "text-gray-700 hover:text-[#5A1E12]"}
+              className={`group relative px-2 py-1 text-sm lg:text-base transition-all duration-300
+                ${isActive(href) ? "text-[#5A1E12] font-semibold" : "text-gray-700 hover:text-[#5A1E12] font-medium"}
               `}
             >
               {label}
