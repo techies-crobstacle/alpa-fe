@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useProducts } from "@/hooks/useProducts";
 import OptimisticProductCard from "@/components/cards/OptimisticProductCard";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 const SLIDE_COUNT = 2;
 
@@ -51,27 +52,148 @@ const Page = () => {
       {/* ================= HERO ================= */}
       <section>
         <div className="relative min-h-screen overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
-          {/* Using standard Tailwind v3 gradient syntax for compatibility */}
-          <div className="absolute inset-0 bg-linear-to-b from-amber-900/60 via-amber-900/30 to-black/70"></div>
+          {/* Layered gradient overlay */}
+          <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
+          <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
 
-          <div className="relative z-10 flex flex-col justify-center text-white px-4 sm:px-6 lg:px-24 py-32 md:py-40 lg:py-60">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-              Discover the Spirit of
-            </h1>
-            <h1 className="text-3xl sm:text-4xl font-bold mb-6 md:mb-8 text-amber-100">
-              Arnhem Land
-            </h1>
-            <p className="text-sm sm:text-base max-w-2xl mb-8 leading-relaxed text-gray-100/90">
-              Discover authentic Aboriginal products and experiences, each
-              carrying stories passed down through thousands of generations.
-            </p>
+          {/* Aboriginal waterhole — top right */}
+          {/* <svg aria-hidden="true" viewBox="0 0 180 180" fill="none" className="absolute top-6 right-6 md:top-10 md:right-12 w-36 h-36 md:w-52 md:h-52 text-white opacity-[0.08] pointer-events-none">
+            {[80,60,42,26,12].map((r, i) => (
+              <circle key={r} cx="90" cy="90" r={r} stroke="currentColor" strokeWidth="1.3" strokeDasharray="4 3" opacity={1 - i * 0.15} />
+            ))}
+            <circle cx="90" cy="90" r="5" fill="currentColor" />
+            {[[90,4],[90,176],[4,90],[176,90]].map(([cx,cy],i)=>(<circle key={i} cx={cx} cy={cy} r="3" fill="currentColor" />))}
+            {[[90,22],[90,158],[22,90],[158,90]].map(([cx,cy],i)=>(<circle key={i} cx={cx} cy={cy} r="2" fill="currentColor" />))}
+            {[[90,40],[90,140],[40,90],[140,90]].map(([cx,cy],i)=>(<circle key={i} cx={cx} cy={cy} r="2" fill="currentColor" />))}
+            {[[32,32],[148,32],[32,148],[148,148]].map(([cx,cy],i)=>(<circle key={i} cx={cx} cy={cy} r="2" fill="currentColor" opacity="0.6" />))}
+            {[[51,51],[129,51],[51,129],[129,129]].map(([cx,cy],i)=>(<circle key={i} cx={cx} cy={cy} r="1.5" fill="currentColor" opacity="0.5" />))}
+          </svg> */}
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <button className="px-8 py-3 bg-[#803512] hover:bg-[#a0451a] text-white font-medium transition-all duration-300 rounded-sm tracking-wide uppercase text-xs sm:text-sm">
-                Start Your Journey
-              </button>
+          {/* Aboriginal spiral — bottom left */}
+          {/* <svg aria-hidden="true" viewBox="0 0 120 120" fill="none" className="absolute bottom-20 left-4 md:bottom-28 md:left-10 w-24 h-24 md:w-36 md:h-36 text-amber-200 opacity-[0.10] pointer-events-none">
+            <path d="M60,60 C65,60 70,55 70,50 C70,45 65,40 60,40 C50,40 40,50 40,60 C40,72 50,82 62,82 C76,82 90,70 90,56 C90,38 76,24 58,22 C36,20 18,38 18,60 C18,84 38,102 62,102" stroke="currentColor" strokeWidth="1.5" fill="none" strokeDasharray="3 2" strokeLinecap="round" />
+            <circle cx="60" cy="60" r="4" fill="currentColor" />
+            {[{cx:70,cy:50},{cx:40,cy:60},{cx:62,cy:82},{cx:90,cy:56},{cx:18,cy:60},{cx:58,cy:22}].map((d,i)=>(<circle key={i} cx={d.cx} cy={d.cy} r="2" fill="currentColor" opacity="0.7" />))}
+          </svg> */}
+
+          {/* Dot field — scattered right side */}
+          {/* <svg aria-hidden="true" viewBox="0 0 160 280" fill="none" className="absolute right-0 top-1/4 w-28 md:w-40 h-auto text-amber-100 opacity-[0.07] pointer-events-none">
+            {[
+              [20,20,3],[50,12,2],[80,28,2.5],[110,16,2],[140,30,3],
+              [10,55,2],[45,48,2.5],[78,62,2],[105,50,2.5],[138,58,3],
+              [25,88,2.5],[58,80,2],[90,95,3],[118,84,2],[148,92,2.5],
+              [15,122,2],[52,115,2.5],[82,128,2],[112,118,3],[145,126,2],
+              [30,158,3],[60,148,2],[92,162,2.5],[122,152,2],[150,160,2.5],
+              [18,192,2],[55,185,3],[85,198,2],[116,188,2.5],[148,195,2],
+            ].map(([cx,cy,r],i)=>(<circle key={i} cx={cx} cy={cy} r={r} fill="currentColor" />))}
+          </svg> */}
+
+          {/* Hero content */}
+          <div className="relative z-10 flex flex-col justify-center min-h-screen text-white px-6 sm:px-10 lg:px-24 pt-40 pb-24">
+
+            {/* Animated badge */}
+            {/* <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="mb-6"
+            >
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-300/40 bg-amber-900/30 backdrop-blur-sm text-amber-200 text-xs font-semibold tracking-[0.18em] uppercase">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+                Authentic Aboriginal Art &amp; Culture
+              </span>
+            </motion.div> */}
+
+            {/* Headline */}
+            <div className="overflow-hidden mb-2">
+              <motion.h1
+                initial={{ y: 60, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-tight"
+              >
+                Discover the Spirit of
+              </motion.h1>
             </div>
+            <div className="overflow-hidden mb-6 md:mb-8">
+              <motion.h1
+                initial={{ y: 60, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.75, delay: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-tight text-amber-200"
+              >
+                Arnhem Land
+              </motion.h1>
+            </div>
+
+            {/* Description */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.58, ease: "easeOut" }}
+              className="text-sm sm:text-base lg:text-lg max-w-lg mb-10 leading-relaxed text-white/75"
+            >
+              Authentic Aboriginal products and experiences — each carrying
+              stories passed down through thousands of generations.
+            </motion.p>
+
+            {/* CTA Row */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.74, ease: "easeOut" }}
+              className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-16 md:mb-20"
+            >
+              <Link
+                href="/shop"
+                className="group relative inline-flex items-center gap-2 px-8 py-3.5 bg-[#803512] hover:bg-[#a0451a] text-white font-semibold text-sm tracking-wide uppercase rounded-sm transition-all duration-300 shadow-[0_8px_24px_rgba(128,53,18,0.45)] hover:shadow-[0_12px_32px_rgba(128,53,18,0.55)] hover:-translate-y-0.5 active:translate-y-0"
+              >
+                Start Your Journey
+                <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </Link>
+              <Link
+                href="/shop"
+                className="inline-flex items-center gap-2 px-8 py-3.5 border border-white/30 hover:border-white/70 text-white/80 hover:text-white font-medium text-sm tracking-wide uppercase rounded-sm transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
+              >
+                Explore Art
+              </Link>
+            </motion.div>
+
+            {/* Stats strip */}
+            {/* <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.9, ease: "easeOut" }}
+              className="flex flex-wrap items-center gap-6 sm:gap-10"
+            >
+              {[
+                { value: "8,000+", label: "Happy Customers" },
+                { value: "30,000+", label: "Products Listed" },
+                { value: "100%", label: "Locally Operated" },
+              ].map((s, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  {i > 0 && <div className="hidden sm:block w-px h-8 bg-white/20" />}
+                  <div>
+                    <p className="text-xl sm:text-2xl font-bold text-amber-200 leading-none">{s.value}</p>
+                    <p className="text-xs text-white/50 mt-0.5 tracking-wide">{s.label}</p>
+                  </div>
+                </div>
+              ))}
+            </motion.div> */}
           </div>
+
+          {/* Scroll indicator */}
+          {/* <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.3, duration: 0.8 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40"
+          >
+            <span className="text-[10px] tracking-[0.2em] uppercase font-medium">Scroll</span>
+            <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent animate-pulse" />
+          </motion.div> */}
         </div>
       </section>
 
@@ -463,56 +585,6 @@ const Page = () => {
         </div>
       </section>
 
-      {/* Cultural Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 xl:gap-20 px-4 sm:px-6 lg:px-16 xl:px-20 py-12 sm:py-16 lg:py-24 items-end mb-12 sm:mb-20">
-        <div className="max-w-2xl">
-          <p className="text-sm sm:text-base lg:text-lg font-medium leading-relaxed text-gray-700">
-            Discover authentic Aboriginal products and experiences, each
-            carrying stories passed down through thousands of generations.
-          </p>
-
-          <svg
-            className="mt-6 lg:mt-8 w-full h-6 lg:h-8"
-            viewBox="0 0 400 30"
-            fill="none"
-          >
-            <path
-              d="M5 15 C60 5, 120 25, 180 15 C240 5, 300 25, 395 15"
-              stroke="#6B2C1A"
-              strokeWidth="4"
-              strokeLinecap="round"
-              className="animate-pulse"
-            />
-          </svg>
-
-          <p className="mt-6 lg:mt-8 text-lg sm:text-xl lg:text-2xl font-bold text-[#6B2C1A] mb-8 lg:mb-12">
-            01/07
-          </p>
-
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
-            Explore our{" "}
-            <span className="text-amber-900">Cultural Categories</span>
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 xl:gap-8">
-          {/* Image Cards */}
-          {[1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="relative h-64 lg:h-80 xl:h-96 rounded-2xl lg:rounded-3xl overflow-hidden group cursor-pointer"
-            >
-              <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-              <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent"></div>
-              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md rounded-xl p-3 text-center">
-                <h3 className="text-xs font-bold text-gray-900">
-                  Category {item}
-                </h3>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
     </main>
   );
 };

@@ -33,7 +33,7 @@ function Counter({ end, suffix = "" }: CounterProps) {
           }, 2000 / steps);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.3 },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -49,18 +49,48 @@ function Counter({ end, suffix = "" }: CounterProps) {
 
 // ── Stats data ────────────────────────────────────────────────────────────────
 const STATS = [
-  { end: 8000,  suffix: "+", label: "Happy Customers",   desc: "Customers who trust us and return for our quality products and service." },
-  { end: 12000, suffix: "+", label: "Orders Delivered",  desc: "Orders shipped across Australia with care, speed, and reliability." },
-  { end: 30000, suffix: "+", label: "Products Listed",   desc: "A curated catalogue spanning hundreds of categories and brands." },
-  { end: 50000, suffix: "+", label: "Community Members", desc: "A growing community of shoppers who share our passion for quality." },
+  {
+    end: 8000,
+    suffix: "+",
+    label: "Happy Customers",
+    desc: "Customers who trust us and return for our quality products and service.",
+  },
+  {
+    end: 12000,
+    suffix: "+",
+    label: "Orders Delivered",
+    desc: "Orders shipped across Australia with care, speed, and reliability.",
+  },
+  {
+    end: 30000,
+    suffix: "+",
+    label: "Products Listed",
+    desc: "A curated catalogue spanning hundreds of categories and brands.",
+  },
+  {
+    end: 50000,
+    suffix: "+",
+    label: "Community Members",
+    desc: "A growing community of shoppers who share our passion for quality.",
+  },
 ];
 
 // ── Values data ───────────────────────────────────────────────────────────────
 const VALUES = [
   {
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      <svg
+        className="w-6 h-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+        />
       </svg>
     ),
     title: "Trust & Integrity",
@@ -68,8 +98,18 @@ const VALUES = [
   },
   {
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+      <svg
+        className="w-6 h-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+        />
       </svg>
     ),
     title: "Quality First",
@@ -77,8 +117,18 @@ const VALUES = [
   },
   {
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      <svg
+        className="w-6 h-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+        />
       </svg>
     ),
     title: "Community Focused",
@@ -86,8 +136,18 @@ const VALUES = [
   },
   {
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      <svg
+        className="w-6 h-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M13 10V3L4 14h7v7l9-11h-7z"
+        />
       </svg>
     ),
     title: "Fast & Reliable",
@@ -98,16 +158,18 @@ const VALUES = [
 export default function Page() {
   return (
     <main className="bg-white text-gray-900 overflow-x-hidden">
-
       {/* ══════════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════════ */}
       <section className="relative min-h-[80vh] flex items-center justify-center bg-[url('/images/main.png')] bg-cover bg-center">
         <div className="absolute inset-0 bg-linear-to-b from-black/60 via-black/50 to-black/70" />
         <div className="relative z-10 text-white text-center px-4 max-w-3xl mx-auto">
-          <p className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60 mb-4">Our Story</p>
+          <p className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60 mb-4">
+            Our Story
+          </p>
           <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6">
-            Built with <span className="text-[#d9a87a]">passion.</span><br />
+            Built with <span className="text-[#d9a87a]">passion.</span>
+            <br />
             Driven by people.
           </h1>
           <p className="text-base md:text-lg text-white/75 max-w-xl mx-auto leading-relaxed">
@@ -115,10 +177,16 @@ export default function Page() {
             delightful — for everyone, everywhere in Australia.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/shop" className="px-7 py-3 bg-[#5A1E12] hover:bg-[#441208] text-white rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-xl">
+            <Link
+              href="/shop"
+              className="px-7 py-3 bg-[#5A1E12] hover:bg-[#441208] text-white rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-xl"
+            >
               Shop Now
             </Link>
-            <a href="#our-story" className="px-7 py-3 border border-white/40 hover:border-white text-white rounded-full text-sm font-semibold transition-all">
+            <a
+              href="#our-story"
+              className="px-7 py-3 border border-white/40 hover:border-white text-white rounded-full text-sm font-semibold transition-all"
+            >
               Learn More ↓
             </a>
           </div>
@@ -129,52 +197,84 @@ export default function Page() {
           MISSION STRIP
       ══════════════════════════════════════════════════ */}
       <section className="bg-[#5A1E12] py-5 px-4">
-        <p className="text-center text-white/80 text-sm font-medium tracking-wide max-w-2xl mx-auto">
-          🌿 &nbsp;Sustainably sourced &nbsp;·&nbsp; 🚚 Fast Australia-wide delivery &nbsp;·&nbsp; ⭐ Trusted by 8,000+ customers
-        </p>
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 max-w-4xl mx-auto">
+          <span className="flex items-center gap-2 text-white/80 text-sm font-medium tracking-wide">
+            <svg className="w-4 h-4 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+            </svg>
+            Sustainably sourced
+          </span>
+          <span className="text-white/30 hidden sm:inline">·</span>
+          <span className="flex items-center gap-2 text-white/80 text-sm font-medium tracking-wide">
+            <svg className="w-4 h-4 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+            </svg>
+            Fast Australia-wide delivery
+          </span>
+          <span className="text-white/30 hidden sm:inline">·</span>
+          <span className="flex items-center gap-2 text-white/80 text-sm font-medium tracking-wide">
+            <svg className="w-4 h-4 text-white shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354l-4.543 2.826c-.998.608-2.231-.29-1.96-1.425l1.257-5.273L2.637 10.955c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.006z" />
+            </svg>
+            Trusted by 8,000+ customers
+          </span>
+        </div>
       </section>
 
       {/* ══════════════════════════════════════════════════
           OUR STORY
       ══════════════════════════════════════════════════ */}
       <section id="our-story" className="py-20 md:py-28 px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-
+        <div className="max-w-screen-xl mx-auto flex gap-12 items-center">
           {/* Image */}
-          <div className="relative">
-            <div className="absolute -top-4 -left-4 w-full h-full rounded-2xl bg-[#F4E9DC] -z-10" />
+          <div className="flex-6/10">
             <Image
               src="/images/about2.png"
               alt="Our story"
               width={800}
               height={600}
-              className="w-full h-80 md:h-120 object-cover rounded-2xl shadow-xl"
+              className="w-full"
             />
           </div>
 
           {/* Text */}
-          <div>
-            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">Who We Are</p>
+          <div className="flex-4/10">
+            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">
+              Who We Are
+            </p>
             <h2 className="text-3xl md:text-4xl font-bold leading-snug mb-5">
-              A marketplace built on <span className="text-[#5A1E12]">values, not just products.</span>
+              A marketplace built on{" "}
+              <span className="text-[#5A1E12]">values, not just products.</span>
             </h2>
             <p className="text-gray-500 leading-relaxed mb-4">
-              Alpa was born from a simple frustration — finding quality products online shouldn&apos;t feel like a gamble.
-              We set out to build a platform where every listing is curated, every seller is vetted, and every customer
-              feels looked after.
+              Alpa was born from a simple frustration — finding quality products
+              online shouldn&apos;t feel like a gamble. We set out to build a
+              platform where every listing is curated, every seller is vetted,
+              and every customer feels looked after.
             </p>
             <p className="text-gray-500 leading-relaxed mb-8">
-              From our first sale to thousands of happy deliveries, we&apos;ve stayed true to our founding belief: great
-              commerce is built on trust. We&apos;re not just a marketplace — we&apos;re the team behind every package
-              that arrives at your door.
+              From our first sale to thousands of happy deliveries, we&apos;ve
+              stayed true to our founding belief: great commerce is built on
+              trust. We&apos;re not just a marketplace — we&apos;re the team
+              behind every package that arrives at your door.
             </p>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#F4E9DC] flex items-center justify-center text-[#5A1E12] shrink-0">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
-              <p className="text-sm text-gray-600 font-medium">Founded in Australia &middot; 100% locally operated</p>
+              <p className="text-sm text-gray-600 font-medium">
+                Founded in Australia &middot; 100% locally operated
+              </p>
             </div>
           </div>
         </div>
@@ -186,17 +286,26 @@ export default function Page() {
       <section className="bg-[#F4E9DC] py-16 md:py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-2">By The Numbers</p>
-            <h2 className="text-3xl md:text-4xl font-bold">Growing every day.</h2>
+            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-2">
+              By The Numbers
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold">
+              Growing every day.
+            </h2>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {STATS.map((s) => (
-              <div key={s.label} className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-[#e8d5c0] text-center">
+              <div
+                key={s.label}
+                className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-[#e8d5c0] text-center"
+              >
                 <p className="text-3xl md:text-4xl font-black text-[#5A1E12] mb-1">
                   <Counter end={s.end} suffix={s.suffix} />
                 </p>
                 <p className="font-semibold text-sm mb-2">{s.label}</p>
-                <p className="text-xs text-gray-400 leading-relaxed hidden md:block">{s.desc}</p>
+                <p className="text-xs text-gray-400 leading-relaxed hidden md:block">
+                  {s.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -207,23 +316,32 @@ export default function Page() {
           WHAT WE OFFER  (two-column challenge section)
       ══════════════════════════════════════════════════ */}
       <section className="py-20 md:py-28 px-4 border-t border-gray-100">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-start">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           <div className="lg:sticky lg:top-24">
-            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">The Challenge</p>
-            <h2 className="text-3xl md:text-5xl font-bold leading-tight">What we<br />Offer</h2>
+            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">
+              The Challenge
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold leading-tight">
+              What we
+              <br />
+              Offer
+            </h2>
           </div>
           <div className="space-y-6">
             <p className="text-lg md:text-xl font-semibold text-gray-800 leading-relaxed">
-              We offer a carefully curated marketplace where quality, convenience, and trust come together in one seamless experience.
+              We offer a carefully curated marketplace where quality,
+              convenience, and trust come together in one seamless experience.
             </p>
             <p className="text-gray-500 leading-relaxed">
-              From everyday essentials to specialty products, our catalogue is built around real customer needs.
-              Every category is managed by a dedicated team who reviews listings, compares pricing, and ensures
+              From everyday essentials to specialty products, our catalogue is
+              built around real customer needs. Every category is managed by a
+              dedicated team who reviews listings, compares pricing, and ensures
               the standards we promise are the standards you receive.
             </p>
             <p className="text-gray-500 leading-relaxed">
-              We also partner closely with sellers to provide tools, insights, and support — so the businesses on our
-              platform thrive, and in turn, so do you.
+              We also partner closely with sellers to provide tools, insights,
+              and support — so the businesses on our platform thrive, and in
+              turn, so do you.
             </p>
           </div>
         </div>
@@ -235,17 +353,26 @@ export default function Page() {
       <section className="bg-[#F4E9DC] py-20 md:py-28 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-2">Our Values</p>
-            <h2 className="text-3xl md:text-4xl font-bold">What drives us forward.</h2>
+            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-2">
+              Our Values
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold">
+              What drives us forward.
+            </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {VALUES.map((v) => (
-              <div key={v.title} className="bg-white rounded-2xl p-6 border border-[#e8d5c0] shadow-sm hover:shadow-md transition-shadow">
+              <div
+                key={v.title}
+                className="bg-white rounded-2xl p-6 border border-[#e8d5c0] shadow-sm hover:shadow-md transition-shadow"
+              >
                 <div className="w-11 h-11 rounded-xl bg-[#5A1E12]/10 flex items-center justify-center text-[#5A1E12] mb-4">
                   {v.icon}
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">{v.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{v.desc}</p>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  {v.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -257,28 +384,42 @@ export default function Page() {
       ══════════════════════════════════════════════════ */}
       <section className="py-20 md:py-28 px-4">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-
           {/* Text */}
           <div>
-            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">Why Choose Us</p>
+            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">
+              Why Choose Us
+            </p>
             <h2 className="text-3xl md:text-4xl font-bold leading-snug mb-5">
-              Shopping that feels <span className="text-[#5A1E12]">personal.</span>
+              Shopping that feels{" "}
+              <span className="text-[#5A1E12]">personal.</span>
             </h2>
             <p className="text-gray-500 leading-relaxed mb-4">
-              We believe every purchase should feel intentional. That&apos;s why our team works hard to surface products
-              that genuinely match what our customers are looking for — not just what&apos;s trending.
+              We believe every purchase should feel intentional. That&apos;s why
+              our team works hard to surface products that genuinely match what
+              our customers are looking for — not just what&apos;s trending.
             </p>
             <p className="text-gray-500 leading-relaxed mb-8">
-              Whether you&apos;re buying for yourself or gifting someone you love, Alpa is built to make it easy,
-              enjoyable, and reliable — every single time.
+              Whether you&apos;re buying for yourself or gifting someone you
+              love, Alpa is built to make it easy, enjoyable, and reliable —
+              every single time.
             </p>
             <Link
               href="/shop"
               className="inline-flex items-center gap-2 bg-[#5A1E12] hover:bg-[#441208] text-white rounded-full py-3 px-8 text-sm font-semibold transition-all shadow-md hover:shadow-lg"
             >
               Explore Our Shop
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
               </svg>
             </Link>
           </div>
@@ -302,21 +443,29 @@ export default function Page() {
       ══════════════════════════════════════════════════ */}
       <section className="bg-[#5A1E12] py-16 md:py-20 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to start shopping?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Ready to start shopping?
+          </h2>
           <p className="text-white/65 text-base mb-8 leading-relaxed">
-            Join thousands of Australians who trust Alpa for quality products, fast delivery, and genuine service.
+            Join thousands of Australians who trust Alpa for quality products,
+            fast delivery, and genuine service.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link href="/shop" className="px-8 py-3 bg-white text-[#5A1E12] hover:bg-[#F4E9DC] rounded-full text-sm font-bold transition-all shadow-md">
+            <Link
+              href="/shop"
+              className="px-8 py-3 bg-white text-[#5A1E12] hover:bg-[#F4E9DC] rounded-full text-sm font-bold transition-all shadow-md"
+            >
               Shop Now
             </Link>
-            <Link href="/contact-us" className="px-8 py-3 border border-white/40 hover:border-white text-white rounded-full text-sm font-semibold transition-all">
+            <Link
+              href="/contact-us"
+              className="px-8 py-3 border border-white/40 hover:border-white text-white rounded-full text-sm font-semibold transition-all"
+            >
               Contact Us
             </Link>
           </div>
         </div>
       </section>
-
     </main>
   );
 }

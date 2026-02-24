@@ -425,7 +425,7 @@ export default function Header() {
 
       <div className="">
         {/* MOBILE/TABLET: Top bar — Logo left, Cart + Hamburger right */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#EAD7B7]/95 backdrop-blur-md shadow-md px-4 py-3 flex items-center justify-between">
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#EAD7B7]/98 backdrop-blur-lg shadow-[0_4px_24px_rgba(90,30,18,0.10)] border-b border-[#5A1E12]/10 px-4 py-3 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="font-bold transition-transform hover:scale-105 active:scale-95">
             <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-10" priority />
@@ -436,10 +436,10 @@ export default function Header() {
             {/* Cart */}
             <button
               onClick={toggleCart}
-              className="relative p-2 rounded-full hover:bg-white/40 transition-colors"
+              className="relative p-2 rounded-full hover:bg-[#5A1E12]/10 active:scale-95 transition-all duration-200"
               aria-label={`Shopping cart with ${cartItemCount} items`}
             >
-              <ShoppingCart className="h-6 w-6 text-gray-800" />
+              <ShoppingCart className="h-6 w-6 text-[#5A1E12]" />
               {mounted && cartItemCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 text-[10px] flex items-center justify-center bg-[#5A1E12] text-white rounded-full font-bold shadow-sm">
                   {cartItemCount > 9 ? "9+" : cartItemCount}
@@ -450,7 +450,7 @@ export default function Header() {
             {/* Hamburger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-full hover:bg-white/40 transition-colors text-gray-800"
+              className="p-2 rounded-full hover:bg-[#5A1E12]/10 active:scale-95 transition-all duration-200 text-[#5A1E12]"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
             >
@@ -462,8 +462,9 @@ export default function Header() {
         {/* DESKTOP: Full Header (hidden on mobile/tablet) */}
         <header
           className={`w-full hidden lg:flex rounded-full px-8 lg:px-12 py-2
-            items-center shadow-xl transition-all duration-500 z-30 relative
-            ${scrolled ? "bg-[#EAD7B7]/95 backdrop-blur-md shadow-lg" : "bg-[#EAD7B7]"}
+            items-center transition-all duration-500 z-30 relative
+            border border-[#5A1E12]/10
+            ${scrolled ? "bg-[#EAD7B7]/98 backdrop-blur-lg shadow-[0_8px_32px_rgba(90,30,18,0.14)]" : "bg-[#EAD7B7] shadow-[0_8px_32px_rgba(90,30,18,0.10)]"}
             ${scrolledPast5 ? "opacity-0 pointer-events-none invisible" : "opacity-100 visible"}
           `}
         >
@@ -522,7 +523,7 @@ export default function Header() {
             {/* Search Button — opens modal */}
             <button
               onClick={() => setIsSearchModalOpen(true)}
-              className="p-2 rounded-full hover:bg-white/30 text-gray-800 transition-all duration-300"
+              className="p-2 rounded-full hover:bg-[#5A1E12]/10 active:scale-95 text-[#5A1E12] transition-all duration-200"
               aria-label="Open search"
             >
               <Search className="h-5 w-5" />
@@ -532,12 +533,12 @@ export default function Header() {
             <button
               ref={cartButtonRef}
               onClick={toggleCart}
-              className="relative p-2 rounded-full hover:bg-white/30 transition-all duration-300 group"
+              className="relative p-2 rounded-full hover:bg-[#5A1E12]/10 active:scale-95 transition-all duration-200 group"
               aria-label={`Shopping cart with ${cartItemCount} items`}
               aria-expanded={cartOpen}
             >
               <ShoppingCart
-                className={`h-6 w-6 text-gray-800 transition-transform duration-300 ${
+                className={`h-6 w-6 text-[#5A1E12] transition-transform duration-300 ${
                   cartOpen ? "rotate-12 scale-110" : "group-hover:scale-110"
                 }`}
               />
@@ -565,7 +566,7 @@ export default function Header() {
                 <div className="relative" ref={guestMenuRef}>
                   <button
                     onClick={() => setGuestMenuOpen(!guestMenuOpen)}
-                    className={`p-2 rounded-full transition-all duration-300 ${guestMenuOpen ? "bg-[#5A1E12] text-white" : "hover:bg-white/30 text-gray-800"}`}
+                    className={`p-2 rounded-full transition-all duration-200 ${guestMenuOpen ? "bg-[#5A1E12] text-white shadow-[0_4px_12px_rgba(90,30,18,0.3)]" : "hover:bg-[#5A1E12]/10 text-[#5A1E12]"}`}
                     aria-label="Account options"
                     aria-expanded={guestMenuOpen}
                   >
@@ -622,7 +623,7 @@ export default function Header() {
                   aria-expanded={userMenuOpen}
                 >
                   <div className="relative">
-                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#5A1E12] flex items-center justify-center ring-2 ring-transparent group-hover:ring-[#5A1E12]/40 group-hover:ring-offset-1 shadow-[0_4px_12px_rgba(90,30,18,0.25)] transition-all duration-200">
                       <User className="w-4 h-4 text-white" />
                     </div>
                   </div>
@@ -998,7 +999,7 @@ export default function Header() {
         className={`
           hidden lg:flex fixed top-0 left-0 right-0 z-60
           px-8 lg:px-16 py-3 items-center
-          bg-[#EAD7B7]/95 backdrop-blur-md shadow-lg
+          bg-[#EAD7B7]/98 backdrop-blur-lg shadow-[0_4px_24px_rgba(90,30,18,0.12)] border-b border-[#5A1E12]/10
           transition-all duration-500
           ${scrolledPast5 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}
         `}
@@ -1036,7 +1037,7 @@ export default function Header() {
           {/* Search Button — opens modal */}
           <button
             onClick={() => setIsSearchModalOpen(true)}
-            className="p-2 rounded-full hover:bg-white/30 text-gray-800 transition-all duration-300"
+            className="p-2 rounded-full hover:bg-[#5A1E12]/10 active:scale-95 text-[#5A1E12] transition-all duration-200"
             aria-label="Open search"
           >
             <Search className="h-5 w-5" />
@@ -1046,10 +1047,10 @@ export default function Header() {
           <button
             ref={cartButtonRef}
             onClick={toggleCart}
-            className="relative p-2 rounded-full hover:bg-white/30 transition-all duration-300 group"
+            className="relative p-2 rounded-full hover:bg-[#5A1E12]/10 active:scale-95 transition-all duration-200 group"
             aria-label={`Shopping cart with ${cartItemCount} items`}
           >
-            <ShoppingCart className={`h-5 w-5 text-gray-800 transition-transform duration-300 ${cartOpen ? "rotate-12 scale-110" : "group-hover:scale-110"}`} />
+            <ShoppingCart className={`h-5 w-5 text-[#5A1E12] transition-transform duration-300 ${cartOpen ? "rotate-12 scale-110" : "group-hover:scale-110"}`} />
             {mounted && cartItemCount > 0 && (
               <>
                 {!cartOpen && <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#5A1E12] rounded-full animate-ping opacity-75" />}
@@ -1066,7 +1067,7 @@ export default function Header() {
               <div className="relative" ref={stickyGuestMenuRef}>
                 <button
                   onClick={() => setStickyGuestMenuOpen(!stickyGuestMenuOpen)}
-                  className={`p-2 rounded-full transition-all duration-300 ${stickyGuestMenuOpen ? "bg-[#5A1E12] text-white" : "hover:bg-white/30 text-gray-800"}`}
+                  className={`p-2 rounded-full transition-all duration-200 ${stickyGuestMenuOpen ? "bg-[#5A1E12] text-white shadow-[0_4px_12px_rgba(90,30,18,0.3)]" : "hover:bg-[#5A1E12]/10 text-[#5A1E12]"}`}
                   aria-label="Account options"
                 >
                   <User className="h-5 w-5" />
@@ -1110,7 +1111,7 @@ export default function Header() {
                 aria-label="User menu"
               >
                 <div className="relative">
-                  <div className="w-8 h-8 rounded-full bg-[#5A1E12] flex items-center justify-center border-2 border-transparent group-hover:border-[#5A1E12] transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-[#5A1E12] flex items-center justify-center ring-2 ring-transparent group-hover:ring-[#5A1E12]/40 group-hover:ring-offset-1 shadow-[0_4px_12px_rgba(90,30,18,0.25)] transition-all duration-200">
                     <User className="w-4 h-4 text-white" />
                   </div>
                 </div>
