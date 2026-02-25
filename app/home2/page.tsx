@@ -5,36 +5,6 @@ import { useProducts } from "@/hooks/useProducts";
 import OptimisticProductCard from "@/components/cards/OptimisticProductCard";
 import Link from "next/link";
 
-const BLOG_POSTS = [
-  {
-    title: "Understanding Yolŋu Art: Symbols, Stories & Sacred Meaning",
-    excerpt:
-      "Every dot, line, and colour in Yolŋu art carries generations of knowledge. We explore the visual language behind some of our most celebrated works.",
-    tags: ["Culture", "Art"],
-    cta: "Read the story",
-    image: "/images/about2.png",
-    href: "/blog/yolngu-art-symbols",
-  },
-  {
-    title: "From Arnhem Land to Your Doorstep: How We Ship with Care",
-    excerpt:
-      "Sending fragile, handcrafted pieces across Australia isn't simple. Here's how our fulfilment team ensures every order arrives safely and on time.",
-    tags: ["Delivery", "Behind the Scenes"],
-    cta: "Learn how we do it",
-    image: "/images/about-us-what-we-offer.jpg",
-    href: "/blog/how-we-ship",
-  },
-  {
-    title: "Meet the Makers: Spotlight on Three Aboriginal Artists",
-    excerpt:
-      "We sat down with three creators from our seller community to hear their stories, their craft, and what inspires their most iconic pieces.",
-    tags: ["Makers", "Community"],
-    cta: "Meet the artists",
-    image: "/images/main.png",
-    href: "/blog/meet-the-makers",
-  },
-];
-
 const Page = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: products = [] } = useProducts();
@@ -254,92 +224,6 @@ const Page = () => {
               fill
               className="object-cover"
             />
-          </div>
-        </div>
-      </section>
-
-      {/* ================= BLOG SECTION ================= */}
-      <section className="bg-white py-20 md:py-28 px-4">
-        <div className="max-w-screen-xl mx-auto">
-
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
-            <div>
-              <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] uppercase text-[#803512]/60 mb-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#803512] animate-pulse" />
-                From the Journal
-              </span>
-              <h2 className="text-4xl sm:text-5xl font-black leading-[1.1] tracking-tight text-[#3a1208]">
-                Latest{" "}
-                <span className="relative inline-block">
-                  <span className="relative z-10 text-[#803512]">Stories</span>
-                  <span className="absolute left-0 -bottom-1 w-full h-[3px] rounded-full bg-[#803512]/25" />
-                </span>
-              </h2>
-            </div>
-            <Link
-              href="/blog"
-              className="shrink-0 inline-flex items-center gap-2 text-sm font-semibold text-[#803512] hover:text-[#5A1E12] transition-colors group"
-            >
-              View all posts
-              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
-          </div>
-
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {BLOG_POSTS.map((post) => (
-              <article
-                key={post.title}
-                className="group flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-              >
-                {/* Image */}
-                <div className="relative w-full aspect-[16/9] overflow-hidden bg-[#F4E9DC]">
-                  <Image
-                    src={post.image}
-                    alt={post.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {/* Tag pill over image */}
-                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                    {post.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2.5 py-1 rounded-full bg-[#3a1208]/70 backdrop-blur-sm text-[10px] font-bold tracking-[0.15em] uppercase text-amber-100"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Body */}
-                <div className="flex flex-col flex-1 p-6">
-                  <h3 className="text-lg font-bold text-[#1a0a06] leading-snug mb-3 group-hover:text-[#803512] transition-colors duration-200">
-                    {post.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 leading-relaxed flex-1 mb-5">
-                    {post.excerpt}
-                  </p>
-
-                  {/* CTA */}
-                  <div className="pt-4 border-t border-[#e8d5c0]">
-                    <Link
-                      href={post.href}
-                      className="inline-flex items-center gap-2 text-sm font-semibold text-[#803512] hover:text-[#5A1E12] transition-colors group/cta"
-                    >
-                      {post.cta}
-                      <svg className="w-4 h-4 group-hover/cta:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
           </div>
         </div>
       </section>

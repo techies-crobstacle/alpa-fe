@@ -1018,7 +1018,7 @@ export default function Header() {
               key={href}
               href={href}
               className={`group relative px-2 py-1 text-sm lg:text-base transition-all duration-300
-                ${isActive(href) ? "text-[#5A1E12] font-semibold" : "text-gray-700 hover:text-[#5A1E12] font-medium"}
+                ${isActive(href) ? "text-[#5A1E12] font-medium" : "text-gray-700 hover:text-[#5A1E12] font-medium"}
               `}
             >
               {label}
