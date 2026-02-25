@@ -15,20 +15,41 @@ import { useEffect } from "react";
  */
 export default function LogoutCallbackPage() {
   useEffect(() => {
-    // Clear Website session data
-    localStorage.removeItem("alpa_token");
-    localStorage.removeItem("user");
+    const doLogout = async () => {
+      const token = localStorage.getItem("alpa_token");
 
-    // Notify any in-tab listeners (e.g. CartContext)
-    window.dispatchEvent(new CustomEvent("alpa-logout"));
+      // Invalidate the token server-side so it can't be reused for SSO tickets
+      if (token) {
+        try {
+          await fetch("https://alpa-be-1.onrender.com/api/auth/logout", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+        } catch (_) {
+          // Best-effort — never block the logout flow
+        }
+      }
 
-    if (window.parent !== window) {
-      // Running inside an iframe — notify the Dashboard parent that we're done
-      window.parent.postMessage("alpa-logout-done", "https://alpa-dashboard.vercel.app");
-    } else {
-      // Navigated to directly — redirect home
-      window.location.replace("/");
-    }
+      // Clear Website session data
+      localStorage.removeItem("alpa_token");
+      localStorage.removeItem("user");
+
+      // Notify any in-tab listeners (e.g. CartContext)
+      window.dispatchEvent(new CustomEvent("alpa-logout"));
+
+      if (window.parent !== window) {
+        // Running inside an iframe — notify the Dashboard parent that we're done
+        window.parent.postMessage("alpa-logout-done", "https://alpa-dashboard.vercel.app");
+      } else {
+        // Navigated to directly — redirect home
+        window.location.replace("/");
+      }
+    };
+
+    doLogout();
   }, []);
 
   // Blank page — only shown for a fraction of a second inside the hidden iframe
