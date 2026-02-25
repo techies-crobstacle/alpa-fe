@@ -211,7 +211,7 @@ export default function CheckOutPage() {
       } catch {}
 
       const res = await fetch(
-        "https://alpa-be-1.onrender.com/api/payments/create-intent",
+        "http://127.0.0.1:5000/api/payments/create-intent",
         {
           method: "POST",
           headers: {
@@ -358,7 +358,7 @@ export default function CheckOutPage() {
         };
 
         response = await fetch(
-          "https://alpa-be-1.onrender.com/api/orders/guest/checkout",
+          "http://127.0.0.1:5000/api/orders/guest/checkout",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -374,7 +374,7 @@ export default function CheckOutPage() {
         }
 
         response = await fetch(
-          "https://alpa-be-1.onrender.com/api/orders/create",
+          "http://127.0.0.1:5000/api/orders/create",
           {
             method: "POST",
             headers: {

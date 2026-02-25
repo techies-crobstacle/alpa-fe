@@ -32,7 +32,7 @@ async function sellerOnboardingRoutes(fastify, options) {
   fastify.post("/business-details", { preHandler: authenticateSeller }, sellerController.submitBusinessDetails);
   
   // Fixed: Changed from POST to GET since this is validation/checking data
-  fastify.get("/validate-abn", { preHandler: authenticateSeller }, sellerController.validateABN);
+  fastify.get("/validate-abn", sellerController.validateABN);
 
   // Step 4: Cultural Identity
   fastify.post("/cultural-info", { preHandler: authenticateSeller }, sellerController.submitCulturalInfo);
