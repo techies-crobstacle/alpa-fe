@@ -37,9 +37,13 @@ function LogoutCallbackContent() {
         }
       }
 
-      // 2. Clear Webapp session data
+      // 2. Clear ALL Webapp session data (auth + seller-specific keys)
       localStorage.removeItem("alpa_token");
       localStorage.removeItem("user");
+      localStorage.removeItem("sellerToken");
+      localStorage.removeItem("sellerOnboardingStep");
+      localStorage.removeItem("sellerOnboardingFormData");
+      localStorage.removeItem("sellerAbnVerified");
 
       // 3. Notify any in-tab listeners (e.g. CartContext)
       window.dispatchEvent(new CustomEvent("alpa-logout"));

@@ -146,11 +146,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // 2. Clear Webapp client-side state immediately
+    // 2. Clear ALL Webapp client-side state (auth + seller-specific keys)
     setUser(null);
     setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("alpa_token");
+    localStorage.removeItem("sellerToken");
+    localStorage.removeItem("sellerOnboardingStep");
+    localStorage.removeItem("sellerOnboardingFormData");
+    localStorage.removeItem("sellerAbnVerified");
 
     // 3. Notify CartContext to clear guest state (same-tab)
     window.dispatchEvent(new CustomEvent("alpa-logout"));
