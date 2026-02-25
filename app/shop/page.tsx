@@ -351,7 +351,7 @@ function ShopContent() {
   // Show error state without early return to maintain hook order
   if (error) {
     return (
-      <section className="bg-[#EBE3D5]">
+      <section className="bg-[#EAD7B7]">
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
@@ -369,7 +369,7 @@ function ShopContent() {
   }
 
   return (
-    <section className=" bg-[#EBE3D5]">
+    <section className=" bg-[#EAD7B7]">
       {/* HERO SECTION */}
       <section className="bg-[#e6e6e6]">
         {/* OUTER FRAME */}

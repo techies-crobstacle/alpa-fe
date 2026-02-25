@@ -281,7 +281,7 @@ function OrderConfirmationContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#ebe3d5] flex items-center justify-center">
+      <div className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 text-[#973c00] animate-spin" />
           <p className="text-[#5A1E12] font-medium">Confirming your order…</p>
@@ -427,7 +427,7 @@ export default function OrderConfirmationPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#ebe3d5] flex items-center justify-center">
+        <div className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
           <Loader2 className="w-10 h-10 text-[#973c00] animate-spin" />
         </div>
       }

@@ -207,7 +207,7 @@
 
 //   // Skeleton Loading Component
 //   const SkeletonLoader = () => (
-//     <div className="min-h-screen bg-[#ebe3d5] py-8 pt-36">
+//     <div className="min-h-screen bg-[#EAD7B7] py-8 pt-36">
 //       <div className="container mx-auto px-4 max-w-7xl">
 //         {/* Breadcrumb Skeleton */}
 //         <div className="mb-6">
@@ -320,7 +320,7 @@
 //     parseFloat(product.price) / (1 - discountPercentage / 100);
 
 //   return (
-//     <div className="min-h-screen bg-[#ebe3d5] py-8 pt-36">
+//     <div className="min-h-screen bg-[#EAD7B7] py-8 pt-36">
 //       <div className="container mx-auto px-4 max-w-7xl">
 //         {/* Breadcrumb with Navigation */}
 //         <div className="flex justify-between items-center mb-6">
@@ -1072,7 +1072,7 @@ export default function ShopSlugPage() {
   // ── Skeleton ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#ebe3d5] pt-36 pb-16">
+      <div className="min-h-screen bg-[#EAD7B7] pt-36 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-4 bg-amber-200 rounded w-56 animate-pulse mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -1106,7 +1106,7 @@ export default function ShopSlugPage() {
   // ── Error ───────────────────────────────────────────────────────────────────
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-[#ebe3d5] flex items-center justify-center">
+      <div className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
         <div className="text-center p-10 bg-white rounded-3xl shadow-xl border border-amber-200 max-w-sm mx-4">
           <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-amber-500" />
@@ -1140,7 +1140,7 @@ export default function ShopSlugPage() {
     typeof product?.discount === "number" ? product.discount : 0;
 
   return (
-    <div className="min-h-screen bg-[#ebe3d5] pt-28 pb-24">
+    <div className="min-h-screen bg-[#EAD7B7] pt-28 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* ── Breadcrumb ────────────────────────────────────────────── */}
