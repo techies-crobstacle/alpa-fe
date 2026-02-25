@@ -9,7 +9,7 @@
 //   const [token, setToken] = useState<string | null>(null);
 //   const [loading, setLoading] = useState(false);
 //   const [abnVerified, setAbnVerified] = useState(false);
-//   const baseURL = 'https://alpa-be-1.onrender.com';
+//   const baseURL = 'http://127.0.0.1:5000';
 
 //   const [formData, setFormData] = useState({
 //     // Step 1
@@ -961,18 +961,18 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const baseURL = 'https://alpa-be-1.onrender.com';
+const baseURL = 'http://127.0.0.1:5000';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Mode = 'onboarding' | 'login' | 'resume' | 'forgot-password' | 'reset-password';
 
 interface FormData {
   email: string; phone: string; contactPerson: string;
-  sellerId: string; otp: string; password: string;
+  sellerId: string; otp: string; password: string; confirmPassword: string;
   businessName: string; abn: string; businessType: string;
-  businessPhone: string; businessEmail: string;
+  businessPhone: string;
   street: string; city: string; state: string; postcode: string; country: string;
-  artistName: string; clanAffiliation: string; culturalStory: string;
+  artistName: string; description: string;
   storeName: string; storeLogo: File | null; storeBio: string;
   firstName: string; lastName: string; dob: string; idDocument: File | null;
   bankName: string; accountName: string; bsb: string; accountNumber: string;
@@ -1001,11 +1001,11 @@ export default function ArtistOnboardingForm() {
 
   const [formData, setFormData] = useState<FormData>({
     email: '', phone: '', contactPerson: '',
-    sellerId: '', otp: '', password: '',
+    sellerId: '', otp: '', password: '', confirmPassword: '',
     businessName: '', abn: '', businessType: '',
-    businessPhone: '', businessEmail: '',
+    businessPhone: '',
     street: '', city: '', state: '', postcode: '', country: '',
-    artistName: '', clanAffiliation: '', culturalStory: '',
+    artistName: '', description: '',
     storeName: '', storeLogo: null, storeBio: '',
     firstName: '', lastName: '', dob: '', idDocument: null,
     bankName: '', accountName: '', bsb: '', accountNumber: '',
@@ -1184,6 +1184,9 @@ export default function ArtistOnboardingForm() {
   const handleStep2Submit = async () => {
     if (!formData.otp?.trim()) { setError('otp', 'OTP is required'); return; }
     if (!formData.password?.trim()) { setError('password', 'Password is required'); return; }
+    if (formData.password.length < 6) { setError('password', 'Password must be at least 6 characters'); return; }
+    if (!formData.confirmPassword?.trim()) { setError('confirmPassword', 'Please confirm your password'); return; }
+    if (formData.password !== formData.confirmPassword) { setError('confirmPassword', 'Passwords do not match'); return; }
 
     setLoading(true);
     try {
@@ -1260,9 +1263,27 @@ export default function ArtistOnboardingForm() {
         const abnData = data.abnValidation.data;
         if (abnData) {
           const updates: Partial<FormData> = {};
+
+          // Business name
           if (abnData.businessName) updates.businessName = abnData.businessName;
           else if (abnData.entityName) updates.businessName = abnData.entityName;
+
+          // Business type
           if (abnData.entityType) updates.businessType = abnData.entityType;
+
+          // Address — ABR may nest address or return flat fields
+          const addr = abnData.address || abnData.businessAddress || abnData;
+          if (addr.postcode || addr.postalCode || addr.addressPostcode)
+            updates.postcode = addr.postcode || addr.postalCode || addr.addressPostcode;
+          if (addr.state || addr.stateCode || addr.addressState)
+            updates.state = addr.state || addr.stateCode || addr.addressState;
+          if (addr.suburb || addr.city || addr.locality || addr.addressSuburb)
+            updates.city = addr.suburb || addr.city || addr.locality || addr.addressSuburb;
+          if (addr.street || addr.streetAddress || addr.addressLine1)
+            updates.street = addr.street || addr.streetAddress || addr.addressLine1;
+          if (addr.country || addr.countryCode)
+            updates.country = addr.country || addr.countryCode;
+
           if (Object.keys(updates).length) setFormData(prev => ({ ...prev, ...updates }));
         }
       } else {
@@ -1276,16 +1297,16 @@ export default function ArtistOnboardingForm() {
   // ─── STEP 4 ───────────────────────────────────────────────────────────────
   const handleStep4Submit = async () => {
     if (!formData.artistName?.trim()) { setError('artistName', 'Artist name is required'); return; }
-    if (!formData.culturalStory?.trim()) { setError('culturalStory', 'Cultural story is required'); return; }
+    if (!formData.description?.trim()) { setError('description', 'Description is required'); return; }
 
     setLoading(true);
     try {
       const res = await fetch(`${baseURL}/api/sellers/cultural-info`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ artistName: formData.artistName, clanAffiliation: formData.clanAffiliation, culturalStory: formData.culturalStory }),
+        body: JSON.stringify({ artistName: formData.artistName, description: formData.description }),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError('submit', d.message || 'Failed to save cultural info'); return; }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError('submit', d.message || 'Failed to save artist info'); return; }
       setErrors({});
       setCurrentStep(5);
     } catch { setError('submit', 'An error occurred.'); }
@@ -1296,7 +1317,7 @@ export default function ArtistOnboardingForm() {
   const handleStep5Submit = async () => {
     if (!formData.storeName?.trim()) { setError('storeName', 'Store name is required'); return; }
     if (!formData.storeLogo) { setError('storeLogo', 'Store logo is required'); return; }
-    if (!formData.storeBio?.trim() || formData.storeBio.length < 50) { setError('storeBio', 'Bio must be at least 50 characters'); return; }
+    if (!formData.storeBio?.trim()) { setError('storeBio', 'Store bio is required'); return; }
 
     setLoading(true);
     const fd = new FormData();
@@ -1624,11 +1645,6 @@ export default function ArtistOnboardingForm() {
               <div className="space-y-5">
                 <h3 className="text-xl font-semibold text-[#6F433A] mb-4">🔑 Seller Verification</h3>
                 <div>
-                  <label className={labelCls}>Seller ID</label>
-                  <input type="text" value={formData.sellerId} readOnly
-                    className="w-full px-4 py-2.5 border border-[#E6CFAF] rounded-xl bg-[#F3E7DF] text-[#440C03] opacity-70 cursor-not-allowed" />
-                </div>
-                <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className={labelCls}>OTP *</label>
                     <button type="button" onClick={handleResendOTP} disabled={loading}
@@ -1645,6 +1661,12 @@ export default function ArtistOnboardingForm() {
                   <input type="password" name="password" value={formData.password} onChange={handleInputChange}
                     placeholder="Set your password (min. 6 characters)" className={inputCls('password')} />
                   {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+                </div>
+                <div>
+                  <label className={labelCls}>Confirm Password *</label>
+                  <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange}
+                    placeholder="Re-enter your password" className={inputCls('confirmPassword')} />
+                  {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
                 </div>
                 {successMessage && <div className="bg-green-50 border border-green-200 rounded-xl p-3"><p className="text-sm text-green-800">{successMessage}</p></div>}
                 {errors.submit && <div className="bg-red-50 border border-red-200 rounded-xl p-3"><p className="text-sm text-red-800">{errors.submit}</p></div>}
@@ -1684,11 +1706,6 @@ export default function ArtistOnboardingForm() {
                     placeholder="Business Phone" className={inputCls()} />
                 </div>
                 <div>
-                  <label className={labelCls}>Business Email</label>
-                  <input type="email" name="businessEmail" value={formData.businessEmail} onChange={handleInputChange}
-                    placeholder="business@email.com" className={inputCls()} />
-                </div>
-                <div>
                   <label className={labelCls}>Business Address</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[['street','Street'],['city','City'],['state','State'],['postcode','Postcode'],['country','Country']].map(([name, placeholder]) => (
@@ -1704,23 +1721,18 @@ export default function ArtistOnboardingForm() {
             {/* Step 4 */}
             {currentStep === 4 && (
               <div className="space-y-5">
-                <h3 className="text-xl font-semibold text-[#6F433A] mb-4">🪃 Artist & Cultural Story</h3>
+                <h3 className="text-xl font-semibold text-[#6F433A] mb-4">🪃 Artist Profile</h3>
                 <div>
                   <label className={labelCls}>Artist Name *</label>
                   <input type="text" name="artistName" value={formData.artistName} onChange={handleInputChange}
-                    placeholder="Artist Name" className={inputCls('artistName')} />
+                    placeholder="e.g. Electronics Store, Traditional Antique" className={inputCls('artistName')} />
                   {errors.artistName && <p className="mt-1 text-xs text-red-600">{errors.artistName}</p>}
                 </div>
                 <div>
-                  <label className={labelCls}>Clan / Tribe Affiliation</label>
-                  <input type="text" name="clanAffiliation" value={formData.clanAffiliation} onChange={handleInputChange}
-                    placeholder="Clan or Tribe" className={inputCls()} />
-                </div>
-                <div>
-                  <label className={labelCls}>Cultural Story *</label>
-                  <textarea name="culturalStory" value={formData.culturalStory} onChange={handleInputChange} rows={6}
-                    placeholder="Share the story behind your art…" className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#A48068] bg-[#FFF8F3] text-[#440C03] placeholder-[#A48068] resize-none transition-all ${errors.culturalStory ? 'border-red-400' : 'border-[#E6CFAF]'}`} />
-                  {errors.culturalStory && <p className="mt-1 text-xs text-red-600">{errors.culturalStory}</p>}
+                  <label className={labelCls}>Description *</label>
+                  <textarea name="description" value={formData.description} onChange={handleInputChange} rows={6}
+                    placeholder="Story about your work…" className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#A48068] bg-[#FFF8F3] text-[#440C03] placeholder-[#A48068] resize-none transition-all ${errors.description ? 'border-red-400' : 'border-[#E6CFAF]'}`} />
+                  {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description}</p>}
                 </div>
                 {errors.submit && <div className="bg-red-50 border border-red-200 rounded-xl p-3"><p className="text-sm text-red-800">{errors.submit}</p></div>}
               </div>
@@ -1748,13 +1760,10 @@ export default function ArtistOnboardingForm() {
                   {errors.storeLogo && <p className="mt-1 text-xs text-red-600">{errors.storeLogo}</p>}
                 </div>
                 <div>
-                  <label className={labelCls}>Store Bio * <span className="text-[#A48068] font-normal">(min. 50 characters)</span></label>
+                  <label className={labelCls}>Store Bio *</label>
                   <textarea name="storeBio" value={formData.storeBio} onChange={handleInputChange} rows={6}
                     placeholder="Tell customers about your art…" className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#A48068] bg-[#FFF8F3] text-[#440C03] placeholder-[#A48068] resize-none transition-all ${errors.storeBio ? 'border-red-400' : 'border-[#E6CFAF]'}`} />
-                  <div className="flex justify-between mt-1">
-                    {errors.storeBio && <p className="text-xs text-red-600">{errors.storeBio}</p>}
-                    <p className="text-xs text-[#A48068] ml-auto">{formData.storeBio.length} chars</p>
-                  </div>
+                  {errors.storeBio && <p className="mt-1 text-xs text-red-600">{errors.storeBio}</p>}
                 </div>
                 {errors.submit && <div className="bg-red-50 border border-red-200 rounded-xl p-3"><p className="text-sm text-red-800">{errors.submit}</p></div>}
               </div>

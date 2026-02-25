@@ -768,7 +768,7 @@ const Page = () => {
 
       {/* ================= BLOG SECTION ================= */}
       <section className="bg-[#EAD7B7] py-20 md:py-28 px-4">
-        <div className="max-w-screen-xl mx-auto">
+        <div className="max-w-7xl mx-auto">
 
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
@@ -781,7 +781,7 @@ const Page = () => {
                 Latest{" "}
                 <span className="relative inline-block">
                   <span className="relative z-10 text-[#803512]">Stories</span>
-                  <span className="absolute left-0 -bottom-1 w-full h-[3px] rounded-full bg-[#803512]/25" />
+                  <span className="absolute left-0 -bottom-1 w-full h-0.75 rounded-full bg-[#803512]/25" />
                 </span>
               </h2>
             </div>
@@ -804,7 +804,7 @@ const Page = () => {
                 className="group flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
                 {/* Image */}
-                <div className="relative w-full aspect-[16/9] overflow-hidden bg-[#F4E9DC]">
+                <div className="relative w-full aspect-video overflow-hidden bg-[#F4E9DC]">
                   <Image
                     src={post.image}
                     alt={post.title}
