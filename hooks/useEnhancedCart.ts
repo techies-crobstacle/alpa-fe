@@ -72,7 +72,7 @@ export function useEnhancedCart() {
   // Ref to track current selection for async operations like setInterval
   const selectedShippingRef = useRef<ShippingOption | null>(null);
 
-  const baseUrl = "http://127.0.0.1:5000";
+  const baseUrl = "https://alpa-be-1.onrender.com";
 
   // Sync ref with state whenever selectedShipping changes
   useEffect(() => {
