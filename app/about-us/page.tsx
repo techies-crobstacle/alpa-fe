@@ -155,6 +155,42 @@ const VALUES = [
   },
 ];
 
+// ── Team / Leadership data ───────────────────────────────────────────────────
+const TEAM = [
+  {
+    name: "James Wurramara",
+    role: "Chief Executive Officer",
+    bio: "A proud Yolŋu man from Arnhem Land, James leads Alpa's mission to bring authentic Aboriginal commerce to the world.",
+    initials: "JW",
+    image: "/images/team/james.jpg",
+    accent: "#5A1E12",
+  },
+  {
+    name: "Sarah Dhurrkay",
+    role: "Head of Marketplace",
+    bio: "With over a decade in e-commerce, Sarah ensures every seller and product meets Alpa's strict quality standards.",
+    initials: "SD",
+    image: "/images/team/sarah.jpg",
+    accent: "#803512",
+  },
+  {
+    name: "Tom Ganambarr",
+    role: "Director of Culture & Partnerships",
+    bio: "Tom bridges the gap between traditional Yolŋu knowledge and the modern digital economy, forging meaningful partnerships.",
+    initials: "TG",
+    image: "/images/team/tom.jpg",
+    accent: "#632013",
+  },
+  {
+    name: "Emily Munuŋgurr",
+    role: "Head of Community",
+    bio: "Emily champions the voices of Aboriginal artisans and communities, ensuring Alpa always stays rooted in culture.",
+    initials: "EM",
+    image: "/images/team/emily.jpg",
+    accent: "#5A1E12",
+  },
+];
+
 export default function Page() {
   return (
     <main className="bg-white text-gray-900 overflow-x-hidden">
@@ -380,18 +416,106 @@ export default function Page() {
       </section>
 
       {/* ══════════════════════════════════════════════════
+          LEADERSHIP
+      ══════════════════════════════════════════════════ */}
+      <section className="py-20 md:py-28 px-4 bg-white border-t border-gray-100">
+        <div className="max-w-screen-2xl px-12 mx-auto">
+
+          {/* Header */}
+          <div className="flex flex-col items-center text-center mb-16">
+            <span className="text-xs font-bold tracking-[0.3em] uppercase text-[#5A1E12]/60 mb-3">The People Behind Alpa</span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1a0a06] leading-tight mb-4">
+              Meet our <span className="text-[#5A1E12]">Leadership</span>
+            </h2>
+            <p className="text-gray-500 max-w-xl text-sm md:text-base leading-relaxed mb-6">
+              A dedicated team rooted in Yolŋu culture and driven by a shared vision to elevate Aboriginal commerce.
+            </p>
+            <div className="flex items-center gap-3">
+              <span className="w-10 h-px bg-[#5A1E12]/40" />
+              <span className="w-2 h-2 rounded-full bg-[#5A1E12]/50" />
+              <span className="w-10 h-px bg-[#5A1E12]/40" />
+            </div>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+            {TEAM.map((member) => (
+              <div
+                key={member.name}
+                className="group relative bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col"
+              >
+                {/* Large portrait image */}
+                <div className="relative w-full aspect-square overflow-hidden bg-[#F4E9DC]">
+                  <Image
+                    src={member.image}
+                    alt={member.name}
+                    fill
+                    className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  {/* Fallback gradient with initials if image missing */}
+                  <div
+                    className="absolute inset-0 flex items-center justify-center text-white text-5xl font-black tracking-tight select-none"
+                    style={{ background: `linear-gradient(135deg, ${member.accent}cc, ${member.accent}66)` }}
+                  >
+                    {member.initials}
+                  </div>
+
+                </div>
+
+                {/* Content */}
+                <div className="flex flex-col flex-1 p-5">
+                  {/* Name + role block */}
+                  <div className="flex items-start gap-3 mb-3">
+                    {/* Accent side bar */}
+                    <div className="w-1 rounded-full shrink-0 mt-0.5 self-stretch" style={{ background: member.accent }} />
+                    <div>
+                      <h3 className="font-bold text-[#1a0a06] text-base leading-snug">{member.name}</h3>
+                      <p className="text-xs font-semibold tracking-[0.12em] uppercase mt-0.5" style={{ color: member.accent }}>
+                        {member.role}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 leading-relaxed flex-1">{member.bio}</p>
+
+                  {/* Divider + social buttons */}
+                  <div className="mt-4 pt-4 border-t border-[#e8d5c0] flex items-center gap-2">
+                    <button className="w-8 h-8 rounded-full bg-[#F4E9DC] hover:bg-[#5A1E12] hover:text-white text-[#5A1E12] flex items-center justify-center transition-all duration-200">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                      </svg>
+                    </button>
+                    <button className="w-8 h-8 rounded-full bg-[#F4E9DC] hover:bg-[#5A1E12] hover:text-white text-[#5A1E12] flex items-center justify-center transition-all duration-200">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════
           IMAGE + COPY  (What We Offer detail row)
       ══════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28 px-4">
+      <section className="py-20 md:py-28 px-4 bg-gray-100 ">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Text */}
           <div>
-            <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">
+            <span className="inline-flex items-center gap-2 bg-[#5A1E12]/10 text-[#5A1E12] text-xs font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#5A1E12] animate-pulse" />
               Why Choose Us
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold leading-snug mb-5">
-              Shopping that feels{" "}
-              <span className="text-[#5A1E12]">personal.</span>
+            </span>
+            <h2 className="text-4xl md:text-5xl font-black leading-[1.1] tracking-tight mb-5">
+              Shopping that{" "}
+              <span className="relative inline-block">
+                <span className="relative z-10 text-[#5A1E12]">feels personal.</span>
+                <span className="absolute left-0 -bottom-1 w-full h-[3px] rounded-full bg-[#5A1E12]/30" />
+              </span>
             </h2>
             <p className="text-gray-500 leading-relaxed mb-4">
               We believe every purchase should feel intentional. That&apos;s why
