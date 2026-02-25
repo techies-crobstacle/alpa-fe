@@ -37,7 +37,7 @@ export const getCheckoutOptions = async (): Promise<{
     }
 
     // Fetch from backend - GET /api/cart/checkout-options
-    const response = await fetch('http://127.0.0.1:5000/api/cart/checkout-options', {
+    const response = await fetch('https://alpa-be-1.onrender.com/api/cart/checkout-options', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ export const guestCartUtils = {
     gstPercentage: number;
   } | null> => {
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/cart/calculate-guest", {
+      const response = await fetch("https://alpa-be-1.onrender.com/api/cart/calculate-guest", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

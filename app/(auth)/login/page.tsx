@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const url = "http://127.0.0.1:5000";
+  const url = "https://alpa-be-1.onrender.com";
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -341,7 +341,7 @@ export default function LoginPage() {
 // }
 
 // export default function LoginPage() {
-//   const url = "http://127.0.0.1:5000";
+//   const url = "https://alpa-be-1.onrender.com";
 //   const router = useRouter();
 
 //   const [email, setEmail] = useState("");
