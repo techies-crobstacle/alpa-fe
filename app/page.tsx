@@ -1,294 +1,3 @@
-// "use client";
-// import React, { useRef } from "react";
-// import Image from "next/image";
-// import { useProducts } from "@/hooks/useProducts";
-// import OptimisticProductCard from "@/components/cards/OptimisticProductCard";
-// import Link from "next/link";
-
-// const Page = () => {
-//   const scrollRef = useRef<HTMLDivElement>(null);
-//   const { data: products = [] } = useProducts();
-//   const limitedProducts = products.slice(0, 4);
-
-//   const scrollByAmount = (amount: number) => {
-//     if (scrollRef.current) {
-//       scrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
-//     }
-//   };
-
-//   return (
-//     <main className="min-h-screen bg-[#EAD7B7] ">
-//       {/* ================= HERO ================= */}
-//       <section>
-//         <div className="relative min-h-screen overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
-//           {/* Using standard Tailwind v3 gradient syntax for compatibility */}
-//           <div className="absolute inset-0 bg-linear-to-b from-amber-900/60 via-amber-900/30 to-black/70"></div>
-
-//           <div className="relative z-10 flex flex-col justify-center text-white px-4 sm:px-6 lg:px-24 py-32 md:py-40 lg:py-60">
-//             <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-//               Discover the Spirit of
-//             </h1>
-//             <h1 className="text-3xl sm:text-4xl font-bold mb-6 md:mb-8 text-amber-100">
-//               Arnhem Land
-//             </h1>
-//             <p className="text-sm sm:text-base max-w-2xl mb-8 leading-relaxed text-gray-100/90">
-//               Discover authentic Aboriginal products and experiences, each
-//               carrying stories passed down through thousands of generations.
-//             </p>
-
-//             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-//               <button className="px-8 py-3 bg-[#803512] hover:bg-[#a0451a] text-white font-medium transition-all duration-300 rounded-sm tracking-wide uppercase text-xs sm:text-sm">
-//                 Start Your Journey
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* ================= FEATURES & SPONSOR CAROUSEL ================= */}
-//       <section className="relative bg-[#632013] p-4 sm:p-6 lg:p-10 rounded-2xl lg:rounded-4xl mx-2 sm:mx-4 lg:mx-10 -mt-8 sm:-mt-12 lg:-mt-20 mb-8 lg:mb-16">
-//         <div className="flex flex-col w-full mb-8 sm:mb-12 lg:mb-20">
-//           {/* CAROUSEL WRAPPER */}
-//           <div className="relative group w-full px-0 sm:px-6 mb-16">
-//             {/* Arrows */}
-//             <button
-//               onClick={() => scrollByAmount(-400)}
-//               className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full hidden md:block transition-all shadow-lg cursor-pointer"
-//             >
-//               <svg
-//                 xmlns="http://www.w3.org/2000/svg"
-//                 className="h-6 w-6 text-white"
-//                 fill="none"
-//                 viewBox="0 0 24 24"
-//                 stroke="currentColor"
-//               >
-//                 <path
-//                   strokeLinecap="round"
-//                   strokeLinejoin="round"
-//                   strokeWidth={2}
-//                   d="M15 19l-7-7 7-7"
-//                 />
-//               </svg>
-//             </button>
-
-//             <button
-//               onClick={() => scrollByAmount(400)}
-//               className="absolute -right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full hidden md:block transition-all shadow-lg cursor-pointer"
-//             >
-//               <svg
-//                 xmlns="http://www.w3.org/2000/svg"
-//                 className="h-6 w-6 text-white"
-//                 fill="none"
-//                 viewBox="0 0 24 24"
-//                 stroke="currentColor"
-//               >
-//                 <path
-//                   strokeLinecap="round"
-//                   strokeLinejoin="round"
-//                   strokeWidth={2}
-//                   d="M9 5l7 7-7 7"
-//                 />
-//               </svg>
-//             </button>
-
-//             {/* Scrolling Container */}
-//             <div
-//               ref={scrollRef}
-//               className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth gap-4 pb-4"
-//               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-//             >
-//               {/* SLIDE 1: Australia Post */}
-//               <div className="min-w-full snap-center px-1">
-//                 <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512]">
-//                   <div className="relative w-full md:w-1/2  bg-[url('/images/ap.jpg')] bg-cover bg-right shrink-0">
-//                     <div className="absolute inset-0 bg-black/5"></div>
-//                   </div>
-//                   <div className="relative w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center text-white">
-//                     <div className="absolute top-0 bottom-0 -left-10 lg:-left-16 w-12 lg:w-20 hidden md:block text-[#803512]">
-//                       <svg
-//                         viewBox="0 0 100 100"
-//                         preserveAspectRatio="none"
-//                         className="h-full w-full fill-[#803512]"
-//                       >
-//                         <path d="M 100 0 L 100 100 L 0 100 Q 50 50 0 0 Z" />
-//                       </svg>
-//                     </div>
-//                     <div className="relative z-10">
-//                       <div className="mb-6 absolute top-0 right-4">
-//                         <span className="inline-flex items-center px-3 py-1 rounded-full bg-black/20 border border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-orange-100">
-//                           <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mr-2 animate-pulse"></span>
-//                           Sponsored
-//                         </span>
-//                       </div>
-//                       <h2 className="text-3xl lg:text-4xl font-bold mb-3 leading-tight">
-//                         Delivering <br />
-//                         <span className="text-orange-200">For Australia</span>
-//                       </h2>
-//                       <p className="text-orange-50/80 text-sm lg:text-base leading-relaxed mb-8 max-w-md">
-//                         Connecting you to more of what you love. Making every
-//                         delivery count across the country.
-//                       </p>
-//                       <button className="bg-white text-[#803512] px-8 py-3 rounded-full text-xs font-bold uppercase shadow-lg hover:bg-orange-50 transition-colors">
-//                         View Now
-//                       </button>
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-
-//               {/* SLIDE 2: Government Services (Medicare / Service Australia) */}
-//               <div className="min-w-full snap-center px-1">
-//                 <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512]">
-//                   <div className="relative w-full md:w-1/2 bg-[url('/images/medicare.jpg')] bg-cover bg-center shrink-0">
-//                     <div className="absolute inset-0 bg-black/10"></div>
-//                   </div>
-//                   <div className="relative w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center text-white">
-//                     <div className="absolute top-0 bottom-0 -left-10 lg:-left-16 w-12 lg:w-20 hidden md:block text-[#803512]">
-//                       <svg
-//                         viewBox="0 0 100 100"
-//                         preserveAspectRatio="none"
-//                         className="h-full w-full fill-[#803512]"
-//                       >
-//                         <path d="M 100 0 L 100 100 L 0 100 Q 50 50 0 0 Z" />
-//                       </svg>
-//                     </div>
-//                     <div className="relative z-10">
-//                       <div className="mb-6 absolute top-0 right-4">
-//                         <span className="inline-flex items-center px-3 py-1 rounded-full bg-black/20 border border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-orange-100">
-//                           <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mr-2 animate-pulse"></span>
-//                           Government
-//                         </span>
-//                       </div>
-//                       <h2 className="text-3xl lg:text-4xl font-bold mb-3 leading-tight">
-//                         Support For <br />
-//                         <span className="text-orange-200">Your Wellbeing</span>
-//                       </h2>
-//                       <p className="text-orange-50/80 text-sm lg:text-base leading-relaxed mb-8 max-w-md">
-//                         Accessing essential healthcare and community services.
-//                         We're here to support every Australian's health journey.
-//                       </p>
-//                       <button className="bg-white text-[#803512] px-8 py-3 rounded-full text-xs font-bold uppercase shadow-lg hover:bg-orange-50 transition-colors">
-//                         Access Services
-//                       </button>
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Fetch the Product cards dynamically  */}
-//           <div>
-//             <h2 className="text-center text-4xl font-bold text-[#e5d3b3] underline">
-//               Explore Our Products
-//             </h2>
-//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-10">
-//               {limitedProducts.map((product) => (
-//                 <OptimisticProductCard
-//                   key={product.id}
-//                   id={product.id}
-//                   photo={product.featuredImage || product.images?.[0] || "/images/placeholder.png"}
-//                   name={product.title}
-//                   description={product.description}
-//                   amount={parseFloat(product.price)}
-//                   stock={product.stock}
-//                   slug={product.slug}
-//                   rating={product.rating}
-//                   tags={product.tags}
-//                   featured={product.featured}
-//                   artistName={product.artistName}
-//                 />
-//               ))}
-//             </div>
-//             <div className="flex justify-center mt-10">
-//               <Link 
-//                 href="/shop" 
-//                 className="px-8 py-2 bg-amber-900 text-white rounded-lg hover:bg-amber-800 transition"
-//               >
-//                 View All
-//               </Link>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* STATIC VIDEO SECTION */}
-//         <div className="flex flex-col justify-center items-center text-center mt-12 sm:mt-16 lg:mt-20">
-//           <h2 className="font-bold text-white text-lg sm:text-xl lg:text-3xl max-w-4xl mb-8 leading-relaxed">
-//             Journey through the heartof{" "}
-//             <span className="text-amber-100">Arnhem Land.</span>
-//           </h2>
-//           <div className="relative w-full max-w-5xl h-48 sm:h-64 lg:h-96 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl">
-//             <Image
-//               src="/images/video-temp.jpg"
-//               alt="Video preview"
-//               fill
-//               className="object-cover"
-//             />
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* Cultural Section */}
-//       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 xl:gap-20 px-4 sm:px-6 lg:px-16 xl:px-20 py-12 sm:py-16 lg:py-24 items-end mb-12 sm:mb-20">
-//         <div className="max-w-2xl">
-//           <p className="text-sm sm:text-base lg:text-lg font-medium leading-relaxed text-gray-700">
-//             Discover authentic Aboriginal products and experiences, each
-//             carrying stories passed down through thousands of generations.
-//           </p>
-
-//           <svg
-//             className="mt-6 lg:mt-8 w-full h-6 lg:h-8"
-//             viewBox="0 0 400 30"
-//             fill="none"
-//           >
-//             <path
-//               d="M5 15 C60 5, 120 25, 180 15 C240 5, 300 25, 395 15"
-//               stroke="#6B2C1A"
-//               strokeWidth="4"
-//               strokeLinecap="round"
-//               className="animate-pulse"
-//             />
-//           </svg>
-
-//           <p className="mt-6 lg:mt-8 text-lg sm:text-xl lg:text-2xl font-bold text-[#6B2C1A] mb-8 lg:mb-12">
-//             01/07
-//           </p>
-
-//           <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
-//             Explore our{" "}
-//             <span className="text-amber-900">Cultural Categories</span>
-//           </h2>
-//         </div>
-
-//         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 xl:gap-8">
-//           {/* Image Cards */}
-//           {[1, 2, 3].map((item) => (
-//             <div
-//               key={item}
-//               className="relative h-64 lg:h-80 xl:h-96 rounded-2xl lg:rounded-3xl overflow-hidden group cursor-pointer"
-//             >
-//               <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-//               <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent"></div>
-//               <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md rounded-xl p-3 text-center">
-//                 <h3 className="text-xs font-bold text-gray-900">
-//                   Category {item}
-//                 </h3>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//       </section>
-//     </main>
-//   );
-// };
-
-// export default Page;
-
-
-
-
-
-
 "use client";
 import React, { useRef, useState, useEffect } from "react";
 import Image from "next/image";
@@ -298,6 +7,39 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 const SLIDE_COUNT = 2;
+
+const BLOG_POSTS = [
+  {
+    title: "Understanding Yolŋu Art: Symbols, Stories & Sacred Meaning",
+    excerpt:
+      "Every dot, line, and colour in Yolŋu art carries generations of knowledge. We explore the visual language behind some of our most celebrated works.",
+    tags: ["Culture", "Art"],
+    readTime: "5 min read",
+    cta: "Read the story",
+    image: "/images/about2.png",
+    href: "/blog/yolngu-art-symbols",
+  },
+  {
+    title: "From Arnhem Land to Your Doorstep: How We Ship with Care",
+    excerpt:
+      "Sending fragile, handcrafted pieces across Australia isn't simple. Here's how our fulfilment team ensures every order arrives safely and on time.",
+    tags: ["Delivery", "Behind the Scenes"],
+    readTime: "4 min read",
+    cta: "Learn how we do it",
+    image: "/images/about-us-what-we-offer.jpg",
+    href: "/blog/how-we-ship",
+  },
+  {
+    title: "Meet the Makers: Spotlight on Three Aboriginal Artists",
+    excerpt:
+      "We sat down with three creators from our seller community to hear their stories, their craft, and what inspires their most iconic pieces.",
+    tags: ["Makers", "Community"],
+    readTime: "6 min read",
+    cta: "Meet the artists",
+    image: "/images/main.png",
+    href: "/blog/meet-the-makers",
+  },
+];
 
 const Page = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -342,7 +84,7 @@ const Page = () => {
 
       {/* ================= HERO ================= */}
       <section>
-        <div className="relative min-h-screen overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
+        <div className="relative min-h-[110vh] h-screen overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
           {/* Layered gradient overlay */}
           <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
           <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
@@ -380,7 +122,7 @@ const Page = () => {
           </svg> */}
 
           {/* Hero content */}
-          <div className="relative z-10 flex flex-col justify-center min-h-screen text-white px-6 sm:px-10 lg:px-24 pt-40 pb-24">
+          <div className="relative z-10 flex flex-col justify-center min-h-screen text-white px-6 sm:px-10 lg:px-24 pt-56 pb-24">
 
             {/* Animated badge */}
             {/* <motion.div
@@ -411,7 +153,7 @@ const Page = () => {
                 initial={{ y: 60, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.75, delay: 0.38, ease: [0.22, 1, 0.36, 1] }}
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-tight text-amber-200"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-tight text-[#ead7b7]"
               >
                 Arnhem Land
               </motion.h1>
@@ -424,7 +166,7 @@ const Page = () => {
               transition={{ duration: 0.65, delay: 0.58, ease: "easeOut" }}
               className="text-sm sm:text-base lg:text-lg max-w-lg mb-10 leading-relaxed text-white/75"
             >
-              Authentic Aboriginal products and experiences — each carrying
+              Authentic Aboriginal products and experiences, each carrying
               stories passed down through thousands of generations.
             </motion.p>
 
@@ -446,7 +188,7 @@ const Page = () => {
               </Link>
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-2 px-8 py-3.5 border border-white/30 hover:border-white/70 text-white/80 hover:text-white font-medium text-sm tracking-wide uppercase rounded-full transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/70 text-white/80 hover:text-white font-medium text-sm tracking-wide uppercase rounded-full backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Explore Art
               </Link>
@@ -893,26 +635,26 @@ const Page = () => {
           {/* Corner bracket top-left */}
           <div className="relative z-10 flex items-start justify-between mb-auto">
             <div className="flex flex-col gap-1">
-              <div className="w-8 h-0.5 bg-amber-400/60" />
-              <div className="w-0.5 h-8 bg-amber-400/60" />
+              <div className="w-8 h-0.5 bg-[#ead7b7]/60" />
+              <div className="w-0.5 h-8 bg-[#ead7b7]/60" />
             </div>
-            <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-amber-400/50 mt-1">01 / Shop</span>
+            <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#ead7b7]/50 mt-1">01 / Shop</span>
           </div>
 
           {/* Text block */}
           <div className="relative z-10 mt-4">
-            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-amber-300/60 mb-2">
+            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#ead7b7]/70 mb-2">
               Discover Products
             </p>
             <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-2 group-hover:text-amber-100 transition-colors duration-300">
               Explore the<br />
-              <span className="text-amber-300">Marketplace</span>
+              <span className="text-[#ead7b7]">Marketplace</span>
             </h3>
             <p className="text-sm text-white/50 max-w-xs leading-relaxed mb-4">
               Thousands of authentic Aboriginal products like art, crafts, textiles, and more, curated with care.
             </p>
-            <div className="inline-flex items-center gap-3 text-amber-300 text-sm font-semibold tracking-wide uppercase">
-              <span className="w-8 h-px bg-amber-400/60 group-hover:w-14 transition-all duration-400" />
+            <div className="inline-flex items-center gap-3 text-[#ead7b7] text-sm font-semibold tracking-wide uppercase">
+              <span className="w-8 h-px bg-[#ead7b7]/60 group-hover:w-14 transition-all duration-400" />
               Browse Now
               <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -922,8 +664,8 @@ const Page = () => {
 
           {/* Corner bracket bottom-right */}
           <div className="absolute bottom-4 right-4 flex flex-col items-end gap-1 opacity-40">
-            <div className="w-0.5 h-8 bg-amber-400" />
-            <div className="w-8 h-0.5 bg-amber-400" />
+            <div className="w-0.5 h-8 bg-[#ead7b7]" />
+            <div className="w-8 h-0.5 bg-[#ead7b7]" />
           </div>
         </Link>
 
@@ -996,7 +738,7 @@ const Page = () => {
       </section>
 
       {/* STATIC VIDEO SECTION */}
-      <section className=" mx-auto pb-20 px-12 bg-white py-14">
+      <section className=" mx-auto px-12 bg-white pt-22 pb-28">
         <div className="max-w-screen-2xl mx-auto flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold tracking-[0.3em] uppercase text-[#803512]/60 mb-3">
             Experience the Land
@@ -1020,6 +762,101 @@ const Page = () => {
               allowFullScreen
               className="absolute inset-0 w-full h-full border-0"
             />
+          </div>
+        </div>
+      </section>
+
+      {/* ================= BLOG SECTION ================= */}
+      <section className="bg-[#EAD7B7] py-20 md:py-28 px-4">
+        <div className="max-w-screen-xl mx-auto">
+
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
+            <div>
+              <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] uppercase text-[#803512]/60 mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#803512] animate-pulse" />
+                From the Journal
+              </span>
+              <h2 className="text-4xl sm:text-5xl font-black leading-[1.1] tracking-tight text-[#3a1208]">
+                Latest{" "}
+                <span className="relative inline-block">
+                  <span className="relative z-10 text-[#803512]">Stories</span>
+                  <span className="absolute left-0 -bottom-1 w-full h-[3px] rounded-full bg-[#803512]/25" />
+                </span>
+              </h2>
+            </div>
+            <Link
+              href="/blog"
+              className="shrink-0 inline-flex items-center gap-2 font-semibold underline underline-offset-4 text-[#803512] hover:text-[#5A1E12] transition-colors group"
+            >
+              View all posts
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {BLOG_POSTS.map((post) => (
+              <article
+                key={post.title}
+                className="group flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              >
+                {/* Image */}
+                <div className="relative w-full aspect-[16/9] overflow-hidden bg-[#F4E9DC]">
+                  <Image
+                    src={post.image}
+                    alt={post.title}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {/* Read time pill — top right */}
+                  <div className="absolute top-3 right-3">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-[10px] font-semibold text-white/90">
+                      <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {post.readTime}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="flex flex-col flex-1 p-6">
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {post.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 rounded-full bg-[#F4E9DC] text-[#803512] text-[11px] font-semibold tracking-wide border border-[#e8d5c0]"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <h3 className="text-lg font-bold text-[#1a0a06] leading-snug mb-3 group-hover:text-[#803512] transition-colors duration-200">
+                    {post.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 leading-relaxed flex-1 mb-5">
+                    {post.excerpt}
+                  </p>
+
+                  {/* CTA */}
+                  <div className="pt-4 border-t border-[#e8d5c0]">
+                    <Link
+                      href={post.href}
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-[#803512] hover:text-[#5A1E12] transition-colors group/cta"
+                    >
+                      {post.cta}
+                      <svg className="w-4 h-4 group-hover/cta:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>

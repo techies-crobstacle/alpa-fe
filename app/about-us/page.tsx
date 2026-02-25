@@ -204,7 +204,7 @@ export default function Page() {
             Our Story
           </p>
           <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6">
-            Built with <span className="text-[#d9a87a]">passion.</span>
+            Built with <span className="text-[#e5d3b3]">Passion.</span>
             <br />
             Driven by people.
           </h1>
