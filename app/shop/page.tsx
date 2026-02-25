@@ -369,7 +369,7 @@ function ShopContent() {
   }
 
   return (
-    <section className=" bg-[#EAD7B7]">
+    <section className=" bg-[#EAD7B7]/40">
       {/* HERO SECTION */}
       <section className="bg-[#e6e6e6]">
         {/* OUTER FRAME */}
