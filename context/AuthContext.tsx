@@ -124,70 +124,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserDirect(userData, authToken);
   };
 
-  // Cross-domain logout — loads a hidden iframe on the other platform so it
-  // can clear its own localStorage, then posts "alpa-logout-done" back when done.
-  const triggerCrossDomainLogout = (iframeUrl: string): Promise<void> => {
-    return new Promise((resolve) => {
-      if (typeof window === "undefined") { resolve(); return; }
-
-      const iframe = document.createElement("iframe");
-      iframe.src = iframeUrl;
-      iframe.style.cssText = "display:none;width:0;height:0;border:none;position:absolute;";
-      document.body.appendChild(iframe);
-
-      // Safety timeout — never block logout for more than 2 seconds
-      const timer = setTimeout(() => {
-        window.removeEventListener("message", handler);
-        if (document.body.contains(iframe)) document.body.removeChild(iframe);
-        resolve();
-      }, 2000);
-
-      function handler(e: MessageEvent) {
-        if (e.data === "alpa-logout-done") {
-          clearTimeout(timer);
-          window.removeEventListener("message", handler);
-          if (document.body.contains(iframe)) document.body.removeChild(iframe);
-          resolve();
-        }
-      }
-      window.addEventListener("message", handler);
-    });
-  };
-
-  // Proper logout
+  // Proper logout — clears Webapp session then hands off to Dashboard's
+  // /logout-callback, which clears Dashboard session and redirects back to
+  // Webapp's /login. No iframes needed — simple redirect chain.
   const logout = async () => {
     const currentToken = token || localStorage.getItem("alpa_token");
-    
-    try {
-      // Call logout API if token exists
-      if (currentToken) {
+
+    // 1. Invalidate the token server-side (best-effort)
+    if (currentToken) {
+      try {
         await fetch("https://alpa-be-1.onrender.com/api/auth/logout", {
           method: "POST",
-          headers: { 
+          credentials: "include",
+          headers: {
             Authorization: `Bearer ${currentToken}`,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
-        }).catch(error => {
-          console.error("Logout API error:", error);
         });
+      } catch (error) {
+        console.error("Logout API error:", error);
       }
-    } finally {
-      // Clear Dashboard session via hidden iframe first
-      await triggerCrossDomainLogout("https://alpa-dashboard.vercel.app/logout-callback");
+    }
 
-      // Clear client-side state
-      setUser(null);
-      setToken(null);
-      localStorage.removeItem("user");
-      localStorage.removeItem("alpa_token");
+    // 2. Clear Webapp client-side state immediately
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("alpa_token");
 
-      // Notify CartContext to clear guest state immediately (same-tab)
-      window.dispatchEvent(new CustomEvent("alpa-logout"));
+    // 3. Notify CartContext to clear guest state (same-tab)
+    window.dispatchEvent(new CustomEvent("alpa-logout"));
 
-      // Redirect to home page
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      }
+    // 4. Redirect to Dashboard's /logout-callback, which will clear its own
+    //    session and then redirect the user back to Webapp's /login page.
+    if (typeof window !== "undefined") {
+      window.location.href =
+        "https://alpa-dashboard.vercel.app/logout-callback?redirect=" +
+        encodeURIComponent("https://apla-fe.vercel.app/login");
     }
   };
 

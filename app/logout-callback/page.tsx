@@ -1,28 +1,32 @@
 "use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 /**
  * /logout-callback
  *
- * This page is loaded inside a hidden iframe by the Dashboard when the user
- * logs out from there. It clears the Website's localStorage and then posts
- * a message back to the parent (Dashboard) so it knows the cross-domain
- * logout is complete.
+ * Called by the Dashboard via a full-page redirect when the user logs out
+ * from there. Invalidates the token server-side, clears the Webapp's
+ * localStorage, then redirects to the URL in the `redirect` param
+ * (validated against known safe origins) — or falls back to the homepage.
  *
- * If someone navigates here directly (not in an iframe), they are simply
- * redirected to the homepage.
+ * Also handles the legacy iframe path for backward compatibility.
  */
-export default function LogoutCallbackPage() {
+function LogoutCallbackContent() {
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     const doLogout = async () => {
       const token = localStorage.getItem("alpa_token");
 
-      // Invalidate the token server-side so it can't be reused for SSO tickets
+      // 1. Invalidate the token server-side so it can't be reused for SSO tickets
       if (token) {
         try {
           await fetch("https://alpa-be-1.onrender.com/api/auth/logout", {
             method: "POST",
+            credentials: "include",
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
@@ -33,25 +37,40 @@ export default function LogoutCallbackPage() {
         }
       }
 
-      // Clear Website session data
+      // 2. Clear Webapp session data
       localStorage.removeItem("alpa_token");
       localStorage.removeItem("user");
 
-      // Notify any in-tab listeners (e.g. CartContext)
+      // 3. Notify any in-tab listeners (e.g. CartContext)
       window.dispatchEvent(new CustomEvent("alpa-logout"));
 
       if (window.parent !== window) {
-        // Running inside an iframe — notify the Dashboard parent that we're done
+        // Legacy iframe path — notify the parent that we're done
         window.parent.postMessage("alpa-logout-done", "https://alpa-dashboard.vercel.app");
-      } else {
-        // Navigated to directly — redirect home
-        window.location.replace("/");
+        return;
       }
+
+      // 4. Redirect-based path — validate the redirect param against known origins
+      const redirectParam = searchParams.get("redirect");
+      const allowedOrigins = [
+        "https://apla-fe.vercel.app",
+        "https://alpa-dashboard.vercel.app",
+      ];
+      const isSafe =
+        redirectParam && allowedOrigins.some((o) => redirectParam.startsWith(o));
+      window.location.replace(isSafe ? redirectParam : "/");
     };
 
     doLogout();
-  }, []);
+  }, [searchParams]);
 
-  // Blank page — only shown for a fraction of a second inside the hidden iframe
-  return null;
+  return <div>Signing out…</div>;
+}
+
+export default function LogoutCallbackPage() {
+  return (
+    <Suspense>
+      <LogoutCallbackContent />
+    </Suspense>
+  );
 }
