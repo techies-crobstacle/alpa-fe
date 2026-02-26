@@ -57,7 +57,7 @@ export default function StripePaymentForm({
 
       // Step 2 – notify backend to confirm the order
       const res = await fetch(
-        "http://127.0.0.1:5000/api/payments/confirm",
+        "https://alpa-be-1.onrender.com/api/payments/confirm",
         {
           method: "POST",
           headers: {

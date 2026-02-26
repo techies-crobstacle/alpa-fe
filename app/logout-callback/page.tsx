@@ -4,16 +4,8 @@ export const dynamic = "force-dynamic";
 import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-/**
- * /logout-callback
- *
- * Called by the Dashboard via a full-page redirect when the user logs out
- * from there. Invalidates the token server-side, clears the Webapp's
- * localStorage, then redirects to the URL in the `redirect` param
- * (validated against known safe origins) — or falls back to the homepage.
- *
- * Also handles the legacy iframe path for backward compatibility.
- */
+
+
 function LogoutCallbackContent() {
   const searchParams = useSearchParams();
 
@@ -24,7 +16,7 @@ function LogoutCallbackContent() {
       // 1. Invalidate the token server-side so it can't be reused for SSO tickets
       if (token) {
         try {
-          await fetch("http://127.0.0.1:5000/api/auth/logout", {
+          await fetch("https://alpa-be-1.onrender.com/api/auth/logout", {
             method: "POST",
             credentials: "include",
             headers: {
