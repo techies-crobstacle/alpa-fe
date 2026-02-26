@@ -4,16 +4,8 @@ export const dynamic = "force-dynamic";
 import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-/**
- * /logout-callback
- *
- * Called by the Dashboard via a full-page redirect when the user logs out
- * from there. Invalidates the token server-side, clears the Webapp's
- * localStorage, then redirects to the URL in the `redirect` param
- * (validated against known safe origins) — or falls back to the homepage.
- *
- * Also handles the legacy iframe path for backward compatibility.
- */
+
+
 function LogoutCallbackContent() {
   const searchParams = useSearchParams();
 
