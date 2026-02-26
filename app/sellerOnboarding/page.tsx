@@ -5,7 +5,7 @@
 // import Image from 'next/image';
 // import Link from 'next/link';
 
-// const baseURL = 'https://alpa-be-1.onrender.com';
+// const baseURL = 'http://127.0.0.1:5000';
 
 // // ─── Types ────────────────────────────────────────────────────────────────────
 // type Mode = 'onboarding' | 'login' | 'resume' | 'forgot-password' | 'reset-password';
@@ -917,7 +917,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const baseURL = 'https://alpa-be-1.onrender.com';
+const baseURL = 'http://127.0.0.1:5000';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Mode = 'onboarding' | 'login' | 'resume' | 'forgot-password' | 'reset-password';

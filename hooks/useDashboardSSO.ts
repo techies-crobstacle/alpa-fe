@@ -3,7 +3,7 @@
 
 import { useState, useCallback } from "react";
 
-const API_BASE_URL = "https://alpa-be-1.onrender.com/api";
+const API_BASE_URL = "http://127.0.0.1:5000/api";
 const DASHBOARD_BASE_URL = "https://alpa-dashboard.vercel.app";
 
 /**

@@ -24,7 +24,7 @@ function LogoutCallbackContent() {
       // 1. Invalidate the token server-side so it can't be reused for SSO tickets
       if (token) {
         try {
-          await fetch("https://alpa-be-1.onrender.com/api/auth/logout", {
+          await fetch("http://127.0.0.1:5000/api/auth/logout", {
             method: "POST",
             credentials: "include",
             headers: {

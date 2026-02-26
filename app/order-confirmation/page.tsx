@@ -45,7 +45,7 @@ function FeedbackForm({ defaultName, defaultEmail }: { defaultName: string; defa
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch("https://alpa-be-1.onrender.com/api/feedback", {
+      const res = await fetch("http://127.0.0.1:5000/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -243,7 +243,7 @@ function OrderConfirmationContent() {
       try {
         const currentToken = token || localStorage.getItem("alpa_token");
         const res = await fetch(
-          `https://alpa-be-1.onrender.com/api/payments/status/${orderId}`,
+          `http://127.0.0.1:5000/api/payments/status/${orderId}`,
           { headers: { Authorization: `Bearer ${currentToken}` } }
         );
         if (res.ok) {
