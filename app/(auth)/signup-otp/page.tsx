@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://alpa-be-1.onrender.com";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://alpa-be.onrender.com";
 
 // Separate component that uses useSearchParams
 function OTPVerificationForm() {

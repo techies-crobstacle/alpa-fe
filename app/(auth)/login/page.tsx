@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const url = "https://alpa-be-1.onrender.com";
+  const url = "https://alpa-be.onrender.com";
   const router = useRouter();
 
   const [email, setEmail] = useState("");

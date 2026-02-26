@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://alpa-be-1.onrender.com";
+  process.env.NEXT_PUBLIC_API_URL || "https://alpa-be.onrender.com";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
