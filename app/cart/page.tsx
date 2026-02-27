@@ -1,16 +1,28 @@
 "use client";
 
-import { TruckElectric, Plus, Minus, Trash2, Loader, ArrowRight, Tag } from "lucide-react";
+import { TruckElectric, Plus, Minus, Trash2, Loader, ArrowRight, Tag, X, LogIn, UserX } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useProducts } from "@/hooks/useProducts";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Page() {
   const router = useRouter();
+  const { user } = useAuth();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+
+  const handleProceedToCheckout = () => {
+    if (user) {
+      router.push("/checkout");
+    } else {
+      setShowCheckoutModal(true);
+    }
+  };
 
   const { data: allProducts = [] } = useProducts();
   const productCategoryMap = useMemo(() => {
@@ -193,7 +205,7 @@ export default function Page() {
                         <div className="flex gap-5 items-center">
                           <div className="relative w-20 h-20 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[#F5F1EB] shadow-inner shrink-0">
                             <Image
-                              src={item.product.images?.[0] || "/images/placeholder.png"}
+                              src={item.product.images?.[0] || "/images/placeholder.svg"}
                               alt={item.product.title}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -304,7 +316,7 @@ export default function Page() {
                 {/* Shipping Selection */}
                 <div className="space-y-3 mb-8 relative z-10">
                     <p className="text-sm font-semibold uppercase tracking-wider text-[#8B5E3C] mb-2">Shipping Method</p>
-                    {cartData?.availableShipping.map((shipping) => (
+                    {cartData?.availableShipping.filter(s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)).map((shipping) => (
                     <label
                         key={shipping.id}
                         className={`group cursor-pointer block relative p-4 rounded-xl border-2 transition-all duration-300 ${
@@ -369,7 +381,7 @@ export default function Page() {
                     </div>
 
                     <button
-                        onClick={() => router.push("/checkout")}
+                        onClick={handleProceedToCheckout}
                         disabled={cartItems.length === 0}
                         className="group w-full py-4 bg-[#5A1E12] text-[#FAF7F2] rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl hover:bg-[#4a180f] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
                     >
@@ -385,6 +397,77 @@ export default function Page() {
           </div>
         </div>
       </div>
+
+    {/* Guest Checkout Modal */}
+    <AnimatePresence>
+      {showCheckoutModal && (
+        <motion.div
+          key="checkout-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          onClick={() => setShowCheckoutModal(false)}
+        >
+          <motion.div
+            key="checkout-modal"
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-[#FAF7F2] rounded-2xl shadow-2xl w-full max-w-md p-8"
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowCheckoutModal(false)}
+              className="absolute top-4 right-4 text-[#8B5E3C] hover:text-[#5A1E12] transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-[#5A1E12]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogIn className="h-7 w-7 text-[#5A1E12]" />
+              </div>
+              <h2 className="text-2xl font-serif font-bold text-[#2C1810] mb-2">How would you like to proceed?</h2>
+              <p className="text-sm text-[#8B5E3C]">
+                You&apos;re currently not logged in. Please choose an option below to continue.
+              </p>
+            </div>
+
+            {/* Options */}
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/login"
+                className="w-full py-3.5 bg-[#5A1E12] text-[#FAF7F2] rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-md hover:bg-[#4a180f] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                onClick={() => setShowCheckoutModal(false)}
+              >
+                <LogIn className="h-5 w-5" />
+                Login to Your Account
+              </Link>
+
+              <button
+                onClick={() => {
+                  setShowCheckoutModal(false);
+                  alert("Guest checkout coming soon!");
+                }}
+                className="w-full py-3.5 bg-white border-2 border-[#5A1E12] text-[#5A1E12] rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-[#5A1E12]/5 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                <UserX className="h-5 w-5" />
+                Continue as Guest
+              </button>
+            </div>
+
+            <p className="text-center text-xs text-[#8B5E3C] mt-5">
+              Logging in lets you track your orders and save your details for faster checkout.
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
 
     </motion.main>
   );

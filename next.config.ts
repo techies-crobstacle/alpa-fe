@@ -12,6 +12,16 @@ const nextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      {
+        // Allow any HTTPS host (S3, CloudFront, other CDNs, etc.)
+        protocol: "https",
+        hostname: "**",
+      },
+      {
+        // Allow any HTTP host for local/dev environments
+        protocol: "http",
+        hostname: "**",
+      },
     ],
   },
 

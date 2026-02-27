@@ -3,6 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { guestCartUtils, getShippingMethods } from '@/lib/guestCartUtils';
 
+// Custom event types dispatched by AuthContext
+declare global {
+  interface WindowEventMap {
+    'alpa-login': CustomEvent<{ token: string }>;
+    'alpa-logout': CustomEvent<undefined>;
+  }
+}
+
 export interface CartProduct {
   id: string;
   title: string;
@@ -140,9 +148,12 @@ export function useEnhancedCart() {
         
         setCartData(guestCartData);
         
-        // Set default shipping
+        // Set default shipping (exclude COD)
         if (!currentSelectedShipping && guestCartData.availableShipping.length > 0) {
-          setSelectedShipping(guestCartData.availableShipping[0]);
+          const nonCodOptions = guestCartData.availableShipping.filter(
+            s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)
+          );
+          setSelectedShipping((nonCodOptions[0] ?? guestCartData.availableShipping[0]));
         }
         
         setError(null);
@@ -182,9 +193,12 @@ export function useEnhancedCart() {
         if (data.calculations.selectedShipping) {
            setSelectedShipping(data.calculations.selectedShipping);
         } else if (data.availableShipping.length > 0) {
-           const generalShipping = data.availableShipping.find(
+           const nonCodOptions = data.availableShipping.filter(
+             s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)
+           );
+           const generalShipping = nonCodOptions.find(
              ship => ship.name.toLowerCase().includes('general')
-           ) || data.availableShipping[0];
+           ) || nonCodOptions[0] || data.availableShipping[0];
            setSelectedShipping(generalShipping);
         }
       }
@@ -318,6 +332,64 @@ export function useEnhancedCart() {
     // No polling interval — cart data is refreshed after every user action
     // (add, update, remove). Polling was causing redundant API calls.
   }, []);
+
+  // ── GUEST CART MERGE ON LOGIN ─────────────────────────────────────────────
+  // When the user logs in, merge any existing guest cart items into their
+  // account on the backend, then reload the merged cart. Clears localStorage
+  // guest_cart_items after a successful merge.
+  const mergeGuestCartOnLogin = useCallback(async (token: string) => {
+    const guestItems = guestCartUtils.getGuestCart();
+
+    if (guestItems.length > 0) {
+      // Fire all add-to-cart calls in parallel (best-effort; failures are silent)
+      await Promise.allSettled(
+        guestItems.map((item) =>
+          fetch(`${baseUrl}/api/cart/add`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              productId: item.productId,
+              quantity: item.quantity,
+            }),
+          })
+        )
+      );
+
+      // Clear guest cart — items are now on the server
+      guestCartUtils.clearGuestCart();
+    }
+
+    // Reload the (now merged) server cart
+    await fetchCartData(true);
+  }, [fetchCartData]);
+
+  // ── CLEAR CART ON LOGOUT ──────────────────────────────────────────────────
+  // When the user logs out, clear local guest cart data and re-fetch so the
+  // cart page shows an empty state immediately (no stale account items).
+  const handleLogout = useCallback(async () => {
+    guestCartUtils.clearGuestCart();
+    // fetchCartData with no token returns empty guest cart automatically
+    await fetchCartData(true);
+  }, [fetchCartData]);
+
+  // Listen for auth events dispatched by AuthContext (same-tab)
+  useEffect(() => {
+    const onLogin = (e: CustomEvent<{ token: string }>) => {
+      if (e.detail?.token) mergeGuestCartOnLogin(e.detail.token);
+    };
+    const onLogout = () => handleLogout();
+
+    window.addEventListener('alpa-login', onLogin);
+    window.addEventListener('alpa-logout', onLogout);
+
+    return () => {
+      window.removeEventListener('alpa-login', onLogin);
+      window.removeEventListener('alpa-logout', onLogout);
+    };
+  }, [mergeGuestCartOnLogin, handleLogout]);
 
   // Refetch when shipping changes to get updated calculations
   useEffect(() => {

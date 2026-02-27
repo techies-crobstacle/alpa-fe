@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from "react";
+import { guestCartUtils } from "@/lib/guestCartUtils";
 
 /* =======================
    TYPES
@@ -234,16 +235,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   /* ---------- NOTIFY LOGIN ----------
-   * Called right after a successful login. Updates the token in state
-   * and fetches the user's server-side cart immediately so the cart page
-   * and side-cart reflect the real data without a page reload.
+   * Called directly by login pages after a successful login.
+   * The actual guest-cart ➜ server MERGE is handled exclusively by
+   * useEnhancedCart.mergeGuestCartOnLogin (triggered via the alpa-login
+   * custom event that AuthContext dispatches). We wait 2 s here so that
+   * merge is guaranteed to finish before we read the server cart.
    * ------------------------------------------------------------------ */
-  const notifyLogin = async (newToken: string) => {
+  const notifyLogin = useCallback(async (newToken: string) => {
     // Persist the token so future operations (addToCart, updateQty …) work.
     setToken(newToken);
 
-    // We must use `newToken` directly here because setToken is async —
-    // the `token` closure still holds the old (null) value at this point.
+    // Give useEnhancedCart time to finish the guest-cart merge first.
+    await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+
+    // Fetch the (now merged) server cart into CartContext so the header
+    // badge count is accurate. Use `newToken` directly because setToken is
+    // async and the `token` closure still holds the old value at this point.
     try {
       const res = await fetch(`${baseUrl}/api/cart/my-cart`, {
         headers: { Authorization: `Bearer ${newToken}` },
@@ -258,7 +265,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         id: item.productId,
         name: item.product.title,
         price: Number(item.product.price),
-        image: item.product.images?.[0] || "/images/placeholder.png",
+        image: item.product.images?.[0] || "/images/placeholder.svg",
         qty: item.quantity,
         stock: item.product.stock,
         slug: item.product.title
@@ -266,14 +273,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .replace(/[^a-z0-9]+/g, "-"),
       }));
 
-      // Replace guest cart with the authoritative server cart.
-      // The existing localStorage sync useEffect will write it back.
       localStorage.removeItem("cart");
       setCartItems(items);
     } catch (err) {
       console.error("notifyLogin cart fetch failed", err);
     }
-  };
+  }, []);
+
+  /* ---------- AUTH EVENT LISTENERS ----------
+   * Only the alpa-logout event is handled here. The alpa-login event is
+   * intentionally NOT handled in CartContext because login pages call
+   * notifyLogin() directly — adding a second listener would cause a
+   * double-merge race condition.
+   * ------------------------------------------------------------------ */
+  useEffect(() => {
+    const onLogout = () => {
+      // Clear cart items and localStorage — the user is signed out.
+      guestCartUtils.clearGuestCart();
+      setCartItems([]);
+      setToken(null);
+      localStorage.removeItem("cart");
+    };
+
+    window.addEventListener("alpa-logout", onLogout);
+    return () => window.removeEventListener("alpa-logout", onLogout);
+  }, []);
 
   /* ---------- HELPERS ---------- */
   const subtotal = cartItems.reduce(

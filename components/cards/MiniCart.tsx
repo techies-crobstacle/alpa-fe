@@ -179,7 +179,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                       onClick={() => navigate(`/shop/${item.productId}`)}
                     >
                       <Image
-                        src={item.product.images?.[0] || "/images/placeholder.png"}
+                        src={item.product.images?.[0] || "/images/placeholder.svg"}
                         alt={item.product.title}
                         fill
                         className="object-cover"
