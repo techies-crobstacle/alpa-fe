@@ -102,6 +102,22 @@ export interface Coupon {
   discount?: string | number;
 }
 
+export interface ValidatedCoupon {
+  code: string;
+  discountType: string;
+  discountValue: number;
+  discountAmount: number;
+  minCartValue: number;
+  maxDiscount: number;
+  expiresAt: string;
+}
+
+export interface ValidateCouponResponse {
+  success: boolean;
+  message: string;
+  coupon?: ValidatedCoupon;
+}
+
 export interface CartItem {
   id: string;
   qty: number;
@@ -121,6 +137,8 @@ export const couponsApi = {
       return Array.isArray(data) ? data : data.coupons || [];
     });
   },
+  validateCoupon: (code: string, orderTotal: number): Promise<ValidateCouponResponse> =>
+    apiClient.post("/coupons/validate", { code, orderTotal }, false),
 };
 
 export const cartApi = {

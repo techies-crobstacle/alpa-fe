@@ -16,7 +16,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import StripePaymentForm from "@/components/checkout/StripePaymentForm";
 import PayPalButton from "@/components/checkout/PayPalButton";
-import { Loader2 } from "lucide-react";
+import { Loader2, Tag, X } from "lucide-react";
+import { couponsApi, ValidatedCoupon } from "@/lib/api";
 
 const stripePromise = loadStripe(
   "pk_test_51SzBiiFXXR0MHwRIutvfNBi6ADMB8qZ5UNXswOwLzlIOgLfy1qVuTciKWGaBtWyJrDBkkZVVclg477Wv8KuEGdp800PKT4ny3K"
@@ -44,6 +45,11 @@ export default function CheckOutPage() {
   const [mobileNumber, setMobileNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+  // ── Coupon state ────────────────────────────────────────────────────────────
+  const [couponError, setCouponError] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   // ── Stripe payment state ──────────────────────────────────────────────────
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -147,6 +153,8 @@ export default function CheckOutPage() {
   const shipping = shippingCost;
   const tax = gstAmount;
   const total = grandTotal;
+  const discountAmount = appliedCoupon?.discountAmount ?? 0;
+  const discountedTotal = Math.max(0, total - discountAmount);
 
   /* ---------------- STEP HANDLERS ---------------- */
   const handleNext = () => {
@@ -170,8 +178,33 @@ export default function CheckOutPage() {
     setMobileNumber(data.phoneNumber);
   };
 
-  const handlePromoSubmit = () => {
-    console.log("Promo applied:", promoCode);
+  const handleCouponApply = async () => {
+    const code = promoCode.trim();
+    if (!code) {
+      setCouponError("Please enter a coupon code.");
+      return;
+    }
+    setCouponError("");
+    setAppliedCoupon(null);
+    setIsValidatingCoupon(true);
+    try {
+      const data = await couponsApi.validateCoupon(code, grandTotal);
+      if (!data.success || !data.coupon) {
+        setCouponError(data.message || "Invalid coupon code.");
+        return;
+      }
+      setAppliedCoupon(data.coupon);
+    } catch (err: any) {
+      setCouponError(err?.message || "Failed to validate coupon. Please try again.");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setPromoCode("");
+    setCouponError("");
   };
 
   // ── Stripe: create payment intent ────────────────────────────────────────
@@ -355,6 +388,7 @@ export default function CheckOutPage() {
           paymentMethod: paymentMethod,
           shippingMethodId: shippingMethodId,
           ...(gstId && { gstId }),
+          ...(appliedCoupon && { couponCode: appliedCoupon.code }),
         };
 
         response = await fetch(
@@ -391,6 +425,7 @@ export default function CheckOutPage() {
               paymentMethod: paymentMethod,
               shippingMethodId: shippingMethodId,
               ...(gstId && { gstId }),
+              ...(appliedCoupon && { couponCode: appliedCoupon.code }),
             }),
           },
         );
@@ -411,6 +446,9 @@ export default function CheckOutPage() {
           guestCartUtils.clearGuestCart();
         }
 
+        setAppliedCoupon(null);
+        setPromoCode("");
+        setCouponError("");
         localStorage.removeItem("checkoutStep");
         localStorage.removeItem("showGuestForm");
         localStorage.removeItem("guestCheckoutData");
@@ -978,23 +1016,47 @@ export default function CheckOutPage() {
 
               {/* ── Fixed bottom: promo + totals ── */}
               <div className="px-6 pb-6 pt-4 border-t shrink-0 space-y-4">
-                {/* PROMO */}
+                {/* COUPON */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Promo Code</label>
-                  <div className="flex gap-2">
-                    <input
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      className="flex-1 border rounded-lg px-4 py-2 text-sm"
-                      placeholder="Enter code"
-                    />
-                    <button
-                      onClick={handlePromoSubmit}
-                      className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm"
-                    >
-                      Apply
-                    </button>
-                  </div>
+                  <label className="block text-sm font-medium mb-2">Coupon Code</label>
+                  {appliedCoupon ? (
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-300 rounded-lg">
+                      <Tag className="w-4 h-4 text-green-600 shrink-0" />
+                      <span className="flex-1 text-sm font-medium text-green-700">{appliedCoupon.code}</span>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-green-600 hover:text-red-500 transition-colors"
+                        aria-label="Remove coupon"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        value={promoCode}
+                        onChange={(e) => { setPromoCode(e.target.value); setCouponError(""); }}
+                        onKeyDown={(e) => e.key === "Enter" && handleCouponApply()}
+                        className={`flex-1 border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 ${
+                          couponError ? "border-red-400 focus:ring-red-400" : "focus:ring-[#5A1E12] focus:border-[#5A1E12]"
+                        }`}
+                        placeholder="Enter code"
+                        disabled={isValidatingCoupon}
+                      />
+                      <button
+                        onClick={handleCouponApply}
+                        disabled={isValidatingCoupon || !promoCode.trim()}
+                        className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        {isValidatingCoupon ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : "Apply"}
+                      </button>
+                    </div>
+                  )}
+                  {couponError && (
+                    <p className="mt-1.5 text-xs text-red-500">{couponError}</p>
+                  )}
                 </div>
 
                 <div className="flex justify-between text-sm">
@@ -1009,12 +1071,21 @@ export default function CheckOutPage() {
                   <span className="text-gray-600">GST (incl. {gstPercentage?.toFixed(1)}%)</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-sm text-green-600 font-medium">
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" />
+                      Coupon {appliedCoupon.code}
+                    </span>
+                    <span>-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
 
                 <hr />
 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>${discountedTotal.toFixed(2)}</span>
                 </div>
               </div>
 
