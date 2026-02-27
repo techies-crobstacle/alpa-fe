@@ -97,6 +97,20 @@ export default function Page() {
   const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } = calculateTotals;
   const [syncTrigger, setSyncTrigger] = useState(0);
 
+  // Auto-invalidate coupon when cart subtotal drops below the coupon's minimum
+  useEffect(() => {
+    if (appliedCoupon && subtotal < appliedCoupon.minCartValue) {
+      const removedCode = appliedCoupon.code;
+      const minVal = appliedCoupon.minCartValue;
+      setAppliedCoupon(null);
+      setCouponInput(removedCode);
+      setCouponError(
+        `Coupon "${removedCode}" requires a minimum cart value of $${minVal.toFixed(2)}. It has been removed.`
+      );
+      localStorage.removeItem("cartAppliedCoupon");
+    }
+  }, [subtotal, appliedCoupon]);
+
   // Handle quantity update
   const handleQuantityUpdate = async (productId: string, newQuantity: number) => {
     setUpdatingItems((prev) => new Set(prev).add(productId));

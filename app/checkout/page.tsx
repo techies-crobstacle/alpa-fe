@@ -166,6 +166,20 @@ export default function CheckOutPage() {
   const discountAmount = appliedCoupon?.discountAmount ?? 0;
   const discountedTotal = Math.max(0, total - discountAmount);
 
+  // Auto-invalidate coupon when subtotal drops below the coupon's minimum
+  useEffect(() => {
+    if (appliedCoupon && subtotal < appliedCoupon.minCartValue) {
+      const removedCode = appliedCoupon.code;
+      const minVal = appliedCoupon.minCartValue;
+      setAppliedCoupon(null);
+      setPromoCode(removedCode);
+      setCouponError(
+        `Coupon "${removedCode}" requires a minimum cart value of $${minVal.toFixed(2)}. It has been removed.`
+      );
+      localStorage.removeItem("cartAppliedCoupon");
+    }
+  }, [subtotal, appliedCoupon]);
+
   /* ---------------- STEP HANDLERS ---------------- */
   const handleNext = () => {
     setStep((s) => Math.min(3, s + 1));
