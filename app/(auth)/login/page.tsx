@@ -3,6 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
+import { syncGuestCartAfterLogin } from "@/lib/guestCartUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -69,6 +70,8 @@ export default function LoginPage() {
 
         localStorage.setItem("alpa_token", data.token);
         setUserDirect(data.user);
+        // Sync any guest cart items into the user's server cart
+        await syncGuestCartAfterLogin(data.token);
         // Reload server cart into both cart stores.
         await notifyLogin(data.token);
         await fetchCartData(true);

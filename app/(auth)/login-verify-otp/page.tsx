@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
+import { syncGuestCartAfterLogin } from "@/lib/guestCartUtils";
 
 // Separate component that uses useSearchParams
 function OTPVerificationForm() {
@@ -184,6 +185,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
 
     setUserDirect(data.user);
+    // Sync any guest cart items into the user's server cart
+    await syncGuestCartAfterLogin(data.token);
     // Reload server cart into both cart stores.
     await notifyLogin(data.token);
     await fetchCartData(true);

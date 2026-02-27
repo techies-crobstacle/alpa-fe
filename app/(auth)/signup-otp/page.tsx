@@ -13,6 +13,7 @@ import {
   Mail,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { syncGuestCartAfterLogin } from "@/lib/guestCartUtils";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://alpa-be.onrender.com";
 
@@ -154,6 +155,8 @@ function OTPVerificationForm() {
       // Store token
       if (data.token) {
         localStorage.setItem("alpa_token", data.token);
+        // Sync any guest cart items into the new account
+        await syncGuestCartAfterLogin(data.token);
       }
       
       if (data.user) {

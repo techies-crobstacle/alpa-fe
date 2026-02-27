@@ -16,6 +16,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import StripePaymentForm from "@/components/checkout/StripePaymentForm";
 import PayPalButton from "@/components/checkout/PayPalButton";
+import GuestCheckoutForm from "@/components/checkout/GuestCheckoutForm";
 import { Loader2, Tag, X } from "lucide-react";
 import { couponsApi, ValidatedCoupon } from "@/lib/api";
 
@@ -502,6 +503,32 @@ export default function CheckOutPage() {
       setIsPlacingOrder(false);
     }
   };
+
+  // ── GUEST ROUTING: show guest checkout for unauthenticated users ──────────
+  const isLoggedIn = !loading && (!!token || !!user);
+  const authChecked = !loading;
+
+  if (authChecked && !isLoggedIn) {
+    return (
+      <section className="relative min-h-screen bg-[#ead7b7] flex flex-col">
+        {/* Absolute logo top-left */}
+        <Link
+          href="/"
+          className="absolute top-5 left-5 z-50 font-bold transition-transform hover:scale-105 active:scale-95"
+        >
+          <Image
+            src="/images/navbarLogo.png"
+            width={500}
+            height={500}
+            alt="Logo"
+            className="w-10 md:w-16"
+            priority
+          />
+        </Link>
+        <GuestCheckoutForm />
+      </section>
+    );
+  }
 
   return (
     <section className="relative min-h-screen bg-[#ead7b7] flex flex-col">

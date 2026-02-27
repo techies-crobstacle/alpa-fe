@@ -216,3 +216,32 @@ export const guestCartUtils = {
     }
   },
 };
+
+/**
+ * Merges the guest cart (localStorage) into the user's server cart after login.
+ * Calls POST /api/cart/sync then clears the local guest cart.
+ * Safe to call even if the guest cart is empty.
+ */
+export const syncGuestCartAfterLogin = async (token: string): Promise<void> => {
+  if (typeof window === 'undefined') return;
+
+  const items = guestCartUtils.getGuestCart();
+  if (items.length === 0) return;
+
+  try {
+    await fetch('https://alpa-be.onrender.com/api/cart/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      }),
+    });
+    // Clear local guest cart after successful sync
+    guestCartUtils.clearGuestCart();
+  } catch (error) {
+    console.error('Failed to sync guest cart after login:', error);
+  }
+};
