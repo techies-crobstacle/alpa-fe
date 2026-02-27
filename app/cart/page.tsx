@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useProducts } from "@/hooks/useProducts";
+import { useCartStock } from "@/hooks/useCartStock";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { couponsApi, ValidatedCoupon } from "@/lib/api";
@@ -159,6 +160,13 @@ export default function Page() {
     return [...items].sort((a, b) => a.productId.localeCompare(b.productId));
   }, [cartData?.cart]);
 
+  // Real-time stock validation — bulk REST snapshot + live socket updates
+  const cartProductIds = useMemo(
+    () => cartItems.map((i) => i.productId),
+    [cartItems]
+  );
+  const { stockMap, canCheckout: stockCanCheckout } = useCartStock(cartProductIds);
+
   // --- LOADING STATE ---
   if (loading) {
     return (
@@ -278,9 +286,14 @@ export default function Page() {
                                 {item.product.category || productCategoryMap[item.productId]}
                               </p>
                             )}
-                            {item.product.stock < 5 && (
-                                <p className="text-xs text-orange-600 font-medium">Only {item.product.stock} left!</p>
-                            )}
+                            {/* Real-time stock warning */}
+                            {stockMap[item.productId] !== undefined && !stockMap[item.productId].isAvailable ? (
+                              <p className="text-xs text-red-600 font-semibold">⚠️ No longer available</p>
+                            ) : stockMap[item.productId]?.stock !== undefined && stockMap[item.productId].stock < 5 && stockMap[item.productId].stock > 0 ? (
+                              <p className="text-xs text-orange-600 font-medium">Only {stockMap[item.productId].stock} left!</p>
+                            ) : item.product.stock < 5 && item.product.stock > 0 ? (
+                              <p className="text-xs text-orange-600 font-medium">Only {item.product.stock} left!</p>
+                            ) : null}
                           </div>
                         </div>
 
@@ -467,12 +480,18 @@ export default function Page() {
                         </span>
                     </div>
 
+                    {/* Stock unavailability notice */}
+                    {cartItems.length > 0 && !stockCanCheckout && (
+                      <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                        ⚠️ Some items in your cart are no longer available. Please remove them to continue.
+                      </div>
+                    )}
                     <button
                         onClick={handleProceedToCheckout}
-                        disabled={cartItems.length === 0}
+                        disabled={cartItems.length === 0 || !stockCanCheckout}
                         className="group w-full py-4 bg-[#5A1E12] text-[#FAF7F2] rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl hover:bg-[#4a180f] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
                     >
-                        Proceed to Checkout
+                        {stockCanCheckout ? 'Proceed to Checkout' : 'Some items are unavailable'}
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                     

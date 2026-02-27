@@ -28,6 +28,7 @@ import { useToggleWishlist } from "@/hooks/useWishlistMutations";
 import { useWishlistCheck } from "@/hooks/useWishlist";
 import { useSingleProduct } from "@/hooks/useSingleProduct";
 import { useProducts } from "@/hooks/useProducts";
+import { useProductStock } from "@/hooks/useProductStock";
 
 interface Product {
   id: string;
@@ -89,6 +90,12 @@ export default function ShopSlugPage() {
   const { data: product, isLoading: productLoading, error: queryError } = useSingleProduct(resolvedProductId);
   const loading = allProductsLoading || productLoading;
   const error = queryError?.message || null;
+
+  // Real-time stock — REST snapshot on mount + live socket updates thereafter
+  const {
+    stock: liveStock,
+    isAvailable: liveIsAvailable,
+  } = useProductStock(product?.id, product?.stock ?? 0);
 
   // UI state
   const [selectedImage, setSelectedImage] = useState(0);
@@ -202,11 +209,9 @@ export default function ShopSlugPage() {
   const cartItem = cartData?.cart.find(item => item.productId === product?.id);
   const currentQtyInCart = cartItem?.quantity || 0;
   
-  const remainingStock = Math.max(
-    0,
-    (product?.stock || 0) - currentQtyInCart,
-  );
-  const isOutOfStock = remainingStock === 0;
+  // Use real-time liveStock so the button reflects instant server-side changes
+  const remainingStock = Math.max(0, liveStock - currentQtyInCart);
+  const isOutOfStock = !liveIsAvailable || remainingStock === 0;
 
   const handleAddToCart = async () => {
     if (!product || isOutOfStock || isAddingToCart) return;
@@ -572,11 +577,11 @@ export default function ShopSlugPage() {
 
               {/* Stock badge */}
               <div>
-                {product.stock > 0 ? (
+                {liveIsAvailable && liveStock > 0 ? (
                 <span className="inline-flex items-center gap-1.5 bg-[#5A1E12]/8 text-[#5A1E12] border border-[#5A1E12]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
                   <Check className="w-3.5 h-3.5" />
                   In Stock
-                  <span className="font-normal text-[#5A1E12]/60">· {product.stock} left</span>
+                  <span className="font-normal text-[#5A1E12]/60">· {liveStock} left</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 bg-[#973c00]/8 text-[#973c00] border border-[#973c00]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
