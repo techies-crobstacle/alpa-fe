@@ -6,6 +6,7 @@ type CartItemProps = {
   name: string;
   price: number;
   quantity: number;
+  stock?: number;
   onUpdate: (id: number, change: number) => void;
   onRemove: (id: number) => void;
   imageUrl?: string;
@@ -16,6 +17,7 @@ export default function CartItem({
   name,
   price,
   quantity,
+  stock,
   onUpdate,
   onRemove,
   imageUrl , // default image fallback
@@ -51,8 +53,9 @@ export default function CartItem({
           </span>
 
           <button
-            className="text-lg font-bold hover:bg-gray-100 w-6 h-6 flex items-center justify-center rounded-full transition-colors"
+            className="text-lg font-bold hover:bg-gray-100 w-6 h-6 flex items-center justify-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             onClick={() => onUpdate(id, 1)}
+            disabled={stock != null ? quantity >= stock : false}
           >
             +
           </button>

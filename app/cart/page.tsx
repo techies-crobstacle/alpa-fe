@@ -165,7 +165,14 @@ export default function Page() {
     () => cartItems.map((i) => i.productId),
     [cartItems]
   );
-  const { stockMap, canCheckout: stockCanCheckout } = useCartStock(cartProductIds);
+  const cartQuantities = useMemo(
+    () => Object.fromEntries(cartItems.map((i) => [i.productId, i.quantity])),
+    [cartItems]
+  );
+  const { stockMap, canCheckout: stockCanCheckout } = useCartStock(cartProductIds, {
+    cartQuantities,
+    onOverstock: (productId, newStock) => handleQuantityUpdate(productId, newStock),
+  });
 
   // --- LOADING STATE ---
   if (loading) {
@@ -312,7 +319,13 @@ export default function Page() {
                             </span>
                             <button
                                onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1)}
-                               disabled={(item.product.stock ? item.quantity >= item.product.stock : false) || isUpdating}
+                               disabled={(
+                                 (() => {
+                                   const liveStock = stockMap[item.productId]?.stock;
+                                   const stock = liveStock !== undefined ? liveStock : item.product.stock;
+                                   return stock != null ? item.quantity >= stock : false;
+                                 })()
+                               ) || isUpdating}
                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-[#4A3728] disabled:opacity-30 transition-colors"
                             >
                               <Plus size={14} />

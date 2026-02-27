@@ -8,7 +8,7 @@
 //   4. Derive `canCheckout` — false if any item is unavailable.
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
 import { getSocket, StockUpdatePayload } from "@/lib/socket";
 
@@ -31,10 +31,28 @@ interface BulkStockResponse {
 }
 
 /**
- * @param productIds – list of product IDs currently in the cart; pass an empty
- *                     array before the cart has loaded.
+ * @param productIds    – list of product IDs currently in the cart; pass an empty
+ *                        array before the cart has loaded.
+ * @param options.cartQuantities  – map of productId → current qty in cart so the
+ *                        hook can detect when a live stock drop makes a cart qty
+ *                        invalid (qty > newStock).
+ * @param options.onOverstock     – called with (productId, newStock) whenever a
+ *                        real-time stock update makes the cart qty exceed available
+ *                        stock.  The caller should cap the qty to newStock.
  */
-export function useCartStock(productIds: string[]) {
+export function useCartStock(
+  productIds: string[],
+  options?: {
+    cartQuantities?: Record<string, number>;
+    onOverstock?: (productId: string, newStock: number) => void;
+  }
+) {
+  const cartQuantitiesRef = useRef(options?.cartQuantities ?? {});
+  const onOverstockRef    = useRef(options?.onOverstock);
+
+  // Keep refs up-to-date every render without re-running the socket effect
+  useEffect(() => { cartQuantitiesRef.current = options?.cartQuantities ?? {}; });
+  useEffect(() => { onOverstockRef.current = options?.onOverstock; });
   const [stockMap, setStockMap] = useState<StockMap>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -58,6 +76,22 @@ export function useCartStock(productIds: string[]) {
             isAvailable: entry.isAvailable,
             isActive: entry.isActive,
           };
+
+          // Overstock check on initial snapshot
+          const cartQty = cartQuantitiesRef.current[id];
+          if (
+            entry.isAvailable &&
+            typeof cartQty === "number" &&
+            cartQty > entry.stock &&
+            entry.stock >= 0
+          ) {
+            setTimeout(() => {
+              toast.warn(
+                `Only ${entry.stock} unit${entry.stock !== 1 ? "s" : ""} of a cart item are now available. Your quantity has been adjusted.`
+              );
+              onOverstockRef.current?.(id, entry.stock);
+            }, 0);
+          }
         }
         setStockMap(map);
       }
@@ -99,6 +133,26 @@ export function useCartStock(productIds: string[]) {
         } else if (prevEntry && !prevEntry.isAvailable && data.isAvailable) {
           toast.success(`✅ An item in your cart is back in stock.`);
         }
+
+        // ── Overstock check ──────────────────────────────────────────────
+        // If the new live stock is lower than what the user has in their cart,
+        // fire the onOverstock callback so the caller can cap the qty.
+        const cartQty = cartQuantitiesRef.current[data.productId];
+        if (
+          data.isAvailable &&
+          typeof cartQty === "number" &&
+          cartQty > data.stock &&
+          data.stock >= 0
+        ) {
+          // Schedule outside of the setState callback to avoid nested state updates
+          setTimeout(() => {
+            toast.warn(
+              `Only ${data.stock} unit${data.stock !== 1 ? "s" : ""} of a cart item are now available. Your quantity has been adjusted.`
+            );
+            onOverstockRef.current?.(data.productId, data.stock);
+          }, 0);
+        }
+
         return {
           ...prev,
           [data.productId]: {

@@ -6,6 +6,7 @@ import { X, Plus, Minus, ShoppingBag, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
+import { useCartStock } from "@/hooks/useCartStock";
 
 export default function MiniCart({ onClose }: { onClose: () => void }) {
   const {
@@ -24,6 +25,16 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
     // Sort by productId to maintain stable order regardless of API response order
     return [...items].sort((a, b) => a.productId.localeCompare(b.productId));
   }, [cartData?.cart]);
+
+  const cartProductIds = useMemo(() => cartItems.map((i) => i.productId), [cartItems]);
+  const cartQuantities = useMemo(
+    () => Object.fromEntries(cartItems.map((i) => [i.productId, i.quantity])),
+    [cartItems]
+  );
+  const { stockMap } = useCartStock(cartProductIds, {
+    cartQuantities,
+    onOverstock: (productId, newStock) => handleQuantityUpdate(productId, newStock),
+  });
   
   const { subtotal: backendSubtotal } = calculateTotals;
 
@@ -219,7 +230,13 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
 
                           <button
                             onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1)}
-                            disabled={(item.product.stock ? item.quantity >= item.product.stock : false) || isUpdating}
+                            disabled={(
+                              (() => {
+                                const liveStock = stockMap[item.productId]?.stock;
+                                const stock = liveStock !== undefined ? liveStock : item.product.stock;
+                                return stock != null ? item.quantity >= stock : false;
+                              })()
+                            ) || isUpdating}
                             className="px-2 py-1 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                             aria-label="Increase quantity"
                           >
