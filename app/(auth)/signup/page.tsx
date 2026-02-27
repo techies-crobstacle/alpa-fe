@@ -7,7 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://alpa-be-1.onrender.com";
+  process.env.NEXT_PUBLIC_API_URL || "https://alpa-be.onrender.com";
 
 // Country list: { code, flag, name, dialCode, digits: [min, max] }
 const COUNTRIES = [

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const baseURL = 'https://alpa-be-1.onrender.com';
+const baseURL = 'https://alpa-be.onrender.com';
 
 // ─── Country phone data ───────────────────────────────────────────────────────
 const COUNTRIES = [
