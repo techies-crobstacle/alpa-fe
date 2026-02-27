@@ -525,7 +525,7 @@ export default function Page() {
               <button
                 onClick={() => {
                   setShowCheckoutModal(false);
-                  alert("Guest checkout coming soon!");
+                  router.push("/checkout");
                 }}
                 className="w-full py-3.5 bg-white border-2 border-[#5A1E12] text-[#5A1E12] rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-[#5A1E12]/5 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
