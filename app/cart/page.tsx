@@ -1,6 +1,6 @@
 "use client";
 
-import { TruckElectric, Plus, Minus, Trash2, Loader, ArrowRight, Tag, X, LogIn, UserX } from "lucide-react";
+import { TruckElectric, Plus, Minus, Trash2, Loader, Loader2, ArrowRight, Tag, X, LogIn, UserX } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -9,6 +9,7 @@ import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useProducts } from "@/hooks/useProducts";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import { couponsApi, ValidatedCoupon } from "@/lib/api";
 
 export default function Page() {
   const router = useRouter();
@@ -44,10 +45,53 @@ export default function Page() {
     subscribeToUpdates,
   } = useSharedEnhancedCart();
 
-  // Fake coupon logic
-  const [coupon, setCoupon] = useState("");
-  const todayDiscount = "XXYY";
-  const discount = 150;
+  // Coupon logic
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  // Restore coupon persisted from a previous cart visit
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("cartAppliedCoupon");
+      if (saved) {
+        setAppliedCoupon(JSON.parse(saved));
+      }
+    } catch {}
+  }, []);
+
+  const handleCouponApply = async () => {
+    const code = couponInput.trim();
+    if (!code) {
+      setCouponError("Please enter a coupon code.");
+      return;
+    }
+    setCouponError("");
+    setAppliedCoupon(null);
+    localStorage.removeItem("cartAppliedCoupon");
+    setIsValidatingCoupon(true);
+    try {
+      const data = await couponsApi.validateCoupon(code, grandTotal);
+      if (!data.success || !data.coupon) {
+        setCouponError(data.message || "Invalid coupon code.");
+        return;
+      }
+      setAppliedCoupon(data.coupon);
+      localStorage.setItem("cartAppliedCoupon", JSON.stringify(data.coupon));
+    } catch (err: any) {
+      setCouponError(err?.message || "Failed to validate coupon. Please try again.");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError("");
+    localStorage.removeItem("cartAppliedCoupon");
+  };
 
   // Get calculated totals
   const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } = calculateTotals;
@@ -282,24 +326,51 @@ export default function Page() {
             {/* Coupon Section */}
             <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-[#E6DCC8] mt-6">
                 <h3 className="flex items-center gap-2 font-serif text-xl mb-4 text-[#4A3728]">
-                    <Tag className="h-5 w-5" /> 
+                    <Tag className="h-5 w-5" />
                     Discount Code
                 </h3>
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <input
-                        type="text"
-                        value={coupon}
-                        onChange={(e) => setCoupon(e.target.value)}
-                        placeholder="Enter coupon code"
-                        className="flex-1 bg-[#FAF7F2] border border-[#E6DCC8] rounded-xl px-5 py-3 outline-none focus:border-[#8B5E3C] focus:ring-1 focus:ring-[#8B5E3C] transition-all"
-                    />
+                {appliedCoupon ? (
+                  <div className="flex items-center gap-3 px-5 py-3 bg-green-50 border border-green-300 rounded-xl">
+                    <Tag className="h-4 w-4 text-green-600 shrink-0" />
+                    <span className="flex-1 font-medium text-green-700">{appliedCoupon.code}</span>
+                    <span className="text-sm font-semibold text-green-700 mr-2">-${appliedCoupon.discountAmount.toFixed(2)}</span>
                     <button
-                        onClick={() => coupon == todayDiscount && alert(`Coupon Applied!`)}
-                        className="px-8 py-3 bg-[#5A1E12] text-white rounded-xl font-medium hover:bg-[#4a180f] transition-colors"
+                      onClick={handleRemoveCoupon}
+                      className="text-green-600 hover:text-red-500 transition-colors"
+                      aria-label="Remove coupon"
                     >
-                        Apply
+                      <X className="h-4 w-4" />
                     </button>
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <input
+                            type="text"
+                            value={couponInput}
+                            onChange={(e) => { setCouponInput(e.target.value); setCouponError(""); }}
+                            onKeyDown={(e) => e.key === "Enter" && handleCouponApply()}
+                            placeholder="Enter coupon code"
+                            disabled={isValidatingCoupon}
+                            className={`flex-1 bg-[#FAF7F2] border rounded-xl px-5 py-3 outline-none focus:ring-1 transition-all ${
+                              couponError
+                                ? "border-red-400 focus:ring-red-400 focus:border-red-400"
+                                : "border-[#E6DCC8] focus:border-[#8B5E3C] focus:ring-[#8B5E3C]"
+                            }`}
+                        />
+                        <button
+                            onClick={handleCouponApply}
+                            disabled={isValidatingCoupon || !couponInput.trim()}
+                            className="px-8 py-3 bg-[#5A1E12] text-white rounded-xl font-medium hover:bg-[#4a180f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {isValidatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                        </button>
+                    </div>
+                    {couponError && (
+                      <p className="mt-2 text-sm text-red-500">{couponError}</p>
+                    )}
+                  </>
+                )}
             </div>
           </div>
 
@@ -361,11 +432,13 @@ export default function Page() {
                         <span>GST <span className="text-xs">(incl. {gstPercentage?.toFixed(1)}%)</span></span>
                         <span className="font-medium text-[#4A3728]">${gstAmount.toFixed(2)}</span>
                     </div>
-                    
-                    {coupon === todayDiscount && (
+
+                    {appliedCoupon && (
                     <div className="flex justify-between text-green-700 bg-green-50 p-2 rounded-lg">
-                        <span>Discount Applied</span>
-                        <span className="font-bold">-${discount.toFixed(2)}</span>
+                        <span className="flex items-center gap-1 text-sm font-medium">
+                          <Tag className="h-3.5 w-3.5" /> Coupon {appliedCoupon.code}
+                        </span>
+                        <span className="font-bold">-${appliedCoupon.discountAmount.toFixed(2)}</span>
                     </div>
                     )}
                 </div>
@@ -374,8 +447,8 @@ export default function Page() {
                     <div className="flex justify-between items-end mb-6">
                         <span className="text-lg font-bold text-[#4A3728]">Grand Total</span>
                         <span className="text-2xl font-serif font-bold text-[#2C1810]">
-                            ${coupon === todayDiscount
-                            ? Math.max(0, grandTotal - discount).toFixed(2)
+                            ${appliedCoupon
+                            ? Math.max(0, grandTotal - appliedCoupon.discountAmount).toFixed(2)
                             : grandTotal.toFixed(2)}
                         </span>
                     </div>

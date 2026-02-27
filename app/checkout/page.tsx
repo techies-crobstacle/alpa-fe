@@ -105,6 +105,15 @@ export default function CheckOutPage() {
     if (savedPaymentMethod) {
       setPaymentMethod(savedPaymentMethod);
     }
+    // Restore coupon applied on the cart page (or a previous checkout visit)
+    try {
+      const savedCoupon = localStorage.getItem("cartAppliedCoupon");
+      if (savedCoupon) {
+        const parsed = JSON.parse(savedCoupon);
+        setAppliedCoupon(parsed);
+        setPromoCode(parsed.code);
+      }
+    } catch {}
   }, []);
 
   // Save checkout data to localStorage whenever it changes
@@ -194,6 +203,7 @@ export default function CheckOutPage() {
         return;
       }
       setAppliedCoupon(data.coupon);
+      localStorage.setItem("cartAppliedCoupon", JSON.stringify(data.coupon));
     } catch (err: any) {
       setCouponError(err?.message || "Failed to validate coupon. Please try again.");
     } finally {
@@ -205,6 +215,7 @@ export default function CheckOutPage() {
     setAppliedCoupon(null);
     setPromoCode("");
     setCouponError("");
+    localStorage.removeItem("cartAppliedCoupon");
   };
 
   // ── Stripe: create payment intent ────────────────────────────────────────
@@ -449,6 +460,7 @@ export default function CheckOutPage() {
         setAppliedCoupon(null);
         setPromoCode("");
         setCouponError("");
+        localStorage.removeItem("cartAppliedCoupon");
         localStorage.removeItem("checkoutStep");
         localStorage.removeItem("showGuestForm");
         localStorage.removeItem("guestCheckoutData");
