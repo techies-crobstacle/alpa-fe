@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -19,6 +19,7 @@ import PayPalButton from "@/components/checkout/PayPalButton";
 import GuestCheckoutForm from "@/components/checkout/GuestCheckoutForm";
 import { Loader2, Tag, X } from "lucide-react";
 import { couponsApi, ValidatedCoupon } from "@/lib/api";
+import { useCartStock } from "@/hooks/useCartStock";
 
 const stripePromise = loadStripe(
   "pk_test_51SzBiiFXXR0MHwRIutvfNBi6ADMB8qZ5UNXswOwLzlIOgLfy1qVuTciKWGaBtWyJrDBkkZVVclg477Wv8KuEGdp800PKT4ny3K"
@@ -59,7 +60,7 @@ export default function CheckOutPage() {
   const [stripeCurrency, setStripeCurrency] = useState("aud");
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
 
-  const { cartData, selectedShipping, calculateTotals } =
+  const { cartData, selectedShipping, calculateTotals, updateQuantity } =
     useSharedEnhancedCart();
   const { token, loading, user } = useAuth();
 
@@ -70,6 +71,20 @@ export default function CheckOutPage() {
   const cartItems = cartData?.cart || [];
   const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } =
     calculateTotals;
+
+  // Real-time stock watching — same pattern as cart/page and MiniCart.
+  // When another customer buys a product while the user is on this page,
+  // the socket fires, quantities are auto-capped, subtotal drops, and then
+  // the coupon auto-invalidation effect below fires automatically.
+  const cartProductIds = useMemo(() => cartItems.map((i) => i.productId), [cartItems]);
+  const cartQuantities = useMemo(
+    () => Object.fromEntries(cartItems.map((i) => [i.productId, i.quantity])),
+    [cartItems]
+  );
+  useCartStock(cartProductIds, {
+    cartQuantities,
+    onOverstock: (productId, newStock) => updateQuantity(productId, newStock),
+  });
 
   // Load checkout data from localStorage on mount
   useEffect(() => {

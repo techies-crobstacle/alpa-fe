@@ -1,11 +1,3 @@
-// hooks/useCartStock.ts
-// Provides real-time stock data for all products currently in the cart.
-//
-// Strategy (matches REALTIME_STOCK_BRIDGE.md §4 + §5):
-//   1. On mount → call POST /api/products/bulk-stock for a snapshot of all items.
-//   2. Connect socket + emit `watch:cart` with all product IDs.
-//   3. Listen for `stock:update` and merge into a stockMap keyed by productId.
-//   4. Derive `canCheckout` — false if any item is unavailable.
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
