@@ -41,11 +41,18 @@ export default function GuestStripePaymentForm({
     setErrorMessage(null);
 
     try {
+      // Persist guest data so it survives a redirect back to this page
+      sessionStorage.setItem("guestEmail", customerEmail);
+      sessionStorage.setItem("guestOrderId", orderId);
+
       // Step C1 – confirm the payment with Stripe
+      // return_url points back to THIS page (no query params) so that after a
+      // redirect-based method (Klarna, Zip, Link) Stripe lands here and the
+      // redirect-detection useEffect in GuestCheckoutForm takes over.
       const { error: stripeError } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: window.location.origin + "/guest/order-success",
+          return_url: window.location.href.split("?")[0],
         },
         redirect: "if_required",
       });

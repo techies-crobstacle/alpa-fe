@@ -9,6 +9,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { Loader2, Tag, X, CheckCircle, ChevronRight } from "lucide-react";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { couponsApi, ValidatedCoupon } from "@/lib/api";
+import { guestCartUtils } from "@/lib/guestCartUtils";
 import GuestStripePaymentForm from "@/components/checkout/GuestStripePaymentForm";
 import Link from "next/link";
 
@@ -30,6 +31,62 @@ interface OrderSummary {
 
 export default function GuestCheckoutForm() {
   const router = useRouter();
+
+  // ── Stripe redirect-return detection ─────────────────────────────────────
+  // When a redirect-based method (Klarna, Zip, Link) completes, Stripe lands
+  // back on this page with ?payment_intent=...&redirect_status=succeeded.
+  // We must handle this BEFORE any other Stripe logic runs.
+  const [isProcessingRedirect, setIsProcessingRedirect] = useState(false);
+  const [redirectError,        setRedirectError]        = useState<string | null>(null);
+
+  useEffect(() => {
+    const params         = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get("redirect_status");
+    const paymentIntentId = params.get("payment_intent");
+
+    if (!redirectStatus || !paymentIntentId) return; // normal first load
+
+    if (redirectStatus === "succeeded") {
+      setIsProcessingRedirect(true);
+      const customerEmail = sessionStorage.getItem("guestEmail");
+      const storedOrderId = sessionStorage.getItem("guestOrderId");
+
+      if (!customerEmail) {
+        setRedirectError("Could not find your session. Please check your email for order confirmation.");
+        setIsProcessingRedirect(false);
+        return;
+      }
+
+      // Confirm with backend — do NOT call stripe.confirmPayment() again
+      fetch("https://alpa-be.onrender.com/api/payments/guest/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentIntentId, customerEmail }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            sessionStorage.removeItem("guestEmail");
+            sessionStorage.removeItem("guestOrderId");
+            guestCartUtils.clearGuestCart();
+            sessionStorage.setItem("guestOrderId",    data.orderId || storedOrderId || "");
+            sessionStorage.setItem("guestOrderEmail", customerEmail);
+            router.push("/guest/order-success");
+          } else {
+            setRedirectError(data.message || "Payment confirmation failed. Please contact support.");
+            setIsProcessingRedirect(false);
+          }
+        })
+        .catch(() => {
+          setRedirectError("Network error confirming payment. Please contact support.");
+          setIsProcessingRedirect(false);
+        });
+
+    } else if (redirectStatus === "failed") {
+      setRedirectError("Your payment was declined. Please try a different payment method.");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Use the same cart hook the cart page uses ─────────────────────────────
   const {
@@ -200,6 +257,30 @@ export default function GuestCheckoutForm() {
   };
 
   // ── Loading / empty states ────────────────────────────────────────────────
+  // Redirect return: show a full-screen loader while we confirm with the backend
+  if (isProcessingRedirect) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 text-[#5A1E12]/70">
+        <Loader2 className="w-8 h-8 animate-spin text-[#5A1E12]" />
+        <p className="text-lg font-medium">Confirming your payment…</p>
+        <p className="text-sm">Please do not close this page.</p>
+      </div>
+    );
+  }
+
+  // Redirect return: payment failed or session expired
+  if (redirectError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 max-w-md mx-auto text-center">
+        <p className="text-[#5A1E12] text-lg font-semibold">Payment issue</p>
+        <p className="text-sm text-[#5A1E12]/70">{redirectError}</p>
+        <Link href="/checkout" className="px-6 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] transition">
+          Try Again
+        </Link>
+      </div>
+    );
+  }
+
   if (cartLoading) {
     return (
       <div className="flex items-center justify-center py-24 gap-3 text-[#5A1E12]/60">
