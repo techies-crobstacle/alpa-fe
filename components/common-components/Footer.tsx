@@ -5,6 +5,7 @@ import {
   FaInstagram,
   FaYoutube,
   FaEnvelope,
+  FaHeart,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import Image from "next/image";
@@ -12,7 +13,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#440C03] text-white px-4 sm:px-8 md:px-12 lg:px-20 py-12 md:py-16"> 
+    <footer className="bg-[#440C03] text-white px-4 sm:px-8 md:px-12 lg:px-20 pt-12 lg:pb-10 md:py-16"> 
       {/* Top Main Section */}
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 mb-12">
         {/* Left Section - Navigation Links */}
@@ -106,10 +107,12 @@ export default function Footer() {
       {/* Address and Copyright Section */}
       <div className="mt-12 flex flex-col md:flex-row justify-between items-center gap-4 mb-8 text-sm md:text-base text-center md:text-left">
         <p className="text-white/80">
-          12 Shelley Street, Sydney, NSW 2000, Australia.
+          70 O’Sullivan Circuit, East Arm NT 0822, GPO Box 3825, Darwin NT 0801
         </p>
-        <p className="text-white/80">
-          © 2026 Arnhem Land Marketplace. All rights reserved.
+        
+        <p className="text-white/80 max-w-[550px] text-right bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg flex items-start justify-top gap-2">
+          <FaHeart className="w-4 h-4 text-red-400 shrink-0 mt-1" />
+          We operate with deep respect for Aboriginal culture and traditions. All products and experiences are shared with community consent.
         </p>
       </div>
 
@@ -194,6 +197,11 @@ export default function Footer() {
             <FaXTwitter className="w-5 h-5 md:w-6 md:h-6 text-white hover:text-[#A48068]" />
           </Link>
         </div>
+      </div>
+      <div>
+        <p className="text-white/80 text-center">
+          © 2026 Made in Arnhem Land. All rights reserved. |Respecting 65,000+ years of continuous culture
+        </p>
       </div>
     </footer>
   );
