@@ -278,7 +278,7 @@ export default function Page() {
                         <div className="flex gap-5 items-center">
                           <div className="relative w-20 h-20 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[#F5F1EB] shadow-inner shrink-0">
                             <Image
-                              src={item.product.images?.[0] || "/images/placeholder.svg"}
+                              src={item.product.featuredImage || item.product.images?.[0] || "/images/placeholder.svg"}
                               alt={item.product.title}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-500"

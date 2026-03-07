@@ -29,6 +29,8 @@ import { useWishlistCheck } from "@/hooks/useWishlist";
 import { useSingleProduct } from "@/hooks/useSingleProduct";
 import { useProducts } from "@/hooks/useProducts";
 import { useProductStock } from "@/hooks/useProductStock";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "react-toastify";
 
 interface Product {
   id: string;
@@ -123,9 +125,14 @@ export default function ShopSlugPage() {
   // Cart / wishlist
   const { addToCart, cartData, loading: cartLoading } = useSharedEnhancedCart();
   const { data: wishlistData } = useWishlistCheck(product?.id || "");
+  const { token, user: authUser } = useAuth();
   const toggleWishlistMutation = useToggleWishlist();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isHeartAnimating, setIsHeartAnimating] = useState(false);
+
+  // Check if user is authenticated (either token or user object exists)
+  const isAuthenticated = !!(token || authUser);
 
   // Build ordered image list
   const allImages = useMemo<string[]>(() => {
@@ -221,9 +228,9 @@ export default function ShopSlugPage() {
       await addToCart(product.id, {
         title: product.title,
         price: product.price,
-        images: product.featuredImage
-          ? [product.featuredImage]
-          : product.images,
+        featuredImage: product.featuredImage,
+        images: product.images || [],
+        galleryImages: product.galleryImages || [],
       });
 
       setAddedToCart(true);
@@ -239,12 +246,56 @@ export default function ShopSlugPage() {
     }
   };
 
-  const handleWishlist = () => {
-    setIsWishlisted(!isWishlisted);
-    // Use debounced mutation for better performance
+  const handleWishlist = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+
+    // Debug: Log auth state
+    console.log('Auth state check:', { 
+      token: !!token, 
+      authUser: !!authUser, 
+      isAuthenticated,
+      tokenValue: token ? 'exists' : 'missing',
+      userValue: authUser ? 'exists' : 'missing'
+    });
+
+    if (!isAuthenticated) {
+      toast.info("🔐 Please log in to add items to your Wishlist", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
+    // Only add to wishlist, don't toggle
+    if (isWishlisted) {
+      return; // Already in wishlist, do nothing
+    }
+
+    // Heart animation
+    setIsHeartAnimating(true);
+    setTimeout(() => setIsHeartAnimating(false), 300);
+    
+    // Optimistically update UI
+    setIsWishlisted(true);
+
+    // Call API to add to wishlist
     toggleWishlistMutation.debouncedMutate({
       productId: product?.id || "",
-      isCurrentlyWishlisted: isWishlisted,
+      isCurrentlyWishlisted: false, // Always pass false since we only add
+    });
+
+    // Show success toast
+    toast.success("❤️ Added to Wishlist!", {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
     });
   };
 
@@ -374,6 +425,28 @@ export default function ShopSlugPage() {
               <p className="text-sm font-black text-[#973c00]">₹{product.price}</p>
             </div>
             <button
+              onClick={handleWishlist}
+              disabled={!token || isWishlisted}
+              className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
+                isWishlisted 
+                  ? 'bg-[#5A1E12] text-white' 
+                  : 'bg-white/90 text-[#973c00] hover:bg-[#5A1E12] hover:text-white'
+              }`}
+              title={
+                !token 
+                  ? "Please log in to add to wishlist" 
+                  : isWishlisted 
+                    ? "Already in wishlist" 
+                    : "Add to wishlist"
+              }
+            >
+              <Heart 
+                className={`w-5 h-5 transition-all duration-200 ${
+                  isWishlisted ? 'fill-current scale-110' : ''
+                } ${isHeartAnimating ? 'animate-pulse scale-125' : ''}`} 
+              />
+            </button>
+            <button
               onClick={handleAddToCart}
               disabled={isOutOfStock || isAddingToCart}
               className={`shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold shadow-lg transition-all duration-200 ${
@@ -468,11 +541,25 @@ export default function ShopSlugPage() {
                 <div className="absolute top-4 right-4 flex flex-col gap-2">
                   <button
                     onClick={handleWishlist}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110 ${
-                      isWishlisted ? 'bg-[#5A1E12] text-white' : 'bg-white/90 backdrop-blur-sm text-[#973c00] hover:bg-[#5A1E12] hover:text-white'
+                    disabled={!token || isWishlisted}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
+                      isWishlisted 
+                        ? 'bg-[#5A1E12] text-white' 
+                        : 'bg-white/90 backdrop-blur-sm text-[#973c00] hover:bg-[#5A1E12] hover:text-white'
                     }`}
+                    title={
+                      !token 
+                        ? "Please log in to add to wishlist" 
+                        : isWishlisted 
+                          ? "Already in wishlist" 
+                          : "Add to wishlist"
+                    }
                   >
-                    <Heart className={`w-5 h-5 transition-transform duration-200 ${isWishlisted ? 'fill-current scale-110' : ''}`} />
+                    <Heart 
+                      className={`w-5 h-5 transition-all duration-200 ${
+                        isWishlisted ? 'fill-current scale-110' : ''
+                      } ${isHeartAnimating ? 'animate-pulse scale-125' : ''}`} 
+                    />
                   </button>
                   {allImages.length > 1 && (
                     <button

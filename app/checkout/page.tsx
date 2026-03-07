@@ -1059,10 +1059,21 @@ export default function CheckOutPage() {
                     <div key={item.productId} className="flex gap-4">
                       <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                         <Image
-                          src={item.product.images?.[0] || "/images/placeholder.png"}
+                          src={
+                            item.product.featuredImage || 
+                            item.product.images?.[0] || 
+                            (item.product as any).galleryImages?.[0] || 
+                            (item.product as any).image || 
+                            "/images/placeholder.png"
+                          }
                           alt={item.product.title}
                           fill
                           className="object-cover"
+                          onError={(e) => {
+                            // Fallback to placeholder if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/images/placeholder.png";
+                          }}
                         />
                       </div>
                       <div className="flex-1 min-w-0">

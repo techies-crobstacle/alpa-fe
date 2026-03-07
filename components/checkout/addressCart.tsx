@@ -1,11 +1,29 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { apiClient } from "@/lib/api";
+import { useContext } from "react";
+import { AuthContext } from "@/context/AuthContext";
+import { toast } from "react-toastify";
+import { motion, AnimatePresence } from "framer-motion";
 
 declare global {
   interface Window {
     google: any;
   }
+}
+
+// Address interface matching API structure
+interface SavedAddress {
+  id?: string;
+  _id?: string;
+  shippingAddress: string;
+  city: string;
+  state: string;
+  country: string;
+  zipCode: string;
+  mobileNumber: string;
+  isDefault: boolean;
 }
 
 interface AddressCartProps {
@@ -66,6 +84,8 @@ function fieldClass(touched: boolean, error: string | null, value: string) {
 
 
 export default function AddressCart({ onAddressChange }: AddressCartProps) {
+  const authContext = useContext(AuthContext) as { user?: any } | null;
+  const user = authContext?.user;
   const [formData, setFormData] = useState({
     country: "",
     address: "",
@@ -96,9 +116,231 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
+  // Saved addresses state
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [loadingSavedAddresses, setLoadingSavedAddresses] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [showSavedAddresses, setShowSavedAddresses] = useState(false);
+  const [saveAsDefault, setSaveAsDefault] = useState(false);
+
   // Refs for the address input and the Google Autocomplete instance
   const addressInputRef = useRef<HTMLInputElement>(null);
   const autocompleteInstanceRef = useRef<any>(null);
+
+  // API functions for addresses
+  const fetchSavedAddresses = async () => {
+    if (!user) {
+      console.log('No user found, skipping address fetch');
+      return;
+    }
+    
+    try {
+      setLoadingSavedAddresses(true);
+      console.log('Fetching saved addresses for user:', user.id || user.email);
+      
+      const response = await apiClient.get<SavedAddress[] | { data?: SavedAddress[]; addresses?: SavedAddress[] }>('/users/addresses');
+      console.log('Saved addresses response:', response);
+      
+      // Handle both array response and object with data property
+      const addressData = Array.isArray(response) ? response : (response as any)?.data || (response as any)?.addresses || [];
+      console.log('Processed address data:', addressData);
+      
+      setSavedAddresses(addressData);
+    } catch (error) {
+      console.error('Error fetching saved addresses:', error);
+      console.error('Error details:', {
+        message: (error as any)?.message,
+        status: (error as any)?.status,
+        response: (error as any)?.response
+      });
+    } finally {
+      setLoadingSavedAddresses(false);
+    }
+  };
+
+  const saveAddress = async () => {
+    if (!user) return;
+    
+    // Validate form before saving
+    const hasErrors = Object.values(fieldErrors).some(error => error !== null);
+    const phoneValidationError = validatePhone(phoneNumber, selectedCountry);
+    
+    if (hasErrors || phoneValidationError || !formData.address.trim()) {
+      toast.error("📋 Please fill all required fields correctly before saving the address.", {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: {
+          background: "#FEF2F2",
+          color: "#991B1B",
+          borderLeft: "4px solid #EF4444"
+        }
+      });
+      return;
+    }
+
+    // Check for duplicate addresses before saving
+    const newAddressData = {
+      shippingAddress: formData.address.trim(),
+      city: formData.city.trim(),
+      state: formData.state.trim(),
+      country: formData.country.trim(),
+      zipCode: formData.zip.trim(),
+      mobileNumber: `${selectedCountry.dialCode} ${phoneNumber}`.trim(),
+    };
+
+    const isDuplicate = savedAddresses.some(existing => 
+      existing.shippingAddress.toLowerCase().trim() === newAddressData.shippingAddress.toLowerCase() &&
+      existing.city.toLowerCase().trim() === newAddressData.city.toLowerCase() &&
+      existing.state.toLowerCase().trim() === newAddressData.state.toLowerCase() &&
+      existing.country.toLowerCase().trim() === newAddressData.country.toLowerCase() &&
+      existing.zipCode.trim() === newAddressData.zipCode &&
+      existing.mobileNumber.trim() === newAddressData.mobileNumber
+    );
+
+    if (isDuplicate) {
+      toast.warning("📍 You have already saved this address!", {
+        position: "top-center",
+        autoClose: 3500,
+        hideProgressBar: false, 
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: {
+          background: "linear-gradient(135deg, #F59E0B, #D97706)",
+          color: "white",
+          borderRadius: "12px",
+          boxShadow: "0 8px 20px rgba(245, 158, 11, 0.4)",
+          fontWeight: "600"
+        }
+      });
+      return;
+    }
+
+    try {
+      setSavingAddress(true);
+      const addressData = {
+        ...newAddressData,
+        isDefault: saveAsDefault
+      };
+      
+      await apiClient.post('/users/addresses', addressData);
+      await fetchSavedAddresses(); // Refresh the saved addresses list
+      setSaveAsDefault(false);
+      toast.success("✅ Address saved successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: {
+          background: "linear-gradient(135deg, #10B981, #059669)",
+          color: "white",
+          borderRadius: "12px",
+          boxShadow: "0 10px 25px rgba(16, 185, 129, 0.3)"
+        }
+      });
+    } catch (error: any) {
+      console.error('Error saving address:', error);
+      
+      // Check if it's a duplicate error from the backend
+      const errorMessage = error?.response?.data?.message || error?.message || '';
+      const isDuplicateError = errorMessage.toLowerCase().includes('already') || 
+                              errorMessage.toLowerCase().includes('duplicate') ||
+                              errorMessage.toLowerCase().includes('exists');
+      
+      if (isDuplicateError) {
+        toast.warning("📍 This address already exists in your saved addresses!", {
+          position: "top-center",
+          autoClose: 3500,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: {
+            background: "linear-gradient(135deg, #F59E0B, #D97706)",
+            color: "white",
+            borderRadius: "12px",
+            boxShadow: "0 8px 20px rgba(245, 158, 11, 0.4)",
+            fontWeight: "600"
+          }
+        });
+      } else {
+        toast.error("❌ Failed to save address. Please try again.", {
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: {
+            background: "#FEF2F2",
+            color: "#991B1B",
+            borderLeft: "4px solid #EF4444"
+          }
+        });
+      }
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const selectSavedAddress = (address: SavedAddress) => {
+    // Auto-fill the form with selected address
+    setFormData({
+      address: address.shippingAddress,
+      city: address.city,
+      state: address.state,
+      country: address.country,
+      zip: address.zipCode
+    });
+    
+    // Parse and set phone number with country selection
+    const phoneWithCountry = address.mobileNumber;
+    const matchingCountry = COUNTRIES.find(c => phoneWithCountry.startsWith(c.dialCode));
+    if (matchingCountry) {
+      setSelectedCountry(matchingCountry);
+      const phoneWithoutCode = phoneWithCountry.replace(matchingCountry.dialCode, '').trim();
+      setPhoneNumber(phoneWithoutCode);
+      // Reset phone validation state
+      setPhoneTouched(false);
+      setPhoneError(null);
+    }
+    
+    // Reset field touched states since we're auto-filling
+    setFieldTouched({
+      country: false,
+      city: false, 
+      zip: false,
+      state: false
+    });
+    
+    setShowSavedAddresses(false);
+    
+    // Show success feedback
+    const addressLabel = `Address ${savedAddresses.indexOf(address) + 1}`;
+    setTimeout(() => {
+      toast.success(`🎯 ${addressLabel} has been auto-filled successfully!`, {
+        position: "top-center",
+        autoClose: 2500,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: {
+          background: "linear-gradient(135deg, #5A1E12, #8B5E3C)",
+          color: "white",
+          borderRadius: "12px",
+          boxShadow: "0 8px 20px rgba(90, 30, 18, 0.4)",
+          fontWeight: "600"
+        }
+      });
+    }, 100);
+  };
 
   // Load saved address data from localStorage on mount
   useEffect(() => {
@@ -122,6 +364,25 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
     }
     setDataLoaded(true);
   }, []);
+
+  // Fetch saved addresses when user is authenticated
+  useEffect(() => {
+    if (user && dataLoaded) {
+      fetchSavedAddresses();
+    }
+  }, [user, dataLoaded]);
+
+  // Auto-expand saved addresses when they are loaded
+  useEffect(() => {
+    if (savedAddresses.length > 0 && !loadingSavedAddresses) {
+      setShowSavedAddresses(true);
+    }
+  }, [savedAddresses, loadingSavedAddresses]);
+
+  // Debug: Log user state changes
+  useEffect(() => {
+    console.log('User state changed:', { user: !!user, userId: user?.id || user?.email });
+  }, [user]);
 
   // Save form data to localStorage (only after initial load)
   useEffect(() => {
@@ -455,6 +716,175 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
           <p className="text-xs text-emerald-600 mt-0.5 flex items-center gap-1"><span>✓</span> Looks good</p>
         )}
       </div>
+
+      {/* Save Address & Action Buttons Section - only show for authenticated users */}
+      {user && (
+        <div className="bg-linear-to-br from-[#5A1E12]/5 to-[#d6b896]/10 rounded-xl p-4 border border-[#d6b896]/30">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saveAsDefault}
+                  onChange={(e) => setSaveAsDefault(e.target.checked)}
+                  className="w-4 h-4 text-[#5A1E12] border-[#d6b896] rounded focus:ring-[#5A1E12] focus:ring-2"
+                />
+                <span className="text-sm text-gray-700">Save as default address</span>
+              </label>
+            </div>
+            <div className="flex items-start">
+              <button
+                type="button"
+                onClick={saveAddress}
+                disabled={savingAddress}
+                className="px-6 py-3 bg-[#5A1E12] hover:bg-[#5A1E12]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+              >
+                {savingAddress ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    Saving Address...
+                  </>
+                ) : (
+                  <>
+                    <span>💾</span>
+                    Save Address
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Saved Addresses Section - show for authenticated users */}
+      {user && (
+        <div className="bg-linear-to-br from-[#f8f4f0] to-[#faf7f4] rounded-xl border border-[#d6b896]/40 overflow-hidden shadow-lg">
+          <div className="p-4 bg-linear-to-r from-[#5A1E12] to-[#4a1810] text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📍</span>
+                <h3 className="text-lg font-semibold">Saved Addresses</h3>
+                {savedAddresses.length > 0 && (
+                  <span className="bg-white/20 text-xs px-2 py-1 rounded-full font-medium">{savedAddresses.length}</span>
+                )}
+              </div>
+              {savedAddresses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowSavedAddresses(!showSavedAddresses)}
+                  className="text-white/80 hover:text-white transition-all duration-300 text-sm flex items-center gap-1 hover:bg-white/10 px-3 py-1 rounded-lg transform hover:scale-105"
+                >
+                  {showSavedAddresses ? 'Hide' : 'Show'}
+                  <motion.span
+                    animate={{ rotate: showSavedAddresses ? 180 : 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="text-sm"
+                  >
+                    ▼
+                  </motion.span>
+                </button>
+              )}
+            </div>
+              {savedAddresses.length === 0 && !loadingSavedAddresses && (
+                <div className="text-center py-4">
+                  <p className="text-white/60 text-sm mb-3">No saved addresses found</p>
+                  <button
+                    onClick={fetchSavedAddresses}
+                    className="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    🔄 Refresh Addresses
+                  </button>
+                </div>
+              )}
+              {loadingSavedAddresses && (
+                <div className="text-center py-4">
+                  <div className="inline-flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+                    <span className="text-white/80 text-sm">Loading...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          
+          <AnimatePresence>
+            {savedAddresses.length > 0 && showSavedAddresses && (
+              <motion.div
+                initial={{ height: 0, opacity: 0, y: -10 }}
+                animate={{ height: "auto", opacity: 1, y: 0 }}
+                exit={{ height: 0, opacity: 0, y: -10 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="divide-y divide-[#d6b896]/30 overflow-hidden"
+              >
+                {loadingSavedAddresses ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-6 text-center"
+                  >
+                    <div className="inline-flex items-center gap-3 text-[#5A1E12]">
+                      <div className="w-5 h-5 border-2 border-[#5A1E12]/20 border-t-[#5A1E12] rounded-full animate-spin"></div>
+                      <span className="text-sm">Loading saved addresses...</span>
+                    </div>
+                  </motion.div>
+                ) : (
+                  savedAddresses.map((address, index) => (
+                    <motion.div
+                      key={address.id || address._id || index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                      className="p-3 hover:bg-[#5A1E12]/8 transition-all duration-300 cursor-pointer group"
+                      onClick={() => selectSavedAddress(address)}
+                      whileHover={{ backgroundColor: "rgba(90, 30, 18, 0.1)" }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[#5A1E12] font-medium text-sm">Address {index + 1}</span>
+                            {address.isDefault && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="bg-linear-to-r from-[#5A1E12] to-[#4a1810] text-white text-xs px-2 py-1 rounded-full font-medium"
+                              >
+                                Default
+                              </motion.span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-700 font-medium">{address.shippingAddress}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectSavedAddress(address);
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="bg-linear-to-r from-[#5A1E12] to-[#4a1810] hover:from-[#4a1810] hover:to-[#5A1E12] text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg"
+                          >
+                            Use This
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {user && loadingSavedAddresses && savedAddresses.length === 0 && (
+        <div className="bg-linear-to-br from-[#5A1E12]/5 to-[#d6b896]/10 rounded-xl p-6 border border-[#d6b896]/30">
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-6 h-6 border-3 border-[#5A1E12]/20 border-t-[#5A1E12] rounded-full animate-spin"></div>
+            <span className="text-[#5A1E12] font-medium">Loading your saved addresses...</span>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

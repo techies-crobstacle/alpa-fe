@@ -22,19 +22,42 @@ type AuthContextType = {
   token: string | null;
 };
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  // Initialize token immediately from localStorage to avoid timing issues
+  const getStoredToken = () => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("alpa_token");
+    }
+    return null;
+  };
+
+  const getStoredUser = () => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          return JSON.parse(storedUser);
+        } catch (error) {
+          console.error("Error parsing stored user:", error);
+          localStorage.removeItem("user");
+        }
+      }
+    }
+    return null;
+  };
+
+  const [user, setUser] = useState<User | null>(getStoredUser);
+  const [token, setToken] = useState<string | null>(getStoredToken);
   const [loading, setLoading] = useState(false);
 
-  // Initialize from localStorage on mount
+  // Initialize from localStorage on mount (backup for SSR)
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("alpa_token");
     
-    if (storedUser) {
+    if (storedUser && !user) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
@@ -43,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     
-    if (storedToken) {
+    if (storedToken && !token) {
       setToken(storedToken);
     }
   }, []);
@@ -113,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("user", JSON.stringify(userData));
     // Notify CartContext (and any other listeners) that a login just happened.
     // StorageEvent does NOT fire within the same tab, so we use a custom event.
-    const newToken = authToken ?? localStorage.getItem("alpa_token");
+    const newToken = authToken ?? token ?? localStorage.getItem("alpa_token");
     if (newToken) {
       window.dispatchEvent(new CustomEvent("alpa-login", { detail: { token: newToken } }));
     }

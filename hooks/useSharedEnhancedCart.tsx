@@ -7,7 +7,13 @@ import { guestCartUtils } from '@/lib/guestCartUtils';
 type SharedCartContextType = ReturnType<typeof useEnhancedCart> & {
   subscribeToUpdates: (callback: () => void) => () => void;
   triggerUpdate: () => void;
-  addToCart: (productId: string, productData: { title: string, price: string, images: string[] }) => Promise<void>;
+  addToCart: (productId: string, productData: { 
+    title: string, 
+    price: string, 
+    featuredImage?: string,
+    images?: string[],
+    galleryImages?: string[]
+  }) => Promise<void>;
 };
 
 const EnhancedCartContext = createContext<SharedCartContextType | null>(null);
@@ -32,7 +38,13 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
   }, []);
 
   // Enhanced add to cart function that notifies all components
-  const enhancedAddToCart = useCallback(async (productId: string, productData: { title: string, price: string, images: string[] }) => {
+  const enhancedAddToCart = useCallback(async (productId: string, productData: { 
+    title: string, 
+    price: string, 
+    featuredImage?: string,
+    images?: string[],
+    galleryImages?: string[]
+  }) => {
     // 1. OPTIMISTIC UPDATE FIRST
     try {
       // Construct a temporary product object for optimistic update
@@ -41,7 +53,9 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
         id: productId,
         title: productData.title,
         price: productData.price,
-        images: productData.images,
+        featuredImage: productData.featuredImage,
+        images: productData.images || [],
+        galleryImages: productData.galleryImages || [],
         stock: 99, 
         category: ''
       }, 1);
@@ -58,7 +72,9 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
           id: productId,
           title: productData.title,
           price: productData.price,
-          images: productData.images,
+          featuredImage: productData.featuredImage,
+          images: productData.images || [],
+          galleryImages: productData.galleryImages || [],
           stock: 100,
           category: '',
         }, 1);

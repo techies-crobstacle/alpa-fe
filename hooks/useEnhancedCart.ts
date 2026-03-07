@@ -12,10 +12,13 @@ declare global {
 }
 
 export interface CartProduct {
+  featuredImage?: string;
   id: string;
   title: string;
   price: string;
-  images: string[];
+  images?: string[];
+  galleryImages?: string[];
+  image?: string; // Sometimes API returns single image field
   stock: number;
   category: string;
 }
