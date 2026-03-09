@@ -24,37 +24,43 @@ export default function Footer() {
             <Link href="/shop" className="mb-2 hover:text-[#A48068] transition-colors">
               All Products
             </Link>
-            <Link href="/shop?category=paintings" className="mb-2 hover:text-[#A48068] transition-colors">
-              Paintings
-            </Link>
-            <Link href="/shop?category=sculptures" className="mb-2 hover:text-[#A48068] transition-colors">
-              Sculptures
-            </Link>
-            <Link href="/shop?category=crafts" className="mb-2 hover:text-[#A48068] transition-colors">
-              Traditional Crafts
-            </Link>
             <Link href="/shop?featured=true" className="mb-2 hover:text-[#A48068] transition-colors">
-              Featured Artists
+              Featured Makers
+            </Link>
+            <Link href="/shop?category=art-crafts" className="mb-2 hover:text-[#A48068] transition-colors">
+              Art & Crafts
+            </Link>
+            <Link href="/shop?category=bush-foods" className="mb-2 hover:text-[#A48068] transition-colors">
+              Bush Foods
+            </Link>
+            <Link href="/shop?category=apparel" className="mb-2 hover:text-[#A48068] transition-colors">
+              Apparel
+            </Link>
+            <Link href="/shop?category=handmade-crafts" className="mb-2 hover:text-[#A48068] transition-colors">
+              Handmade Crafts
+            </Link>
+            <Link href="/shop?category=accessories" className="mb-2 hover:text-[#A48068] transition-colors">
+              Accessories
             </Link>
           </div>
 
-          {/* Column 2 - About */}
+          {/* Column 2 - Sellers */}
           <div className="flex flex-col">
-            <h2 className="mb-4 text-lg font-semibold">About</h2>
-            <Link href="/about-us" className="mb-2 hover:text-[#A48068] transition-colors">
-              About Us
+            <h2 className="mb-4 text-lg font-semibold">Sellers</h2>
+            <Link href="/sellerOnboarding" className="mb-2 hover:text-[#A48068] transition-colors">
+              Sell with MIA
             </Link>
-            <Link href="/artists" className="mb-2 hover:text-[#A48068] transition-colors">
-              Our Artists
+            <Link href="/sellerOnboarding" className="mb-2 hover:text-[#A48068] transition-colors">
+              Seller Registration
             </Link>
-            <Link href="/our-story" className="mb-2 hover:text-[#A48068] transition-colors">
-              Our Story
+            <Link href="/login" className="mb-2 hover:text-[#A48068] transition-colors">
+              Seller Login
             </Link>
-            <Link href="/community" className="mb-2 hover:text-[#A48068] transition-colors">
-              Community Impact
+            <Link href="/seller-guidelines" className="mb-2 hover:text-[#A48068] transition-colors">
+              Seller Guidelines
             </Link>
-            <Link href="/blog" className="mb-2 hover:text-[#A48068] transition-colors">
-              Blog
+            <Link href="/contact-us" className="mb-2 hover:text-[#A48068] transition-colors">
+              Supplier Support
             </Link>
           </div>
 
@@ -65,15 +71,21 @@ export default function Footer() {
               Contact Us
             </Link>
             <Link href="/faq" className="mb-2 hover:text-[#A48068] transition-colors">
-              FAQ
+              FAQs
+            </Link>
+            <Link href="/guest/track-order" className="mb-2 hover:text-[#A48068] transition-colors">
+              Track Order / Track Status
             </Link>
             <Link href="/shipping" className="mb-2 hover:text-[#A48068] transition-colors">
               Shipping & Returns
             </Link>
+            <Link href="/guest/refund" className="mb-2 hover:text-[#A48068] transition-colors">
+              Refund Policy
+            </Link>
             <Link href="/privacy" className="mb-2 hover:text-[#A48068] transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="mb-2 hover:text-[#A48068] transition-colors">
+            <Link href="/term-and-conditions" className="mb-2 hover:text-[#A48068] transition-colors">
               Terms & Conditions
             </Link>
           </div>
@@ -107,7 +119,7 @@ export default function Footer() {
       {/* Address and Copyright Section */}
       <div className="mt-12 flex flex-col md:flex-row justify-between items-center gap-4 mb-8 text-sm md:text-base text-center md:text-left">
         <p className="text-white/80">
-          70 O’Sullivan Circuit, East Arm NT 0822, GPO Box 3825, Darwin NT 0801
+          70 O’Sullivan Circuit, East Arm NT 0822
         </p>
         
         <p className="text-white/80 max-w-[550px] text-right bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg flex items-start justify-top gap-2">
