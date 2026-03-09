@@ -656,7 +656,7 @@ export default function ArtistOnboardingForm() {
           <p className="text-[#5A1E12]/70 mb-1">Complete all steps to start selling your artwork</p>
 
           {/* Resume / Login CTA */}
-          <div className="mt-3 flex gap-3">
+          {/* <div className="mt-3 flex gap-3">
             <button
               onClick={() => { setErrors({}); setMode('resume'); }}
               className="text-sm text-[#5A1E12] border border-[#5A1E12]/30 rounded-lg px-4 py-1.5 hover:bg-[#5A1E12]/10 transition-all"
@@ -669,7 +669,7 @@ export default function ArtistOnboardingForm() {
             >
               🔑 Log in
             </button>
-          </div>
+          </div> */}
         </div>
 
         <div className="max-w-2xl mx-auto">

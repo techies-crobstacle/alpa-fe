@@ -335,29 +335,29 @@ export default function ShopSlugPage() {
   // ── Skeleton ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f1eee9] pt-36 pb-16">
+      <div className="min-h-screen bg-[#ebe3d5] pt-36 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-4 bg-amber-200 rounded w-56 animate-pulse mb-8" />
+          <div className="h-4 bg-[#973c00]/20 rounded w-56 animate-pulse mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             <div className="space-y-4">
-              <div className="aspect-square w-full rounded-3xl bg-amber-100 animate-pulse" />
+              <div className="aspect-square w-full rounded-3xl bg-[#5A1E12]/10 animate-pulse border border-[#973c00]/10" />
               <div className="flex gap-3">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="w-20 h-20 rounded-xl bg-amber-100 animate-pulse" />
+                  <div key={i} className="w-20 h-20 rounded-xl bg-[#973c00]/15 animate-pulse border border-[#5A1E12]/10" />
                 ))}
               </div>
             </div>
             <div className="space-y-5 pt-2">
-              <div className="h-9 bg-amber-200 rounded-xl w-3/4 animate-pulse" />
-              <div className="h-5 bg-amber-100 rounded-lg w-1/3 animate-pulse" />
-              <div className="h-10 bg-amber-200 rounded-xl w-36 animate-pulse" />
-              <div className="h-4 bg-amber-100 rounded w-full animate-pulse" />
-              <div className="h-4 bg-amber-100 rounded w-5/6 animate-pulse" />
-              <div className="h-4 bg-amber-100 rounded w-4/6 animate-pulse" />
+              <div className="h-9 bg-[#5A1E12]/15 rounded-xl w-3/4 animate-pulse" />
+              <div className="h-5 bg-[#973c00]/10 rounded-lg w-1/3 animate-pulse" />
+              <div className="h-10 bg-[#973c00]/20 rounded-xl w-36 animate-pulse" />
+              <div className="h-4 bg-[#5A1E12]/8 rounded w-full animate-pulse" />
+              <div className="h-4 bg-[#5A1E12]/8 rounded w-5/6 animate-pulse" />
+              <div className="h-4 bg-[#5A1E12]/8 rounded w-4/6 animate-pulse" />
               <div className="flex gap-3 pt-2">
-                <div className="h-14 flex-1 rounded-2xl bg-amber-200 animate-pulse" />
-                <div className="h-14 w-14 rounded-2xl bg-amber-200 animate-pulse" />
-                <div className="h-14 w-14 rounded-2xl bg-amber-200 animate-pulse" />
+                <div className="h-14 flex-1 rounded-2xl bg-[#973c00]/15 animate-pulse border border-[#5A1E12]/10" />
+                <div className="h-14 w-14 rounded-2xl bg-[#5A1E12]/12 animate-pulse border border-[#973c00]/15" />
+                <div className="h-14 w-14 rounded-2xl bg-[#5A1E12]/12 animate-pulse border border-[#973c00]/15" />
               </div>
             </div>
           </div>
@@ -370,17 +370,17 @@ export default function ShopSlugPage() {
   if (error || !product) {
     return (
       <div className="min-h-screen bg-[#ebe3d5] flex items-center justify-center">
-        <div className="text-center p-10 bg-white rounded-3xl shadow-xl border border-amber-200 max-w-sm mx-4">
-          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Package className="w-8 h-8 text-amber-500" />
+        <div className="text-center p-10 bg-white rounded-3xl shadow-xl border border-[#973c00]/20 max-w-sm mx-4">
+          <div className="w-16 h-16 bg-[#5A1E12]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Package className="w-8 h-8 text-[#973c00]" />
           </div>
-          <p className="text-xl font-bold text-amber-900 mb-2">
+          <p className="text-xl font-bold text-[#3b1a08] mb-2">
             {error || "Product not found"}
           </p>
-          <p className="text-amber-600 mb-6">Please check the URL and try again.</p>
+          <p className="text-[#973c00]/80 mb-6">Please check the URL and try again.</p>
           <button
             onClick={handleBackToShop}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl font-semibold hover:bg-amber-700 transition"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5A1E12] text-white rounded-xl font-semibold hover:bg-[#3b1a08] transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Shop
