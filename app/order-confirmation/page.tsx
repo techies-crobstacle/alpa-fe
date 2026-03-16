@@ -12,16 +12,24 @@ import {
   ShoppingBag,
   Home,
   MessageSquare,
+  Store,
+  Truck,
+  Box,
+  Clock,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import { SegregatedOrder, SellerOrder, OrderStatus as SellerOrderStatus, ORDER_STATUS_MAPPING } from "@/types/seller-orders";
+import { detectMultiSellerOrder, logApiResponse } from "@/lib/orderUtils";
 
 interface OrderStatus {
   orderId: string;
   status: string;
   paymentStatus: string;
+  isMultiSeller?: boolean;
+  segregatedData?: SegregatedOrder;
 }
 
 // ─── Feedback Form ───────────────────────────────────────────────────────────
@@ -226,6 +234,55 @@ function FeedbackForm({ defaultName, defaultEmail }: { defaultName: string; defa
 }
 
 // ─── Main Content ─────────────────────────────────────────────────────────────
+// ─── Seller Order Card ───────────────────────────────────────────────────────
+function SellerOrderCard({ sellerOrder, parentStatus }: { sellerOrder: SellerOrder, parentStatus: string }) {
+  const statusColor = ORDER_STATUS_MAPPING[sellerOrder.status as keyof typeof ORDER_STATUS_MAPPING]?.color || "#10b981";
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white/5 rounded-xl border border-white/10 p-4 mb-3"
+    >
+      {/* Seller Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+            <Store className="w-4 h-4 text-white/70" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">{sellerOrder.seller.name}</p>
+            <p className="text-xs text-white/50">Sub Order: #{sellerOrder.subOrderId.slice(-6).toUpperCase()}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <div 
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
+            style={{ backgroundColor: `${statusColor}20`, color: statusColor }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
+            {ORDER_STATUS_MAPPING[sellerOrder.status as keyof typeof ORDER_STATUS_MAPPING]?.label || sellerOrder.status}
+          </div>
+          <p className="text-xs text-white/40 mt-1">${parseFloat(sellerOrder.subTotal).toFixed(2)}</p>
+        </div>
+      </div>
+      
+      {/* Items Count */}
+      <div className="flex items-center gap-2 text-xs text-white/60">
+        <Box className="w-3 h-3" />
+        <span>{sellerOrder.items.length} {sellerOrder.items.length === 1 ? 'item' : 'items'}</span>
+        {sellerOrder.trackingNumber && (
+          <>
+            <span>•</span>
+            <Truck className="w-3 h-3" />
+            <span>Tracking: {sellerOrder.trackingNumber}</span>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const { token, user } = useAuth();
@@ -242,31 +299,80 @@ function OrderConfirmationContent() {
     const checkStatus = async () => {
       try {
         const currentToken = token || localStorage.getItem("alpa_token");
+        
+        // Get basic order status
         const res = await fetch(
           `https://alpa-be.onrender.com/api/payments/status/${orderId}`,
           { headers: { Authorization: `Bearer ${currentToken}` } }
         );
+        
+        let basicOrderStatus: OrderStatus = {
+          orderId,
+          status: "Confirmed",
+          paymentStatus: isCOD ? "Cash on Delivery" : "Paid",
+          isMultiSeller: false,
+          segregatedData: undefined,
+        };
+        
         if (res.ok) {
           const data = await res.json();
-          setOrderStatus({
+          logApiResponse('/api/payments/status', data, orderId);
+          
+          basicOrderStatus = {
             orderId,
             status: data.status || "Confirmed",
             paymentStatus: isCOD
               ? "Cash on Delivery"
               : data.paymentStatus || "Paid",
-          });
-        } else {
-          setOrderStatus({
-            orderId,
-            status: "Confirmed",
-            paymentStatus: isCOD ? "Cash on Delivery" : "Paid",
-          });
+            isMultiSeller: data.isMultiSeller || false,
+            segregatedData: undefined,
+          };
         }
-      } catch {
+        
+        // Always try to fetch segregated data for this order to check if it's multi-seller
+        try {
+          console.log('🔍 Checking for segregated order data...');
+          const segregatedRes = await fetch(
+            `https://alpa-be.onrender.com/api/orders/segregated/${orderId}`,
+            { headers: { Authorization: `Bearer ${currentToken}` } }
+          );
+          
+          if (segregatedRes.ok) {
+            const segregatedData = await segregatedRes.json();
+            logApiResponse('/api/orders/segregated', segregatedData, orderId);
+            
+            if (segregatedData.success && segregatedData.order) {
+              basicOrderStatus.isMultiSeller = true;
+              basicOrderStatus.segregatedData = segregatedData.order;
+              console.log('✅ Multi-seller order data loaded successfully');
+            }
+          } else if (segregatedRes.status === 404) {
+            console.log('📦 Single-seller order confirmed (no segregated data)');
+          } else {
+            console.log('⚠️ Error fetching segregated data, status:', segregatedRes.status);
+          }
+        } catch (error) {
+          console.log("❌ Error fetching segregated data:", error);
+        }
+        
+        console.log('✅ Order confirmation data ready:', {
+          orderId: basicOrderStatus.orderId,
+          status: basicOrderStatus.status,
+          paymentStatus: basicOrderStatus.paymentStatus,
+          isMultiSeller: basicOrderStatus.isMultiSeller,
+          hasSegregatedData: !!basicOrderStatus.segregatedData,
+          sellerCount: basicOrderStatus.segregatedData?.sellerOrders?.length || 0
+        });
+        
+        setOrderStatus(basicOrderStatus);
+      } catch (error) {
+        console.log("Error in checkStatus:", error);
         setOrderStatus({
           orderId,
           status: "Confirmed",
           paymentStatus: isCOD ? "Cash on Delivery" : "Paid",
+          isMultiSeller: false,
+          segregatedData: undefined,
         });
       } finally {
         setLoading(false);
@@ -345,27 +451,53 @@ function OrderConfirmationContent() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="w-full divide-y divide-white/10 bg-white/5 rounded-2xl px-4 border border-white/10"
+                className="w-full space-y-3"
               >
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Order ID</span>
-                  <span className="text-sm font-bold font-mono text-white">
-                    #{orderStatus.orderId.slice(-8).toUpperCase()}
-                  </span>
+                {/* Main Order Info */}
+                <div className="bg-white/5 rounded-2xl px-4 border border-white/10 divide-y divide-white/10">
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Order ID</span>
+                    <span className="text-sm font-bold font-mono text-white">
+                      #{orderStatus.orderId.slice(-8).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Status</span>
+                    <span className="text-xs font-semibold text-[#EAD7B7]">{orderStatus.status}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Payment</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#EAD7B7]">
+                      {isCOD
+                        ? <Package className="w-3 h-3" />
+                        : <CheckCircle className="w-3 h-3" />}
+                      {orderStatus.paymentStatus}
+                    </span>
+                  </div>
+                  {orderStatus.isMultiSeller && orderStatus.segregatedData && (
+                    <div className="flex items-center justify-between py-3">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Total</span>
+                      <span className="text-sm font-bold text-[#EAD7B7]">
+                        ${parseFloat(orderStatus.segregatedData.totalAmount).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Status</span>
-                  <span className="text-xs font-semibold text-[#EAD7B7]">{orderStatus.status}</span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Payment</span>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#EAD7B7]">
-                    {isCOD
-                      ? <Package className="w-3 h-3" />
-                      : <CheckCircle className="w-3 h-3" />}
-                    {orderStatus.paymentStatus}
-                  </span>
-                </div>
+
+                {/* Multi-seller breakdown */}
+                {orderStatus.isMultiSeller && orderStatus.segregatedData ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-white/60 mt-2">
+                      <Store className="w-3 h-3" />
+                      <span className="font-semibold">Multiple Sellers ({orderStatus.segregatedData.sellerOrders.length})</span>
+                    </div>
+                    {orderStatus.segregatedData.sellerOrders.map((sellerOrder, index) => (
+                      <SellerOrderCard
+                        key={sellerOrder.sellerId}
+                        sellerOrder={sellerOrder} parentStatus={""}                      />
+                    ))}
+                  </div>
+                ) : null}
               </motion.div>
             )}
           </div>
