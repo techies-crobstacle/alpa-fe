@@ -508,9 +508,9 @@ export default function Page() {
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                     
-                    <p className="text-center text-xs text-[#8B5E3C] mt-4 flex items-center justify-center gap-1">
+                    {/* <p className="text-center text-xs text-[#8B5E3C] mt-4 flex items-center justify-center gap-1">
                         <TruckElectric size={12} /> Free returns within 30 days
-                    </p>
+                    </p> */}
                 </div>
             </div>
           </div>

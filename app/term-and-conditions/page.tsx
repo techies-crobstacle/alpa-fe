@@ -19,7 +19,7 @@ export default function Page() {
       </div>
 
       {/* CONTENT SECTION */}
-      <div className="flex flex-col md:flex-row gap-10 md:gap-20 pt-10 px-6 md:px-16 max-w-screen-2xl mx-auto">
+      <div className="flex flex-col md:flex-row gap-10 md:gap-20 pt-10 pb-20 px-6 md:px-16 max-w-screen-2xl mx-auto">
 
         {/* TABLE OF CONTENTS */}
         <aside className="w-full md:w-64 lg:w-72 h-fit md:sticky md:top-32">

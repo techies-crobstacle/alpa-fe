@@ -990,84 +990,85 @@ export default function ShopSlugPage() {
           </div>
         </div>
 
-        {/* ── Image Lightbox Modal ──────────────────────────────────── */}
-        {isModalOpen && (
-          <div
-            className="fixed inset-0 z-999 bg-black/96 backdrop-blur-md animate-in fade-in duration-200 flex flex-col"
+      </div>
+
+      {/* ── Image Lightbox Modal — rendered outside main div to avoid stacking-context trap ── */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-9999 bg-black/96 backdrop-blur-md animate-in fade-in duration-200 flex flex-col"
+          onClick={() => setIsModalOpen(false)}
+        >
+          {/* Close button */}
+          <button
             onClick={() => setIsModalOpen(false)}
+            className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all duration-200 hover:scale-110 z-10000"
           >
-            {/* Close button */}
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all duration-200 hover:scale-110 z-1000"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <X className="w-6 h-6" />
+          </button>
 
-            {/* Image area — fills all space above the thumbnail strip */}
-            <div className="flex-1 relative flex items-center justify-center overflow-hidden">
-              {/* Prev button */}
-              {allImages.length > 1 && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setModalImageIndex(prev => prev > 0 ? prev - 1 : allImages.length - 1); }}
-                  className="absolute left-4 z-1000 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all duration-200 hover:scale-110"
-                >
-                  <ChevronLeft className="w-8 h-8" />
-                </button>
-              )}
-
-              {/* Main image — padded so it never slides under nav buttons */}
-              <div
-                className="relative w-full h-full max-w-4xl mx-auto px-20"
-                onClick={(e) => e.stopPropagation()}
+          {/* Image area — fills all space above the thumbnail strip */}
+          <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+            {/* Prev button */}
+            {allImages.length > 1 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setModalImageIndex(prev => prev > 0 ? prev - 1 : allImages.length - 1); }}
+                className="absolute left-4 z-10000 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all duration-200 hover:scale-110"
               >
-                <Image
-                  src={allImages[modalImageIndex]}
-                  alt={product.title}
-                  fill
-                  className="object-contain"
-                  quality={100}
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 896px"
-                />
-              </div>
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+            )}
 
-              {/* Next button */}
-              {allImages.length > 1 && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setModalImageIndex(prev => prev < allImages.length - 1 ? prev + 1 : 0); }}
-                  className="absolute right-4 z-1000 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all duration-200 hover:scale-110"
-                >
-                  <ChevronRight className="w-8 h-8" />
-                </button>
-              )}
+            {/* Main image */}
+            <div
+              className="relative w-full h-full max-w-4xl mx-auto px-20"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={allImages[modalImageIndex]}
+                alt={product.title}
+                fill
+                className="object-contain"
+                quality={100}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 896px"
+              />
             </div>
 
-            {/* Thumbnail strip — pinned to bottom */}
+            {/* Next button */}
             {allImages.length > 1 && (
-              <div
-                className="shrink-0 flex justify-center pb-4 pt-3"
-                onClick={(e) => e.stopPropagation()}
+              <button
+                onClick={(e) => { e.stopPropagation(); setModalImageIndex(prev => prev < allImages.length - 1 ? prev + 1 : 0); }}
+                className="absolute right-4 z-10000 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all duration-200 hover:scale-110"
               >
-                <div className="flex gap-2.5 px-4 py-2.5 bg-white/5 backdrop-blur-xl rounded-2xl overflow-x-auto max-w-[90vw]">
-                  {allImages.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setModalImageIndex(idx)}
-                      className={`relative shrink-0 w-12 h-12 rounded-xl overflow-hidden border-2 transition-all duration-200 hover:scale-105 ${
-                        modalImageIndex === idx
-                          ? 'border-[#973c00] scale-110 shadow-lg shadow-[#973c00]/30'
-                          : 'border-white/10 opacity-40 hover:opacity-90'
-                      }`}
-                    >
-                      <Image src={img} alt="thumbnail" fill className="object-cover" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+                <ChevronRight className="w-8 h-8" />
+              </button>
             )}
           </div>
-        )}
-      </div>
+
+          {/* Thumbnail strip — pinned to bottom */}
+          {allImages.length > 1 && (
+            <div
+              className="shrink-0 flex justify-center pb-4 pt-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex gap-2.5 px-4 py-2.5 bg-white/5 backdrop-blur-xl rounded-2xl overflow-x-auto max-w-[90vw]">
+                {allImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setModalImageIndex(idx)}
+                    className={`relative shrink-0 w-12 h-12 rounded-xl overflow-hidden border-2 transition-all duration-200 hover:scale-105 ${
+                      modalImageIndex === idx
+                        ? 'border-[#973c00] scale-110 shadow-lg shadow-[#973c00]/30'
+                        : 'border-white/10 opacity-40 hover:opacity-90'
+                    }`}
+                  >
+                    <Image src={img} alt="thumbnail" fill className="object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }

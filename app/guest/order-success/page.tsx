@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCircle, Copy, Check, Package, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle, Copy, Check, Package, Loader2, AlertCircle, Mail, Truck, PartyPopper } from "lucide-react";
 
 function OrderSuccessContent() {
   const router = useRouter();
@@ -139,67 +139,113 @@ function OrderSuccessContent() {
   return (
     <main className="min-h-screen bg-[#ead7b7] flex flex-col items-center justify-center px-4 py-16">
       {/* Logo */}
-      <Link href="/" className="mb-10">
+      <Link href="/" className="mb-8">
         <Image src="/images/navbarLogo.png" width={70} height={70} alt="Logo" priority />
       </Link>
 
-      <div className="bg-white rounded-3xl shadow-xl max-w-lg w-full p-10 flex flex-col items-center text-center gap-6">
-        {/* Success icon */}
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-          <CheckCircle className="w-10 h-10 text-green-600" />
-        </div>
-
-        <div>
-          <h1 className="text-3xl font-bold text-[#5A1E12] mb-2">Order Confirmed!</h1>
-          <p className="text-[#5A1E12]/70 text-sm">
-            Thank you for your purchase. Your order has been placed successfully.
+      <div className="bg-white rounded-3xl shadow-xl max-w-lg w-full flex flex-col items-center text-center overflow-hidden">
+        {/* Celebratory header band */}
+        <div className="w-full bg-[#5A1E12] px-10 py-8 flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center">
+            <PartyPopper className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">Thank You!</h1>
+          <p className="text-white/80 text-sm leading-relaxed">
+            Your order has been placed and we&apos;re already on it.
+            <br />
+            We appreciate your trust in us!
           </p>
         </div>
 
-        {/* Order ID */}
-        {orderId && (
-          <div className="w-full bg-[#5A1E12]/5 rounded-xl p-4">
-            <p className="text-xs text-[#5A1E12]/50 mb-1 uppercase tracking-wide">Order ID</p>
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-sm font-semibold text-[#5A1E12] break-all">
-                {orderId}
-              </span>
-              <button
-                onClick={handleCopy}
-                className="shrink-0 p-1.5 rounded-lg hover:bg-[#5A1E12]/10 transition-colors text-[#5A1E12]"
-                title="Copy Order ID"
-              >
-                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-              </button>
+        <div className="w-full px-10 py-8 flex flex-col gap-6">
+          {/* Order ID */}
+          {orderId && (
+            <div className="w-full bg-[#5A1E12]/5 rounded-xl p-4">
+              <p className="text-xs text-[#5A1E12]/50 mb-1 uppercase tracking-wide font-medium">
+                Your Order ID
+              </p>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-sm font-semibold text-[#5A1E12] break-all">
+                  {orderId}
+                </span>
+                <button
+                  onClick={handleCopy}
+                  className="shrink-0 p-1.5 rounded-lg hover:bg-[#5A1E12]/10 transition-colors text-[#5A1E12]"
+                  title="Copy Order ID"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Email confirmation */}
+          {email && (
+            <div className="flex items-start gap-3 bg-blue-50 rounded-xl p-4 text-left">
+              <Mail className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-700 leading-relaxed">
+                A confirmation email with your order details has been sent to{" "}
+                <span className="font-semibold">{email}</span>.
+              </p>
+            </div>
+          )}
+
+          {/* What happens next */}
+          <div className="w-full text-left">
+            <p className="text-xs text-[#5A1E12]/50 uppercase tracking-wide font-medium mb-3">
+              What happens next
+            </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-[#5A1E12]/10 flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-4 h-4 text-[#5A1E12]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#5A1E12]">Order Confirmed</p>
+                  <p className="text-xs text-[#5A1E12]/60">Your payment was successful</p>
+                </div>
+              </div>
+              <div className="ml-4 w-px h-4 bg-[#5A1E12]/15" />
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-[#5A1E12]/10 flex items-center justify-center shrink-0">
+                  <Package className="w-4 h-4 text-[#5A1E12]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#5A1E12]">Being Prepared</p>
+                  <p className="text-xs text-[#5A1E12]/60">We&apos;re packing your items with care</p>
+                </div>
+              </div>
+              <div className="ml-4 w-px h-4 bg-[#5A1E12]/15" />
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-[#5A1E12]/10 flex items-center justify-center shrink-0">
+                  <Truck className="w-4 h-4 text-[#5A1E12]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#5A1E12]">Out for Delivery</p>
+                  <p className="text-xs text-[#5A1E12]/60">Your order will be on its way soon</p>
+                </div>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Email confirmation */}
-        {email && (
-          <p className="text-sm text-[#5A1E12]/70">
-            A confirmation email has been sent to{" "}
-            <span className="font-semibold text-[#5A1E12]">{email}</span>
-          </p>
-        )}
-
-        {/* Actions */}
-        <div className="w-full flex flex-col gap-3 mt-2">
-          {orderId && (
+          {/* Actions */}
+          <div className="w-full flex flex-col gap-3 pt-2">
+            {orderId && (
+              <Link
+                href={`/guest/track-order?orderId=${encodeURIComponent(orderId)}&email=${encodeURIComponent(email)}`}
+                className="flex items-center justify-center gap-2 w-full py-3 bg-[#5A1E12] text-white font-semibold rounded-xl hover:bg-[#441208] transition-all shadow-md"
+              >
+                <Package className="w-4 h-4" />
+                Track Your Order
+              </Link>
+            )}
             <Link
-              href={`/guest/track-order?orderId=${encodeURIComponent(orderId)}&email=${encodeURIComponent(email)}`}
-              className="flex items-center justify-center gap-2 w-full py-3 bg-[#5A1E12] text-white font-semibold rounded-xl hover:bg-[#441208] transition-all shadow-lg"
+              href="/shop"
+              className="w-full py-3 border border-[#5A1E12]/25 text-[#5A1E12] font-medium rounded-xl hover:bg-[#5A1E12]/5 transition-all text-center"
             >
-              <Package className="w-4 h-4" />
-              Track Your Order
+              Continue Shopping
             </Link>
-          )}
-          <Link
-            href="/shop"
-            className="w-full py-3 border border-[#5A1E12]/25 text-[#5A1E12] font-medium rounded-xl hover:bg-[#5A1E12]/5 transition-all text-center"
-          >
-            Continue Shopping
-          </Link>
+          </div>
         </div>
       </div>
     </main>
