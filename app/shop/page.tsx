@@ -6,7 +6,6 @@ import React, {
   useCallback,
   Suspense,
 } from "react";
-import { HiViewGrid } from "react-icons/hi";
 import { motion } from "framer-motion";
 import OptimisticProductCard from "@/components/cards/OptimisticProductCard";
 import { useCart } from "@/context/CartContext";
@@ -24,7 +23,6 @@ function ShopContent() {
 
   const error = queryError?.message || null;
   const [sort, setSort] = useState("");
-  const [view, setView] = useState<3 | 4>(3);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
@@ -284,22 +282,10 @@ function ShopContent() {
     priceRange[0] > minPrice ||
     priceRange[1] < maxPrice;
 
-  const ThreeGridIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <rect x="2" y="4" width="5" height="16" stroke="currentColor" />
-      <rect x="9.5" y="4" width="5" height="16" stroke="currentColor" />
-      <rect x="17" y="4" width="5" height="16" stroke="currentColor" />
-    </svg>
-  );
-
   // Skeleton loader for products
   const SkeletonLoader = () => (
     <div
-      className={`grid gap-4 sm:gap-6 ${
-        view === 3
-          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-      }`}
+      className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
     >
       {[...Array(PRODUCTS_PER_PAGE)].map((_, i) => (
         <div
@@ -958,22 +944,7 @@ function ShopContent() {
                 <option value="price-high-low">Price: high to low</option>
               </select>
 
-              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setView(3)}
-                  className={`p-2 ${view === 3 ? "bg-[#973c00] text-white" : "bg-white hover:bg-gray-100"}`}
-                  title="3-column view"
-                >
-                  <ThreeGridIcon />
-                </button>
-                <button
-                  onClick={() => setView(4)}
-                  className={`p-2 ${view === 4 ? "bg-[#973c00] text-white" : "bg-white hover:bg-gray-100"}`}
-                  title="4-column view"
-                >
-                  <HiViewGrid size={20} />
-                </button>
-              </div>
+
             </div>
           </div>
           {/* ACTIVE FILTERS — only renders when something is selected; no empty space otherwise */}
@@ -1045,11 +1016,7 @@ function ShopContent() {
           ) : (
             <>
               <div
-                className={`grid gap-4 sm:gap-6 ${
-                  view === 3
-                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-                }`}
+                className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               >
                 {paginatedProducts.map((product) => (
                   <OptimisticProductCard

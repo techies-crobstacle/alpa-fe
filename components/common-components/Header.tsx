@@ -577,7 +577,7 @@ export default function Header() {
                     <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden z-50 border border-gray-100 origin-top-right">
                       {/* Header */}
                       <div className="px-4 py-3 bg-[#5A1E12]/5 border-b border-gray-100">
-                        <p className="text-xs font-semibold text-[#5A1E12] uppercase tracking-widest">My Account</p>
+                        <p className="text-xs font-semibold text-[#5A1E12] uppercase tracking-widest">User Options</p>
                       </div>
                       <div className="p-1.5 flex flex-col gap-0.5">
                         <button
@@ -1075,7 +1075,7 @@ export default function Header() {
                 {stickyGuestMenuOpen && (
                   <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden z-50 border border-gray-100 origin-top-right">
                     <div className="px-4 py-3 bg-[#5A1E12]/5 border-b border-gray-100">
-                      <p className="text-xs font-semibold text-[#5A1E12] uppercase tracking-widest">My Account</p>
+                      <p className="text-xs font-semibold text-[#5A1E12] uppercase tracking-widest">User Options</p>
                     </div>
                     <div className="p-1.5 flex flex-col gap-0.5">
                       <button onClick={() => { setStickyGuestMenuOpen(false); router.push("/login"); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group">

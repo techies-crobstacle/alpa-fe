@@ -113,11 +113,9 @@ export default function ArtistOnboardingForm() {
     const savedStep = localStorage.getItem('sellerOnboardingStep');
     const savedFormData = localStorage.getItem('sellerOnboardingFormData');
     const savedToken = localStorage.getItem('sellerToken');
-    const savedAbnVerified = localStorage.getItem('sellerAbnVerified');
 
     if (savedToken) setToken(savedToken);
     if (savedStep) setCurrentStep(parseInt(savedStep, 10));
-    if (savedAbnVerified) setAbnVerified(JSON.parse(savedAbnVerified));
     if (savedFormData) {
       try {
         const parsed = JSON.parse(savedFormData);
@@ -133,7 +131,6 @@ export default function ArtistOnboardingForm() {
     localStorage.setItem('sellerOnboardingFormData', JSON.stringify(rest));
   }, [formData]);
   useEffect(() => { if (token) localStorage.setItem('sellerToken', token); }, [token]);
-  useEffect(() => { localStorage.setItem('sellerAbnVerified', JSON.stringify(abnVerified)); }, [abnVerified]);
 
   // ─── Close phone dropdowns on outside click ───────────────────────────────
   useEffect(() => {
@@ -361,24 +358,30 @@ export default function ArtistOnboardingForm() {
     } else if (!abnVerified) {
       newErrors.abn = 'Please verify ABN first';
     }
-    
-    // Validate business phone if provided
-    if (formData.businessPhone?.trim()) {
+    if (!formData.businessType?.trim()) {
+      newErrors.businessType = 'Business type is required';
+    }
+    if (!formData.businessPhone?.trim()) {
+      newErrors.businessPhone = 'Business phone is required';
+    } else {
       const bizErr = validatePhone(formData.businessPhone, bizPhoneCountry);
       if (bizErr) {
         newErrors.businessPhone = bizErr;
         setBizPhoneTouched(true);
       }
     }
+    if (!formData.street?.trim())    newErrors.street    = 'Street is required';
+    if (!formData.city?.trim())      newErrors.city      = 'City is required';
+    if (!formData.state?.trim())     newErrors.state     = 'State is required';
+    if (!formData.postcode?.trim())  newErrors.postcode  = 'Postcode is required';
+    if (!formData.country?.trim())   newErrors.country   = 'Country is required';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
     
-    if (formData.businessPhone?.trim()) {
-      setFormData(prev => ({ ...prev, businessPhone: `${bizPhoneCountry.dialCode} ${prev.businessPhone.replace(/\D/g, '')}` }));
-    }
+    setFormData(prev => ({ ...prev, businessPhone: `${bizPhoneCountry.dialCode} ${prev.businessPhone.replace(/\D/g, '')}` }));
     setErrors({});
     setCurrentStep(4);
   };
@@ -552,7 +555,7 @@ export default function ArtistOnboardingForm() {
         body: JSON.stringify({ email: formData.email, otp: formData.otp }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setError('otp', d.message || 'Invalid or expired OTP'); return; }
-      ['sellerOnboardingStep', 'sellerOnboardingFormData', 'sellerToken', 'sellerAbnVerified'].forEach(k => localStorage.removeItem(k));
+      ['sellerOnboardingStep', 'sellerOnboardingFormData', 'sellerToken'].forEach(k => localStorage.removeItem(k));
       window.location.href = '/';
     } catch { setError('submit', 'An error occurred. Please try again.'); }
     finally { setLoading(false); }
@@ -817,7 +820,7 @@ export default function ArtistOnboardingForm() {
             {/* Step 1 */}
             {currentStep === 1 && (
               <div className="space-y-5">
-                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">📧 Account Verification</h3>
+                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Account Verification</h3>
                 <div>
                   <label className={labelCls}>Contact Person Name *</label>
                   <input type="text" name="contactPerson" value={formData.contactPerson} onChange={handleInputChange}
@@ -911,7 +914,7 @@ export default function ArtistOnboardingForm() {
             {/* Step 2 */}
             {currentStep === 2 && (
               <div className="space-y-5">
-                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">🔑 Set Your Password</h3>
+                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Set Your Password</h3>
                 <div>
                   <label className={labelCls}>Password *</label>
                   <input type="password" name="password" value={formData.password} onChange={handleInputChange}
@@ -931,7 +934,7 @@ export default function ArtistOnboardingForm() {
             {/* Step 3 */}
             {currentStep === 3 && (
               <div className="space-y-5">
-                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">🏢 Business Details</h3>
+                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Business Details</h3>
                 <div>
                   <label className={labelCls}>Business Name *</label>
                   <input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange}
@@ -951,12 +954,13 @@ export default function ArtistOnboardingForm() {
                   {errors.abn && <p className="mt-1 text-xs text-red-600">{errors.abn}</p>}
                 </div>
                 <div>
-                  <label className={labelCls}>Business Type</label>
+                  <label className={labelCls}>Business Type *</label>
                   <input type="text" name="businessType" value={formData.businessType} onChange={handleInputChange}
-                    placeholder="e.g. Sole Trader, Company" className={inputCls()} />
+                    placeholder="e.g. Sole Trader, Company" className={inputCls('businessType')} />
+                  {errors.businessType && <p className="mt-1 text-xs text-red-600">{errors.businessType}</p>}
                 </div>
                 <div>
-                  <label className={labelCls}>Business Phone</label>
+                  <label className={labelCls}>Business Phone *</label>
                   <div ref={bizPhoneDropdownRef} className="relative">
                     <div className={`flex bg-white border rounded-xl items-center overflow-visible transition-all ${
                       errors.businessPhone ? 'border-red-400 ring-2 ring-red-200'
@@ -1030,11 +1034,14 @@ export default function ArtistOnboardingForm() {
                   {!errors.businessPhone && bizPhoneTouched && !bizPhoneInputError && formData.businessPhone.trim() && <p className="mt-1 text-xs text-[#5A1E12]">✓ Looks good</p>}
                 </div>
                 <div>
-                  <label className={labelCls}>Business Address</label>
+                  <label className={labelCls}>Business Address *</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[['street','Street'],['city','City'],['state','State'],['postcode','Postcode'],['country','Country']].map(([name, placeholder]) => (
-                      <input key={name} type="text" name={name} value={(formData as any)[name]} onChange={handleInputChange}
-                        placeholder={placeholder} className={`px-4 py-2.5 border border-[#5A1E12]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A1E12]/40 bg-white text-[#5A1E12] placeholder-[#5A1E12]/40 ${name === 'street' ? 'col-span-full' : ''}`} />
+                      <div key={name} className={name === 'street' ? 'col-span-full' : ''}>
+                        <input type="text" name={name} value={(formData as any)[name]} onChange={handleInputChange}
+                          placeholder={placeholder} className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A1E12]/40 bg-white text-[#5A1E12] placeholder-[#5A1E12]/40 transition-all ${(errors as any)[name] ? 'border-red-400 bg-red-50' : 'border-[#5A1E12]/20'}`} />
+                        {(errors as any)[name] && <p className="mt-1 text-xs text-red-600">{(errors as any)[name]}</p>}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1045,7 +1052,7 @@ export default function ArtistOnboardingForm() {
             {/* Step 4 */}
             {currentStep === 4 && (
               <div className="space-y-5">
-                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">🪃 Artist Profile</h3>
+                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Artist Profile</h3>
                 <div>
                   <label className={labelCls}>Artist Name *</label>
                   <input type="text" name="artistName" value={formData.artistName} onChange={handleInputChange}
@@ -1065,7 +1072,7 @@ export default function ArtistOnboardingForm() {
             {/* Step 5 */}
             {currentStep === 5 && (
               <div className="space-y-5">
-                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">🏬 Store Profile</h3>
+                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Store Profile</h3>
                 <div>
                   <label className={labelCls}>Store Name *</label>
                   <input type="text" name="storeName" value={formData.storeName} onChange={handleInputChange}
@@ -1096,7 +1103,7 @@ export default function ArtistOnboardingForm() {
             {/* Step 6 */}
             {currentStep === 6 && (
               <div className="space-y-5">
-                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">🆔 Identity & Bank Details</h3>
+                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Identity & Bank Details</h3>
 
                 <div>
                   <h4 className="text-sm font-bold text-[#5A1E12] mb-3 pb-1 border-b border-[#5A1E12]/20">KYC Information</h4>

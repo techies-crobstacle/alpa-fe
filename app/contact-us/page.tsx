@@ -123,13 +123,91 @@
 
 
 "use client";
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Testimonials from "@/components/cards/Testimonials";
-// Ensure you have lucide-react installed: npm install lucide-react
 import { MapPin, Phone, Mail, Send, ArrowRight } from "lucide-react";
 
+// ─── Country phone data ───────────────────────────────────────────────────────
+const COUNTRIES = [
+  { code: 'AU', flag: '🇦🇺', name: 'Australia',      dialCode: '+61',  digits: [9,  9]  },
+  { code: 'US', flag: '🇺🇸', name: 'United States',  dialCode: '+1',   digits: [10, 10] },
+  { code: 'GB', flag: '🇬🇧', name: 'United Kingdom', dialCode: '+44',  digits: [10, 10] },
+  { code: 'IN', flag: '🇮🇳', name: 'India',          dialCode: '+91',  digits: [10, 10] },
+  { code: 'CA', flag: '🇨🇦', name: 'Canada',         dialCode: '+1',   digits: [10, 10] },
+  { code: 'NZ', flag: '🇳🇿', name: 'New Zealand',    dialCode: '+64',  digits: [8,  9]  },
+  { code: 'SG', flag: '🇸🇬', name: 'Singapore',      dialCode: '+65',  digits: [8,  8]  },
+  { code: 'AE', flag: '🇦🇪', name: 'UAE',            dialCode: '+971', digits: [9,  9]  },
+  { code: 'SA', flag: '🇸🇦', name: 'Saudi Arabia',   dialCode: '+966', digits: [9,  9]  },
+  { code: 'DE', flag: '🇩🇪', name: 'Germany',        dialCode: '+49',  digits: [10, 11] },
+  { code: 'FR', flag: '🇫🇷', name: 'France',         dialCode: '+33',  digits: [9,  9]  },
+  { code: 'JP', flag: '🇯🇵', name: 'Japan',          dialCode: '+81',  digits: [10, 11] },
+  { code: 'CN', flag: '🇨🇳', name: 'China',          dialCode: '+86',  digits: [11, 11] },
+  { code: 'BR', flag: '🇧🇷', name: 'Brazil',         dialCode: '+55',  digits: [10, 11] },
+  { code: 'PK', flag: '🇵🇰', name: 'Pakistan',       dialCode: '+92',  digits: [10, 10] },
+  { code: 'MY', flag: '🇲🇾', name: 'Malaysia',       dialCode: '+60',  digits: [9,  10] },
+  { code: 'PH', flag: '🇵🇭', name: 'Philippines',    dialCode: '+63',  digits: [10, 10] },
+  { code: 'ID', flag: '🇮🇩', name: 'Indonesia',      dialCode: '+62',  digits: [9,  12] },
+] as const;
+type Country = typeof COUNTRIES[number];
+
+function validatePhone(digits: string, country: Country): string | null {
+  const clean = digits.replace(/\D/g, '');
+  if (!clean) return 'Phone number is required.';
+  const [min, max] = country.digits;
+  if (clean.length < min) return `Too short — ${country.name} numbers need ${min} digits.`;
+  if (clean.length > max) return `Too long — ${country.name} numbers need at most ${max} digits.`;
+  return null;
+}
+
 export default function Page() {
+  const [fields, setFields] = useState({ name: "", phone: "", email: "", message: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  // Phone country picker
+  const [phoneCountry, setPhoneCountry] = useState<Country>(COUNTRIES[0]);
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [phoneInputError, setPhoneInputError] = useState<string | null>(null);
+  const phoneDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (phoneDropdownRef.current && !phoneDropdownRef.current.contains(e.target as Node)) {
+        setShowPhoneDropdown(false);
+        setPhoneSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFields((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+    if (!fields.name.trim())    newErrors.name    = 'Full name is required.';
+    if (!fields.email.trim())   newErrors.email   = 'Email address is required.';
+    if (!fields.message.trim()) newErrors.message = 'Message is required.';
+    const phoneErr = validatePhone(fields.phone, phoneCountry);
+    if (phoneErr) newErrors.phone = phoneErr;
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+    setSubmitted(true);
+  };
+
+  const inputBase = "w-full px-5 py-4 rounded-xl outline-none transition-all";
+  const inputNormal = `${inputBase} bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-[#3b0f06]/20 focus:border-[#3b0f06]`;
+  const inputError  = `${inputBase} bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-500`;
+
   return (
     <main className="bg-[#ebe2d5] min-h-screen font-sans">
       
@@ -158,46 +236,138 @@ export default function Page() {
           {/* LEFT: THE FORM (Takes up 2 cols) */}
           <div className="lg:col-span-2 bg-white rounded-3xl p-8 md:p-12 shadow-2xl shadow-[#3b0f06]/5">
             <h2 className="text-3xl font-bold text-[#3b0f06] mb-2">Send us a message</h2>
-            <p className="text-gray-500 mb-8">Fill out the form below and our team will get back to you within 24 hours.</p>
+            <p className="text-gray-500 mb-2">Fill out the form below and our team will get back to you within 24 hours.</p>
+            <p className="text-xs text-gray-400 mb-8"><span className="text-red-500 font-bold">*</span> Required fields</p>
             
-            <form className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-600 ml-1">Full Name</label>
-                    <input
-                        type="text"
-                        placeholder="John Doe"
-                        className="w-full bg-gray-50 border border-gray-200 px-5 py-4 rounded-xl outline-none focus:ring-2 focus:ring-[#3b0f06]/20 focus:border-[#3b0f06] transition-all"
-                    />
+            <form className="space-y-6" noValidate onSubmit={handleSubmit}>
+
+              {submitted && (
+                <div className="flex items-center gap-3 px-5 py-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-medium">
+                  <svg className="w-5 h-5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  Message sent! We'll get back to you within 24 hours.
                 </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-600 ml-1">Phone Number</label>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-600 ml-1">Full Name <span className="text-red-500">*</span></label>
                     <input
                         type="text"
-                        placeholder="+1 (555) 000-0000"
-                        className="w-full bg-gray-50 border border-gray-200 px-5 py-4 rounded-xl outline-none focus:ring-2 focus:ring-[#3b0f06]/20 focus:border-[#3b0f06] transition-all"
+                        name="name"
+                        value={fields.name}
+                        onChange={handleChange}
+                        placeholder="John Doe"
+                        className={errors.name ? inputError : inputNormal}
                     />
+                    {errors.name && <p className="text-xs text-red-500 ml-1">{errors.name}</p>}
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-600 ml-1">Phone Number <span className="text-red-500">*</span></label>
+                    <div ref={phoneDropdownRef} className="relative">
+                      <div className={`flex items-center bg-gray-50 border rounded-xl overflow-visible transition-all ${
+                        errors.phone
+                          ? 'border-red-400 ring-2 ring-red-200 bg-red-50'
+                          : phoneTouched && !phoneInputError && fields.phone.trim()
+                          ? 'border-[#3b0f06]/60'
+                          : 'border-gray-200 focus-within:border-[#3b0f06] focus-within:ring-2 focus-within:ring-[#3b0f06]/20'
+                      }`}>
+                        {/* Country picker button */}
+                        <button
+                          type="button"
+                          onClick={() => { setShowPhoneDropdown(v => !v); setPhoneSearch(''); }}
+                          className="flex items-center gap-1.5 px-3 py-4 text-sm font-medium border-r border-gray-200 hover:bg-gray-100 transition rounded-l-xl shrink-0"
+                        >
+                          <span className="text-lg leading-none">{phoneCountry.flag}</span>
+                          <span className="text-gray-700 text-xs font-semibold">{phoneCountry.dialCode}</span>
+                          <span className="text-gray-400 text-xs">▾</span>
+                        </button>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={fields.phone}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^\d\s\-().]/g, '');
+                            setFields(prev => ({ ...prev, phone: v }));
+                            if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+                            if (phoneTouched) setPhoneInputError(validatePhone(v, phoneCountry));
+                          }}
+                          onBlur={() => { setPhoneTouched(true); setPhoneInputError(validatePhone(fields.phone, phoneCountry)); }}
+                          placeholder={`${phoneCountry.digits[0]}-digit number`}
+                          className="flex-1 px-4 py-4 text-sm bg-transparent outline-none placeholder-gray-400 text-gray-700"
+                        />
+                      </div>
+                      {/* Country dropdown */}
+                      {showPhoneDropdown && (
+                        <div className="absolute top-full left-0 z-50 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden" style={{ minWidth: '260px' }}>
+                          <div className="p-2 border-b border-gray-100">
+                            <input
+                              type="text"
+                              autoFocus
+                              value={phoneSearch}
+                              onChange={(e) => setPhoneSearch(e.target.value)}
+                              placeholder="Search country…"
+                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3b0f06] bg-white text-gray-700"
+                            />
+                          </div>
+                          <ul className="max-h-52 overflow-y-auto">
+                            {COUNTRIES
+                              .filter(c => c.name.toLowerCase().includes(phoneSearch.toLowerCase()) || c.dialCode.includes(phoneSearch))
+                              .map(c => (
+                                <li key={c.code}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPhoneCountry(c);
+                                      setShowPhoneDropdown(false);
+                                      setPhoneSearch('');
+                                      if (phoneTouched) setPhoneInputError(validatePhone(fields.phone, c));
+                                      if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+                                    }}
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 text-left transition ${
+                                      c.code === phoneCountry.code ? 'bg-[#3b0f06]/8 font-medium text-[#3b0f06]' : 'text-gray-700'
+                                    }`}
+                                  >
+                                    <span className="text-base w-6 shrink-0">{c.flag}</span>
+                                    <span className="flex-1 truncate">{c.name}</span>
+                                    <span className="text-gray-400 text-xs shrink-0">{c.dialCode}</span>
+                                  </button>
+                                </li>
+                              ))
+                            }
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                    {errors.phone && <p className="text-xs text-red-500 ml-1">{errors.phone}</p>}
+                    {!errors.phone && phoneTouched && phoneInputError && <p className="text-xs text-red-500 ml-1">{phoneInputError}</p>}
+                    {!errors.phone && phoneTouched && !phoneInputError && fields.phone.trim() && <p className="text-xs text-green-600 ml-1">✓ Looks good</p>}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-600 ml-1">Email Address</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-600 ml-1">Email Address <span className="text-red-500">*</span></label>
                 <input
                     type="email"
+                    name="email"
+                    value={fields.email}
+                    onChange={handleChange}
                     placeholder="john@example.com"
-                    required
-                    className="w-full bg-gray-50 border border-gray-200 px-5 py-4 rounded-xl outline-none focus:ring-2 focus:ring-[#3b0f06]/20 focus:border-[#3b0f06] transition-all"
+                    className={errors.email ? inputError : inputNormal}
                 />
+                {errors.email && <p className="text-xs text-red-500 ml-1">Email address is required.</p>}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-600 ml-1">Message</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-600 ml-1">Message <span className="text-red-500">*</span></label>
                 <textarea
+                    name="message"
+                    value={fields.message}
+                    onChange={handleChange}
                     placeholder="How can we help you?"
-                    required
                     rows={6}
-                    className="w-full bg-gray-50 border border-gray-200 px-5 py-4 rounded-xl outline-none resize-none focus:ring-2 focus:ring-[#3b0f06]/20 focus:border-[#3b0f06] transition-all"
+                    className={errors.message ? inputError : inputNormal + " resize-none"}
                 />
+                {errors.message && <p className="text-xs text-red-500 ml-1">Message is required.</p>}
               </div>
 
               <button

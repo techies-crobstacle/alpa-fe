@@ -212,7 +212,7 @@ export default function Footer() {
       </div>
       <div>
         <p className="text-white/80 text-center">
-          © 2026 Made in Arnhem Land. All rights reserved. |Respecting 65,000+ years of continuous culture
+          © 2026 Made in Arnhem Land. All rights reserved. | Respecting 65,000+ years of continuous culture
         </p>
       </div>
     </footer>
