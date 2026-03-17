@@ -714,7 +714,7 @@ export default function Header() {
                             {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
                           </button>
                           <button
-                            onClick={() => { setUserMenuOpen(false); redirectToDashboard("/customerdashboard/wishlist"); }}
+                            onClick={() => { setUserMenuOpen(false); redirectToDashboard("/customerdashboard/wishlists"); }}
                             disabled={isDashboardRedirecting}
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60"
                           >
@@ -963,7 +963,7 @@ export default function Header() {
                         <span className="font-medium">{isDashboardRedirecting ? "Redirecting…" : "My Orders"}</span>
                         <svg className="w-3.5 h-3.5 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                       </button>
-                      <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/customerdashboard/wishlist"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
+                      <button onClick={() => { setMobileMenuOpen(false); redirectToDashboard("/customerdashboard/wishlists"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white transition-colors text-sm text-gray-700 border-b border-gray-100 disabled:opacity-60">
                         <div className="w-8 h-8 rounded-full bg-[#EAD7B7] flex items-center justify-center shrink-0">
                           <Heart className="w-4 h-4 text-[#5A1E12]" />
                         </div>
@@ -1156,7 +1156,7 @@ export default function Header() {
                           <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Package className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
                           {isDashboardRedirecting ? "Redirecting…" : "My Orders"}
                         </button>
-                        <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/customerdashboard/wishlist"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
+                        <button onClick={() => { setStickyUserMenuOpen(false); redirectToDashboard("/customerdashboard/wishlists"); }} disabled={isDashboardRedirecting} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group disabled:opacity-60">
                           <span className="w-7 h-7 rounded-lg bg-[#EAD7B7] group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors"><Heart className="w-3.5 h-3.5 text-[#5A1E12]" /></span>
                           My Wishlist
                         </button>
