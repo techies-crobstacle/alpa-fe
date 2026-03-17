@@ -199,8 +199,20 @@ export default function ArtistOnboardingForm() {
 
   // ─── LOGIN ────────────────────────────────────────────────────────────────
   const handleLogin = async () => {
-    if (!formData.loginEmail?.trim()) { setError('loginEmail', 'Email is required'); return; }
-    if (!formData.loginPassword?.trim()) { setError('loginPassword', 'Password is required'); return; }
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.loginEmail?.trim()) {
+      newErrors.loginEmail = 'Email is required';
+    }
+    if (!formData.loginPassword?.trim()) {
+      newErrors.loginPassword = 'Password is required';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     setLoading(true);
     try {
       const res = await fetch(`${baseURL}/api/sellers/login`, {
@@ -245,10 +257,20 @@ export default function ArtistOnboardingForm() {
 
   // ─── RESET PASSWORD ───────────────────────────────────────────────────────
   const handleResetPassword = async () => {
-    if (!formData.resetOtp?.trim()) { setError('resetOtp', 'OTP is required'); return; }
-    if (!formData.newPassword || formData.newPassword.length < 6) {
-      setError('newPassword', 'Password must be at least 6 characters'); return;
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.resetOtp?.trim()) {
+      newErrors.resetOtp = 'OTP is required';
     }
+    if (!formData.newPassword || formData.newPassword.length < 6) {
+      newErrors.newPassword = 'Password must be at least 6 characters';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     setLoading(true);
     try {
       const res = await fetch(`${baseURL}/api/sellers/reset-password`, {
@@ -272,12 +294,31 @@ export default function ArtistOnboardingForm() {
 
   // ─── STEP 1: just validate + move forward ────────────────────────────────
   const handleApplyStep1 = () => {
-    if (!formData.contactPerson?.trim()) { setError('contactPerson', 'Contact person name is required'); return; }
-    if (!formData.email?.trim()) { setError('email', 'Email is required'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) { setError('email', 'Invalid email format'); return; }
-    if (!formData.phone?.trim()) { setError('phone', 'Phone is required'); return; }
-    const phoneErr = validatePhone(formData.phone, phoneCountry);
-    if (phoneErr) { setError('phone', phoneErr); setPhoneTouched(true); return; }
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.contactPerson?.trim()) {
+      newErrors.contactPerson = 'Contact person name is required';
+    }
+    if (!formData.email?.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+    if (!formData.phone?.trim()) {
+      newErrors.phone = 'Phone is required';
+    } else {
+      const phoneErr = validatePhone(formData.phone, phoneCountry);
+      if (phoneErr) {
+        newErrors.phone = phoneErr;
+        setPhoneTouched(true);
+      }
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     // Store full number with dial code
     setFormData(prev => ({ ...prev, phone: `${phoneCountry.dialCode} ${prev.phone.replace(/\D/g, '')}` }));
     setErrors({});
@@ -286,23 +327,56 @@ export default function ArtistOnboardingForm() {
 
   // ─── STEP 2: validate password + move forward ────────────────────────────
   const handleStep2Submit = () => {
-    if (!formData.password?.trim()) { setError('password', 'Password is required'); return; }
-    if (formData.password.length < 6) { setError('password', 'Password must be at least 6 characters'); return; }
-    if (!formData.confirmPassword?.trim()) { setError('confirmPassword', 'Please confirm your password'); return; }
-    if (formData.password !== formData.confirmPassword) { setError('confirmPassword', 'Passwords do not match'); return; }
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.password?.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    if (!formData.confirmPassword?.trim()) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     setErrors({});
     setCurrentStep(3);
   };
 
   // ─── STEP 3: validate business details + move forward ────────────────────
   const handleStep3Submit = () => {
-    if (!formData.businessName?.trim()) { setError('businessName', 'Business name is required'); return; }
-    if (!formData.abn?.trim()) { setError('abn', 'ABN is required'); return; }
-    if (!abnVerified) { setError('abn', 'Please verify ABN first'); return; }
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.businessName?.trim()) {
+      newErrors.businessName = 'Business name is required';
+    }
+    if (!formData.abn?.trim()) {
+      newErrors.abn = 'ABN is required';
+    } else if (!abnVerified) {
+      newErrors.abn = 'Please verify ABN first';
+    }
+    
     // Validate business phone if provided
     if (formData.businessPhone?.trim()) {
       const bizErr = validatePhone(formData.businessPhone, bizPhoneCountry);
-      if (bizErr) { setError('businessPhone', bizErr); setBizPhoneTouched(true); return; }
+      if (bizErr) {
+        newErrors.businessPhone = bizErr;
+        setBizPhoneTouched(true);
+      }
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    if (formData.businessPhone?.trim()) {
       setFormData(prev => ({ ...prev, businessPhone: `${bizPhoneCountry.dialCode} ${prev.businessPhone.replace(/\D/g, '')}` }));
     }
     setErrors({});
@@ -360,32 +434,71 @@ export default function ArtistOnboardingForm() {
 
   // ─── STEP 4 ───────────────────────────────────────────────────────────────
   const handleStep4Submit = () => {
-    if (!formData.artistName?.trim()) { setError('artistName', 'Artist name is required'); return; }
-    if (!formData.description?.trim()) { setError('description', 'Description is required'); return; }
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.artistName?.trim()) {
+      newErrors.artistName = 'Artist name is required';
+    }
+    if (!formData.description?.trim()) {
+      newErrors.description = 'Description is required';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     setErrors({});
     setCurrentStep(5);
   };
 
   // ─── STEP 5 ───────────────────────────────────────────────────────────────
   const handleStep5Submit = () => {
-    if (!formData.storeName?.trim()) { setError('storeName', 'Store name is required'); return; }
-    if (!formData.storeLogo) { setError('storeLogo', 'Store logo is required'); return; }
-    if (!formData.storeBio?.trim()) { setError('storeBio', 'Store bio is required'); return; }
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.storeName?.trim()) {
+      newErrors.storeName = 'Store name is required';
+    }
+    if (!formData.storeLogo) {
+      newErrors.storeLogo = 'Store logo is required';
+    }
+    if (!formData.storeBio?.trim()) {
+      newErrors.storeBio = 'Store bio is required';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     setErrors({});
     setCurrentStep(6);
   };
 
   // ─── STEP 6 — unified submit ─────────────────────────────────────────────
   const handleStep6Submit = async () => {
+    const newErrors: Record<string, string> = {};
+    
     const required: [keyof FormData, string][] = [
       ['firstName', 'First name'], ['lastName', 'Last name'], ['dob', 'Date of birth'],
       ['bankName', 'Bank name'], ['accountName', 'Account name'], ['bsb', 'BSB'], ['accountNumber', 'Account number'],
     ];
     for (const [key, label] of required) {
-      if (!formData[key]?.toString().trim()) { setError(key, `${label} is required`); return; }
+      if (!formData[key]?.toString().trim()) {
+        newErrors[key] = `${label} is required`;
+      }
     }
-    if (!formData.idDocument) { setError('idDocument', 'ID document is required'); return; }
-    if (!tcAccepted) { setError('tc', 'You must accept the Terms & Conditions to proceed'); return; }
+    if (!formData.idDocument) {
+      newErrors.idDocument = 'ID document is required';
+    }
+    if (!tcAccepted) {
+      newErrors.tc = 'You must accept the Terms & Conditions to proceed';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     setLoading(true);
     try {
