@@ -53,9 +53,12 @@ export default function OptimisticProductCard({
   const [optimisticAdded, setOptimisticAdded] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
-  const { token } = useAuth();
+  const { token, user: authUser } = useAuth();
   const { data: wishlistData } = useWishlistQuery();
   const toggleWishlistMutation = useToggleWishlist();
+  
+  // Check if user is authenticated (either token or user object exists)
+  const isAuthenticated = !!(token || authUser);
 
   // Subscribe to cart updates
   useEffect(() => {
@@ -132,9 +135,23 @@ export default function OptimisticProductCard({
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (!token) {
-      toast.info("Please log in to add items to your Wishlist", {
+    // Debug: Log auth state for troubleshooting
+    console.log('Wishlist Auth Check:', { 
+      token: !!token, 
+      authUser: !!authUser, 
+      isAuthenticated,
+      component: 'OptimisticProductCard'
+    });
+
+    if (!isAuthenticated) {
+      toast.info("Please sign in to add items to your Wishlist", {
         icon: () => <Info size={18} color="#EAD7B7" />,
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
       return;
     }

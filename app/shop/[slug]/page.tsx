@@ -237,17 +237,18 @@ export default function ShopSlugPage() {
   const handleWishlist = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
 
-    // Debug: Log auth state
-    console.log('Auth state check:', { 
+    // Debug: Log auth state for troubleshooting
+    console.log('Wishlist Auth Check:', { 
       token: !!token, 
       authUser: !!authUser, 
       isAuthenticated,
       tokenValue: token ? 'exists' : 'missing',
-      userValue: authUser ? 'exists' : 'missing'
+      userValue: authUser ? 'exists' : 'missing',
+      component: 'ProductDetailPage'
     });
 
     if (!isAuthenticated) {
-      toast.info("Please log in to add items to your Wishlist", {
+      toast.info("Please sign in to add items to your Wishlist", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,

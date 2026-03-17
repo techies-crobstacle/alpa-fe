@@ -406,18 +406,9 @@ const handleSubmit = async (e: React.FormEvent) => {
           {/* Additional Info */}
           <div className="mt-8 pt-6 border-t border-white/20">
             <div className="space-y-2 text-xs md:text-sm text-white/70">
-              <p className="flex items-start gap-2">
-                <span>📧</span>
-                <span>Check your inbox and spam folder</span>
-              </p>
-              <p className="flex items-start gap-2">
-                <span>⏱️</span>
-                <span>OTP expires in 10 minutes</span>
-              </p>
-              <p className="flex items-start gap-2">
-                <span>🔒</span>
-                <span>Secure and encrypted verification</span>
-              </p>
+              <p>Check your inbox and spam folder</p>
+              <p>OTP expires in 10 minutes</p>
+              <p>Secure and encrypted verification</p>
             </div>
           </div>
         </div>
