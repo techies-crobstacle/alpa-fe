@@ -431,6 +431,7 @@ export default function GuestCheckoutForm() {
         state:        state.trim(),
         zipCode:      zipCode.trim(),
         mobileNumber: `${selectedCountry.dialCode} ${phoneNumber}`.trim(),
+        paymentMethod: "credit/debit card",
         ...(gstId && { gstId }),
         ...(appliedCoupon?.code && { couponCode: appliedCoupon.code }),
       };
