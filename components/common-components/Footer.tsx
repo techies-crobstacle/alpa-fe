@@ -56,7 +56,7 @@ export default function Footer() {
             <Link href="/login" className="mb-2 hover:text-[#A48068] transition-colors">
               Seller Login
             </Link>
-            <Link href="/seller-guidelines" className="mb-2 hover:text-[#A48068] transition-colors">
+            <Link href="/seller-rules" className="mb-2 hover:text-[#A48068] transition-colors">
               Seller Guidelines
             </Link>
             <Link href="/contact-us" className="mb-2 hover:text-[#A48068] transition-colors">
@@ -90,6 +90,9 @@ export default function Footer() {
             </Link>
             <Link href="/term-and-conditions" className="mb-2 hover:text-[#A48068] transition-colors">
               Terms & Conditions
+            </Link>
+            <Link href="/certification" className="mb-2 hover:text-[#A48068] transition-colors">
+              100% Made in Arnhem Land
             </Link>
           </div>
         </div>
