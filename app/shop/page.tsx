@@ -368,11 +368,11 @@ function ShopContent() {
         <div className="max-w-full mx-auto overflow-hidden">
           {/* FULL IMAGE */}
           <div
-            className="relative h-[30vh] sm:h-[35vh] md:h-[50vh] lg:h-[65vh]
-                   bg-[url('/images/main.png')] bg-cover bg-center"
+            className="relative h-[80vh] bg-[url('/images/main.png')] bg-cover bg-center"
           >
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-black/30" />
+            {/* Layered gradient overlay */}
+            <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
+            <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
 
             {/* Center Text */}
             <div className="relative z-10 pt-6 h-full flex flex-col items-center justify-center text-white text-center">

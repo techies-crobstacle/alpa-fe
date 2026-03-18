@@ -141,6 +141,7 @@ export default function GuestCheckoutForm() {
             guestCartUtils.clearGuestCart();
             sessionStorage.setItem("guestOrderId",    data.orderId || storedOrderId || "");
             sessionStorage.setItem("guestOrderEmail", customerEmail);
+            if (data.displayId) sessionStorage.setItem("guestOrderDisplayId", data.displayId);
             router.push("/guest/order-success");
           } else {
             setRedirectError(data.message || "Payment confirmation failed. Please contact support.");
@@ -460,6 +461,7 @@ export default function GuestCheckoutForm() {
 
       sessionStorage.setItem("guestOrderId",    data.orderId);
       sessionStorage.setItem("guestOrderEmail", customerEmail.trim());
+      if (data.displayId) sessionStorage.setItem("guestOrderDisplayId", data.displayId);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to initiate payment.");
     } finally {

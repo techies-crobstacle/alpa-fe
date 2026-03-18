@@ -331,7 +331,7 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
           type="text"
           value={orderId}
           onChange={(e) => setOrderId(e.target.value)}
-          placeholder="e.g. clxyz123..."
+          placeholder="e.g. A4X9KR"
           className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#5A1E12]/40 focus:ring-2 focus:ring-[#5A1E12]/10 transition-all"
         />
       </div>
@@ -446,7 +446,7 @@ function TrackTab({ prefillOrderId = "" }: TrackTabProps) {
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="e.g. clxyz123..."
+            placeholder="e.g. A4X9KR"
             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#5A1E12]/40 focus:ring-2 focus:ring-[#5A1E12]/10 transition-all"
           />
         </div>

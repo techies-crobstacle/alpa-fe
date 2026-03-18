@@ -9,7 +9,8 @@ import { CheckCircle, Copy, Check, Package, Loader2, AlertCircle, Mail, Truck, P
 function OrderSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(""); // internal CUID for payment API calls
+  const [displayId, setDisplayId] = useState(""); // customer-facing short ID
   const [email, setEmail] = useState("");
   const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState<"loading" | "success" | "failed" | "idle">("idle");
@@ -17,8 +18,10 @@ function OrderSuccessContent() {
 
   useEffect(() => {
     const id = sessionStorage.getItem("guestOrderId") || "";
+    const dispId = sessionStorage.getItem("guestOrderDisplayId") || "";
     const em = sessionStorage.getItem("guestOrderEmail") || "";
     setOrderId(id);
+    setDisplayId(dispId || id);
     setEmail(em);
 
     // Handle 3DS redirect: Stripe appends ?payment_intent=pi_xxx to the return_url
@@ -53,6 +56,7 @@ function OrderSuccessContent() {
       if (data.success) {
         setStatus("success");
         setOrderId(data.orderId || oId);
+        if (data.displayId) setDisplayId(data.displayId);
         // Clear guest cart if not already cleared
         if (typeof window !== "undefined") {
           localStorage.removeItem("guest_cart_items");
@@ -98,8 +102,8 @@ function OrderSuccessContent() {
   };
 
   const handleCopy = () => {
-    if (orderId) {
-      navigator.clipboard.writeText(orderId);
+    if (orderId || displayId) {
+      navigator.clipboard.writeText(displayId || orderId);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -159,14 +163,14 @@ function OrderSuccessContent() {
 
         <div className="w-full px-10 py-8 flex flex-col gap-6">
           {/* Order ID */}
-          {orderId && (
+          {(displayId || orderId) && (
             <div className="w-full bg-[#5A1E12]/5 rounded-xl p-4">
               <p className="text-xs text-[#5A1E12]/50 mb-1 uppercase tracking-wide font-medium">
-                Your Order ID
+                Your Order #
               </p>
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-sm font-semibold text-[#5A1E12] break-all">
-                  {orderId}
+                  {displayId || orderId}
                 </span>
                 <button
                   onClick={handleCopy}
@@ -230,9 +234,9 @@ function OrderSuccessContent() {
 
           {/* Actions */}
           <div className="w-full flex flex-col gap-3 pt-2">
-            {orderId && (
+            {(displayId || orderId) && (
               <Link
-                href={`/guest/track-order?orderId=${encodeURIComponent(orderId)}&email=${encodeURIComponent(email)}`}
+                href={`/guest/track-order?orderId=${encodeURIComponent(displayId || orderId)}&email=${encodeURIComponent(email)}`}
                 className="flex items-center justify-center gap-2 w-full py-3 bg-[#5A1E12] text-white font-semibold rounded-xl hover:bg-[#441208] transition-all shadow-md"
               >
                 <Package className="w-4 h-4" />

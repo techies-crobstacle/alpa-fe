@@ -134,20 +134,6 @@ export default function Footer() {
         </p>
       </div>
 
-      {/* Payment Methods */}
-      <div className="flex justify-center md:justify-end mb-6">
-        <div className="flex items-center gap-4">
-          <Image 
-            src="/images/paypal.png" 
-            width={80} 
-            height={40} 
-            alt="PayPal accepted" 
-            className="w-20 h-auto"
-          />
-          {/* Add more payment method logos here if needed */}
-        </div>
-      </div>
-
       <hr className="border-[#A5816B] mb-6" />
 
       {/* Logo and Social Icons */}

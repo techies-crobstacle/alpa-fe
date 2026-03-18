@@ -94,6 +94,7 @@ export default function GuestStripePaymentForm({
         guestCartUtils.clearGuestCart();
         sessionStorage.setItem("guestOrderId", data.orderId || orderId);
         sessionStorage.setItem("guestOrderEmail", customerEmail);
+        if (data.displayId) sessionStorage.setItem("guestOrderDisplayId", data.displayId);
         onSuccess(data.orderId || orderId);
       } else {
         const msg = data.message || "Guest order not found for this payment";

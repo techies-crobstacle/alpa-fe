@@ -13,7 +13,7 @@ interface StripePaymentFormProps {
   token: string;
   amount: number;
   currency: string;
-  onSuccess: (orderId: string) => void;
+  onSuccess: (orderId: string, displayId?: string) => void;
   onError: (msg: string) => void;
 }
 
@@ -80,7 +80,7 @@ export default function StripePaymentForm({
       }
 
       const data = await res.json();
-      onSuccess(data.orderId);
+      onSuccess(data.orderId, data.displayId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unexpected error. Please try again.";
       setErrorMessage(msg);

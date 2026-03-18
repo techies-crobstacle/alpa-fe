@@ -287,6 +287,7 @@ function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const { token, user } = useAuth();
   const orderId = searchParams.get("orderId");
+  const displayId = searchParams.get("displayId");
   const paymentMethodParam = searchParams.get("paymentMethod");
   const isCOD = paymentMethodParam === "cod";
 
@@ -458,7 +459,7 @@ function OrderConfirmationContent() {
                   <div className="flex items-center justify-between py-3">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Order ID</span>
                     <span className="text-sm font-bold font-mono text-white">
-                      #{orderStatus.orderId.slice(-8).toUpperCase()}
+                      #{displayId || orderStatus.orderId.slice(-8).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between py-3">

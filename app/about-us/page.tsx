@@ -3,6 +3,7 @@ import React from "react";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 // ── Animated counter ──────────────────────────────────────────────────────────
 type CounterProps = { end: number; suffix?: string };
@@ -202,19 +203,52 @@ export default function Page() {
         <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
         <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
         <div className="relative mt-16 z-10 text-white text-center px-4 max-w-3xl mx-auto">
-          <p className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60 mb-4">
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60 mb-4"
+          >
             Our Story
-          </p>
-          <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6">
-            Built with <span className="text-[#e5d3b3]">Passion.</span>
-            <br />
-            Driven by people.
-          </h1>
-          <p className="text-base md:text-lg text-white/75 max-w-xl mx-auto leading-relaxed">
+          </motion.p>
+
+          <div className="overflow-hidden mb-2">
+            <motion.h1
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="text-5xl md:text-7xl font-bold leading-tight"
+            >
+              Built with <span className="text-[#e5d3b3]">Passion.</span>
+            </motion.h1>
+          </div>
+          <div className="overflow-hidden mb-6">
+            <motion.h1
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.75, delay: 0.38, ease: [0.22, 1, 0.36, 1] }}
+              className="text-5xl md:text-7xl font-bold leading-tight"
+            >
+              Driven by people.
+            </motion.h1>
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, delay: 0.58, ease: "easeOut" }}
+            className="text-base md:text-lg text-white/75 max-w-xl mx-auto leading-relaxed"
+          >
             We started Alpa to make premium shopping accessible, honest, and
             delightful for everyone, everywhere in Australia.
-          </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.74, ease: "easeOut" }}
+            className="mt-10 flex flex-wrap items-center justify-center gap-4"
+          >
             <Link
               href="/shop"
               className="px-7 py-3 bg-[#5A1E12] hover:bg-[#441208] text-white rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-xl"
@@ -227,7 +261,7 @@ export default function Page() {
             >
               Learn More ↓
             </a>
-          </div>
+          </motion.div>
         </div>
       </section>
 

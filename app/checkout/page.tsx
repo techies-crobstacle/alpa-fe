@@ -15,7 +15,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import StripePaymentForm from "@/components/checkout/StripePaymentForm";
-import PayPalButton from "@/components/checkout/PayPalButton";
 import GuestCheckoutForm from "@/components/checkout/GuestCheckoutForm";
 import { Loader2, Tag, X } from "lucide-react";
 import { couponsApi, ValidatedCoupon } from "@/lib/api";
@@ -326,33 +325,6 @@ export default function CheckOutPage() {
     }
   };
 
-  // ── PayPal: build address from state + AddressCart localStorage ─────────
-  const getPaypalAddress = () => {
-    let addrLine  = shippingFullAddress || shippingStreet;
-    let addrCity  = shippingCity;
-    let addrState = shippingState;
-    let addrZip   = shippingZipCode || shippingPostcode;
-    let addrPhone = mobileNumber;
-    try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem("addressCartData") : null;
-      if (saved) {
-        const d = JSON.parse(saved);
-        addrLine  = addrLine  || d.address      || "";
-        addrCity  = addrCity  || d.city         || "Sydney";
-        addrState = addrState || d.state        || "NSW";
-        addrZip   = addrZip   || d.zip          || "";
-        addrPhone = addrPhone || d.phoneNumber  || "";
-      }
-    } catch {}
-    return {
-      addressLine : addrLine,
-      city        : addrCity,
-      state       : addrState,
-      zipCode     : addrZip,
-      mobileNumber: addrPhone,
-    };
-  };
-
   const handlePlaceOrder = async () => {
     if (showGuestForm) {
       if (
@@ -482,6 +454,7 @@ export default function CheckOutPage() {
           responseData.order?.id ||
           responseData.id ||
           "";
+        const displayId = responseData.displayId || "";
 
         if (showGuestForm) {
           guestCartUtils.clearGuestCart();
@@ -502,7 +475,9 @@ export default function CheckOutPage() {
 
         setTimeout(() => {
           router.push(
-            orderId ? `/order-confirmation?orderId=${orderId}&paymentMethod=${paymentMethod}` : "/"
+            orderId
+              ? `/order-confirmation?orderId=${orderId}${displayId ? `&displayId=${encodeURIComponent(displayId)}` : ""}&paymentMethod=${paymentMethod}`
+              : "/"
           );
         }, 2500);
       } else {
@@ -795,7 +770,7 @@ export default function CheckOutPage() {
                                 token={token || (typeof window !== "undefined" ? localStorage.getItem("alpa_token") : "") || ""}
                                 amount={stripeAmount}
                                 currency={stripeCurrency}
-                                onSuccess={(orderId) => {
+                                onSuccess={(orderId, displayId) => {
                                   localStorage.removeItem("checkoutStep");
                                   localStorage.removeItem("showGuestForm");
                                   localStorage.removeItem("guestCheckoutData");
@@ -804,7 +779,9 @@ export default function CheckOutPage() {
                                   localStorage.removeItem("addressCartData");
                                   localStorage.removeItem("addressPlaceId");
                                   localStorage.removeItem("addressValidated");
-                                  router.push(`/order-confirmation?orderId=${orderId}`);
+                                  const params = new URLSearchParams({ orderId });
+                                  if (displayId) params.set("displayId", displayId);
+                                  router.push(`/order-confirmation?${params.toString()}`);
                                 }}
                                 onError={(msg) => toast.error(msg)}
                               />
@@ -855,30 +832,6 @@ export default function CheckOutPage() {
                                   <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded tracking-wide">VISA</span>
                                   <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded tracking-wide">MC</span>
                                 </div>
-                              </label>
-
-                              {/* PayPal */}
-                              <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                                paymentMethod === "paypal"
-                                  ? "border-[#5A1E12] bg-[#5A1E12]/5 shadow-sm"
-                                  : "border-[#5A1E12]/15 hover:border-[#5A1E12]/40 hover:bg-[#5A1E12]/2"
-                              }`}>
-                                <input
-                                  type="radio"
-                                  name="paymentMethodSelect"
-                                  value="paypal"
-                                  checked={paymentMethod === "paypal"}
-                                  onChange={() => setPaymentMethod("paypal")}
-                                  className="accent-[#5A1E12] w-4 h-4 shrink-0"
-                                />
-                                <div className="w-10 h-10 rounded-lg bg-[#003087] flex items-center justify-center shrink-0 shadow-sm">
-                                  <span className="text-white font-extrabold text-xs tracking-tight">PP</span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-[#3b1a08] text-sm">PayPal</p>
-                                  <p className="text-xs text-black mt-0.5">Pay securely with your PayPal balance or linked card</p>
-                                </div>
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-900/10 text-[#003087] rounded shrink-0 tracking-wide">PayPal</span>
                               </label>
 
                               {/* Cash on Delivery */}
@@ -959,17 +912,6 @@ export default function CheckOutPage() {
                             "Place Order"
                           )}
                         </button>
-                      ) : paymentMethod === "paypal" ? (
-                        <div className="w-52">
-                          <PayPalButton
-                            token={token || (typeof window !== "undefined" ? localStorage.getItem("token") : "") || ""}
-                            shippingMethodId={selectedShipping?.id || ""}
-                            gstId={cartData?.gst?.id}
-                            address={getPaypalAddress()}
-                            onSuccess={(orderId) => router.push(`/order-confirmation?orderId=${orderId}`)}
-                            onError={(msg) => toast.error(msg)}
-                          />
-                        </div>
                       ) : (
                         <button
                           onClick={handleCreateIntent}
@@ -995,7 +937,7 @@ export default function CheckOutPage() {
                 <div className="border-t pt-8">
                   <h3 className="text-lg font-semibold text-[#5A1E12] mb-4">Payment Method</h3>
                   <div className="space-y-3 mb-6">
-                    {["Credit Card", "Debit Card", "PayPal"].map((method) => (
+                    {["Credit Card", "Debit Card"].map((method) => (
                       <label
                         key={method}
                         className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
