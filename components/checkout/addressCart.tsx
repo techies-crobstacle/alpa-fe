@@ -6,6 +6,10 @@ import { useContext } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
+import { isValidPhoneNumber } from "react-phone-number-input";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import type { CountryCode } from "libphonenumber-js";
 
 declare global {
   interface Window {
@@ -37,37 +41,63 @@ interface AddressCartProps {
   }) => void;
 }
 
-// Country list: { code, flag, name, dialCode, digits: [min, max] }
-const COUNTRIES = [
-  { code: "AU", flag: "🇦🇺", name: "Australia",       dialCode: "+61",  digits: [9,  9]  },
-  { code: "US", flag: "🇺🇸", name: "United States",   dialCode: "+1",   digits: [10, 10] },
-  { code: "GB", flag: "🇬🇧", name: "United Kingdom",  dialCode: "+44",  digits: [10, 10] },
-  { code: "IN", flag: "🇮🇳", name: "India",           dialCode: "+91",  digits: [10, 10] },
-  { code: "CA", flag: "🇨🇦", name: "Canada",          dialCode: "+1",   digits: [10, 10] },
-  { code: "NZ", flag: "🇳🇿", name: "New Zealand",     dialCode: "+64",  digits: [8,  9]  },
-  { code: "SG", flag: "🇸🇬", name: "Singapore",       dialCode: "+65",  digits: [8,  8]  },
-  { code: "AE", flag: "🇦🇪", name: "UAE",             dialCode: "+971", digits: [9,  9]  },
-  { code: "SA", flag: "🇸🇦", name: "Saudi Arabia",    dialCode: "+966", digits: [9,  9]  },
-  { code: "DE", flag: "🇩🇪", name: "Germany",         dialCode: "+49",  digits: [10, 11] },
-  { code: "FR", flag: "🇫🇷", name: "France",          dialCode: "+33",  digits: [9,  9]  },
-  { code: "JP", flag: "🇯🇵", name: "Japan",           dialCode: "+81",  digits: [10, 11] },
-  { code: "CN", flag: "🇨🇳", name: "China",           dialCode: "+86",  digits: [11, 11] },
-  { code: "BR", flag: "🇧🇷", name: "Brazil",          dialCode: "+55",  digits: [10, 11] },
-  { code: "ZA", flag: "🇿🇦", name: "South Africa",    dialCode: "+27",  digits: [9,  10] },
-  { code: "PK", flag: "🇵🇰", name: "Pakistan",        dialCode: "+92",  digits: [10, 10] },
-  { code: "NG", flag: "🇳🇬", name: "Nigeria",         dialCode: "+234", digits: [10, 10] },
-  { code: "PH", flag: "🇵🇭", name: "Philippines",     dialCode: "+63",  digits: [10, 10] },
-  { code: "MY", flag: "🇲🇾", name: "Malaysia",        dialCode: "+60",  digits: [9,  10] },
-  { code: "ID", flag: "🇮🇩", name: "Indonesia",       dialCode: "+62",  digits: [9,  12] },
-];
+// ── Country data from react-phone-number-input ────────────────────────
+const countryCodeList = getCountries();
 
-function validatePhone(digits: string, country: typeof COUNTRIES[number]): string | null {
-  const clean = digits.replace(/\D/g, "");
-  if (!clean) return null;
-  const [min, max] = country.digits;
-  if (clean.length < min) return `Too short — ${country.name} numbers need ${min} digits`;
-  if (clean.length > max) return `Too long — ${country.name} numbers need ${max} digits`;
-  return null;
+// Country flags mapping
+const countryFlags: Record<string, string> = {
+  'AU': '🇦🇺', 'US': '🇺🇸', 'GB': '🇬🇧', 'IN': '🇮🇳', 'CA': '🇨🇦', 'NZ': '🇳🇿', 
+  'SG': '🇸🇬', 'AE': '🇦🇪', 'SA': '🇸🇦', 'DE': '🇩🇪', 'FR': '🇫🇷', 'JP': '🇯🇵',
+  'CN': '🇨🇳', 'BR': '🇧🇷', 'PK': '🇵🇰', 'MY': '🇲🇾', 'PH': '🇵🇭', 'ID': '🇮🇩',
+  'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
+  'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'IE': '🇮🇪', 'PT': '🇵🇹',
+  'GR': '🇬🇷', 'PL': '🇵🇱', 'CZ': '🇨🇿', 'HU': '🇭🇺', 'TR': '🇹🇷', 'RU': '🇷🇺',
+  'KR': '🇰🇷', 'TH': '🇹🇭', 'VN': '🇻🇳', 'ZA': '🇿🇦', 'EG': '🇪🇬', 'NG': '🇳🇬',
+  'KE': '🇰🇪', 'MX': '🇲🇽', 'AR': '🇦🇷', 'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪',
+};
+
+// Country names mapping
+const countryNames: Record<string, string> = {
+  'AU': 'Australia', 'US': 'United States', 'GB': 'United Kingdom', 'IN': 'India', 
+  'CA': 'Canada', 'NZ': 'New Zealand', 'SG': 'Singapore', 'AE': 'United Arab Emirates',
+  'SA': 'Saudi Arabia', 'DE': 'Germany', 'FR': 'France', 'JP': 'Japan', 'CN': 'China',
+  'BR': 'Brazil', 'PK': 'Pakistan', 'MY': 'Malaysia', 'PH': 'Philippines', 'ID': 'Indonesia',
+  'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands', 'CH': 'Switzerland', 'AT': 'Austria',
+  'BE': 'Belgium', 'SE': 'Sweden', 'NO': 'Norway', 'DK': 'Denmark', 'FI': 'Finland',
+  'IE': 'Ireland', 'PT': 'Portugal', 'GR': 'Greece', 'PL': 'Poland', 'CZ': 'Czech Republic',
+  'HU': 'Hungary', 'TR': 'Turkey', 'RU': 'Russia', 'KR': 'South Korea', 'TH': 'Thailand',
+  'VN': 'Vietnam', 'ZA': 'South Africa', 'EG': 'Egypt', 'NG': 'Nigeria', 'KE': 'Kenya',
+  'MX': 'Mexico', 'AR': 'Argentina', 'CL': 'Chile', 'CO': 'Colombia', 'PE': 'Peru',
+};
+
+// Build COUNTRIES array from react-phone-number-input data
+const COUNTRIES = countryCodeList.map(code => ({
+  code,
+  flag: countryFlags[code] || '🏳️',
+  name: countryNames[code] || code,
+  dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
+})).filter(country => countryFlags[country.code]); // Only include countries with flags
+
+type Country = typeof COUNTRIES[number];
+
+// Phone validation using react-phone-number-input
+function validatePhone(digits: string, country: Country): string | null {
+  if (!digits.trim()) return null;
+  
+  // Create a full phone number with country calling code for validation
+  const fullNumber = `${country.dialCode}${digits.replace(/\D/g, '')}`;
+  
+  try {
+    const phoneNumber = parsePhoneNumberFromString(fullNumber);
+    if (!phoneNumber) return 'Invalid phone number format.';
+    
+    const isValid = isValidPhoneNumber(fullNumber);
+    if (!isValid) return `Invalid ${country.name} phone number.`;
+    
+    return null;
+  } catch (error) {
+    return 'Invalid phone number format.';
+  }
 }
 
 const inputBase = "w-full bg-white/70 border border-[#d6b896] rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400";
@@ -107,7 +137,7 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
   const touchField = (f: keyof typeof fieldTouched) =>
     setFieldTouched(prev => ({ ...prev, [f]: true }));
 
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneTouched, setPhoneTouched] = useState(false);
@@ -704,7 +734,7 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
             value={phoneNumber}
             onChange={(e) => handlePhoneChange(e.target.value)}
             onBlur={handlePhoneBlur}
-            placeholder={`${selectedCountry.digits[0]}-digit number`}
+            placeholder="Enter phone number"
             className="flex-1 px-4 py-3 text-sm text-gray-900 bg-transparent outline-none placeholder:text-gray-400"
           />
         </div>

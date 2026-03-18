@@ -292,6 +292,11 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
               ${loading ? "-.--" : subtotal.toFixed(2)}
             </span>
           </div>
+          
+          {/* Currency note */}
+          <div className="text-xs text-gray-500 text-center">
+            All prices are in AUD (Australian Dollars)
+          </div>
 
           {/* Secondary Actions */}
           <div className="grid grid-cols-2 gap-3">

@@ -87,7 +87,7 @@ export default function ShopSlugPage() {
   const resolvedProductId = useMemo(() => {
     if (!allProducts || !slugParam) return undefined;
     const match = allProducts.find((p) => {
-      const productSlug = p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const productSlug = p.slug || p.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "";
       return productSlug === slugParam;
     });
     return match?.id;

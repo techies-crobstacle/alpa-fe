@@ -51,9 +51,15 @@ function ShopContent() {
   const { minPrice, maxPrice } = useMemo(() => {
     if (products.length === 0) return { minPrice: 0, maxPrice: 1000 };
     
-    const prices = products.map(p => parseFloat(p.price));
-    const min = Math.floor(Math.min(...prices));
-    const max = Math.ceil(Math.max(...prices));
+    // Filter out invalid prices and parse them safely
+    const validPrices = products
+      .map(p => parseFloat(p.price || '0'))
+      .filter(price => !isNaN(price) && price > 0);
+    
+    if (validPrices.length === 0) return { minPrice: 0, maxPrice: 1000 };
+    
+    const min = Math.floor(Math.min(...validPrices));
+    const max = Math.ceil(Math.max(...validPrices));
     
     // Update price range if it was not set yet
     if (priceRange[0] === 0 && priceRange[1] === 1000) {
@@ -119,8 +125,8 @@ function ShopContent() {
   /* ---------- SORT ---------- */
   const sortedProducts = useMemo(() => {
     return [...products].sort((a, b) => {
-      const priceA = parseFloat(a.price);
-      const priceB = parseFloat(b.price);
+      const priceA = parseFloat(a.price || '0');
+      const priceB = parseFloat(b.price || '0');
 
       if (sort === "price-low-high") return priceA - priceB;
       if (sort === "price-high-low") return priceB - priceA;
@@ -142,17 +148,20 @@ function ShopContent() {
         filtered = filtered.filter(
           (product) =>
             product.discount === true || 
-            product.tags?.some(tag => tag.toLowerCase().includes("sale"))
+            (product.tags && Array.isArray(product.tags) && 
+             product.tags.some(tag => tag && typeof tag === 'string' && tag.toLowerCase().includes("sale")))
         );
         break;
       case "limited-edition":
         filtered = filtered.filter((product) =>
-          product.tags?.includes("Limited Edition"),
+          product.tags && Array.isArray(product.tags) &&
+          product.tags.some(tag => tag && typeof tag === 'string' && tag.includes("Limited Edition")),
         );
         break;
       case "new-arrivals":
         filtered = filtered.filter((product) =>
-          product.tags?.includes("New Arrival"),
+          product.tags && Array.isArray(product.tags) &&
+          product.tags.some(tag => tag && typeof tag === 'string' && tag.includes("New Arrival")),
         );
         break;
       case "all":
@@ -169,26 +178,26 @@ function ShopContent() {
 
       const categoryMatch =
         selectedCategories.length === 0 ||
-        selectedCategories.includes(product.category);
+        (product.category && selectedCategories.includes(product.category));
 
-      // Price match
-      const productPrice = parseFloat(product.price);
-      const priceMatch = productPrice >= priceRange[0] && productPrice <= priceRange[1];
+      // Price match with safe parsing
+      const productPrice = parseFloat(product.price || '0');
+      const priceMatch = !isNaN(productPrice) && productPrice >= priceRange[0] && productPrice <= priceRange[1];
 
-      // Search match - check title, description, artist, and category
+      // Search match - check title, description, artist, and category with null safety
       const searchMatch =
         !debouncedSearchTerm ||
-        product.title
+        (product.title || '')
           .toLowerCase()
           .includes(debouncedSearchTerm.toLowerCase()) ||
-        product.description
+        (product.description || '')
           .toLowerCase()
           .includes(debouncedSearchTerm.toLowerCase()) ||
         (product.artistName &&
           product.artistName
             .toLowerCase()
             .includes(debouncedSearchTerm.toLowerCase())) ||
-        product.category
+        (product.category || '')
           .toLowerCase()
           .includes(debouncedSearchTerm.toLowerCase());
 
@@ -228,12 +237,11 @@ function ShopContent() {
     const categoryMap = new Map<string, number>();
 
     products.forEach((product) => {
-      if (product.category) {
-        categoryMap.set(
-          product.category,
-          (categoryMap.get(product.category) || 0) + 1,
-        );
-      }
+      const category = product.category || 'Uncategorized';
+      categoryMap.set(
+        category,
+        (categoryMap.get(category) || 0) + 1,
+      );
     });
 
     return Array.from(categoryMap.entries()).map(([name, count]) => ({
@@ -247,10 +255,8 @@ function ShopContent() {
     const artistMap = new Map<string, number>();
 
     products.forEach((product) => {
-      const artist = product.artistName;
-      if (artist) {
-        artistMap.set(artist, (artistMap.get(artist) || 0) + 1);
-      }
+      const artist = product.artistName || 'Unknown Artist';
+      artistMap.set(artist, (artistMap.get(artist) || 0) + 1);
     });
 
     return Array.from(artistMap.entries()).map(([name, count]) => ({
@@ -1023,15 +1029,15 @@ function ShopContent() {
                     key={product.id}
                     id={product.id}
                     photo={product.featuredImage || product.images?.[0] || "/images/placeholder.png"}
-                    name={product.title}
-                    description={product.description}
-                    amount={parseFloat(product.price)}
-                    stock={product.stock}
-                    slug={product.slug}
-                    rating={product.rating}
-                    tags={product.tags}
-                    featured={product.featured}
-                    artistName={product.artistName}
+                    name={product.title || 'Untitled Product'}
+                    description={product.description || 'No description available'}
+                    amount={parseFloat(product.price || '0') || 0}
+                    stock={product.stock || 0}
+                    slug={product.slug || `product-${product.id}`}
+                    rating={product.rating || 0}
+                    tags={product.tags || []}
+                    featured={product.featured || false}
+                    artistName={product.artistName || 'Unknown Artist'}
                   />
                 ))}
               </div>

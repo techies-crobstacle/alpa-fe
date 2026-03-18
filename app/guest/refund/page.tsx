@@ -541,14 +541,14 @@ export default function GuestRefundPage() {
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </Link>
         <div className="flex-1" />
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[#ead7b7]/15 flex items-center justify-center">
             <ReceiptText className="w-4 h-4 text-[#ead7b7]" />
           </div>
           <span className="text-[#ead7b7]/80 text-sm font-semibold hidden sm:block">
             Guest Refund Portal
           </span>
-        </div>
+        </div> */}
       </header>
 
       {/* ─── Content ─────────────────────────────────────────────────── */}
@@ -563,6 +563,20 @@ export default function GuestRefundPage() {
             <p className="text-sm text-gray-500 mt-1.5">
               Submit a new refund request or track an existing one using your Order ID and email.
             </p>
+            
+            {/* Important Information */}
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Important Information
+              </h3>
+              <div className="text-xs text-blue-800 space-y-1.5">
+                <p><strong>What you'll need:</strong> Your Order ID and the email address used at checkout.</p>
+                <p><strong>Processing time:</strong> Refund requests are typically reviewed within 2-3 business days.</p>
+                <p><strong>Refund timeline:</strong> Once approved, refunds are processed back to your original payment method within 5-10 business days.</p>
+                <p><strong>Eligible items:</strong> Items must be in original condition and returned within 30 days of purchase (excluding personalized or custom items).</p>
+              </div>
+            </div>
           </div>
 
           {/* Tab switcher */}

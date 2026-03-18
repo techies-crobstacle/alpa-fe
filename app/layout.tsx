@@ -8,6 +8,7 @@ import QueryProvider from "@/providers/QueryProvider";
 import { EnhancedCartProvider } from "@/hooks/useSharedEnhancedCart";
 import { StickyLeftCouponDrawer } from "@/components/common-components/StickyLeftCouponDrawer";
 import ToastProvider from "@/providers/ToastProvider";
+import ScrollToTop from "@/components/common-components/ScrollToTop";
 
 export const metadata = {
   title: "Arnhem  ",
@@ -30,6 +31,7 @@ export default function RootLayout({
                 <NavbarWrapper />
                 {children}
                 <FooterWrapper />
+                <ScrollToTop />
               </AuthProvider>
             </EnhancedCartProvider>
           </CartProvider>

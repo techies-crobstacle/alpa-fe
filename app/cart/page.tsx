@@ -215,8 +215,10 @@ export default function Page() {
       
       {/* --- HERO SECTION --- */}
       <section className="relative h-[80vh] overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/images/main.png')] bg-cover bg-center animate-slow-zoom">
-          <div className="absolute inset-0 bg-black/60"></div>
+        <div className="absolute inset-0 bg-[url('/images/main.png')] bg-cover bg-center bg-fixed animate-slow-zoom">
+          {/* Layered gradient overlay */}
+          <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
+          <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
         </div>
 
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
@@ -471,6 +473,11 @@ export default function Page() {
                     <div className="flex justify-between text-[#6D5443]">
                         <span>GST <span className="text-xs">(incl. {gstPercentage?.toFixed(1)}%)</span></span>
                         <span className="font-medium text-[#4A3728]">${gstAmount.toFixed(2)}</span>
+                    </div>
+                    
+                    {/* Currency note */}
+                    <div className="text-xs text-[#8B5E3C]/70 text-center pt-2 border-t border-[#D6C0A9]/20">
+                        All prices are in AUD (Australian Dollars)
                     </div>
 
                     {appliedCoupon && (

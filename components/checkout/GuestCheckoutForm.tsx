@@ -12,6 +12,10 @@ import { couponsApi, ValidatedCoupon } from "@/lib/api";
 import { guestCartUtils } from "@/lib/guestCartUtils";
 import GuestStripePaymentForm from "@/components/checkout/GuestStripePaymentForm";
 import Link from "next/link";
+import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
+import { isValidPhoneNumber } from "react-phone-number-input";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import type { CountryCode } from "libphonenumber-js";
 
 // Add Google Maps type declarations
 declare global {
@@ -20,48 +24,63 @@ declare global {
   }
 }
 
-// Country data with flags and dial codes
-const COUNTRIES = [
-  { code: 'AU', name: 'Australia', flag: '🇦🇺', dialCode: '+61', minDigits: 8, maxDigits: 9 },
-  { code: 'US', name: 'United States', flag: '🇺🇸', dialCode: '+1', minDigits: 10, maxDigits: 10 },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', dialCode: '+44', minDigits: 10, maxDigits: 11 },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦', dialCode: '+1', minDigits: 10, maxDigits: 10 },
-  { code: 'IN', name: 'India', flag: '🇮🇳', dialCode: '+91', minDigits: 10, maxDigits: 10 },
-  { code: 'DE', name: 'Germany', flag: '🇩🇪', dialCode: '+49', minDigits: 10, maxDigits: 12 },
-  { code: 'FR', name: 'France', flag: '🇫🇷', dialCode: '+33', minDigits: 9, maxDigits: 10 },
-  { code: 'JP', name: 'Japan', flag: '🇯🇵', dialCode: '+81', minDigits: 10, maxDigits: 11 },
-  { code: 'SG', name: 'Singapore', flag: '🇸🇬', dialCode: '+65', minDigits: 8, maxDigits: 8 },
-  { code: 'NZ', name: 'New Zealand', flag: '🇳🇿', dialCode: '+64', minDigits: 8, maxDigits: 9 },
-  { code: 'HK', name: 'Hong Kong', flag: '🇭🇰', dialCode: '+852', minDigits: 8, maxDigits: 8 },
-  { code: 'MY', name: 'Malaysia', flag: '🇲🇾', dialCode: '+60', minDigits: 9, maxDigits: 10 },
-  { code: 'TH', name: 'Thailand', flag: '🇹🇭', dialCode: '+66', minDigits: 9, maxDigits: 9 },
-  { code: 'PH', name: 'Philippines', flag: '🇵🇭', dialCode: '+63', minDigits: 10, maxDigits: 10 },
-  { code: 'ID', name: 'Indonesia', flag: '🇮🇩', dialCode: '+62', minDigits: 10, maxDigits: 12 },
-  { code: 'VN', name: 'Vietnam', flag: '🇻🇳', dialCode: '+84', minDigits: 9, maxDigits: 10 },
-  { code: 'KR', name: 'South Korea', flag: '🇰🇷', dialCode: '+82', minDigits: 10, maxDigits: 11 },
-  { code: 'CN', name: 'China', flag: '🇨🇳', dialCode: '+86', minDigits: 11, maxDigits: 11 },
-  { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪', dialCode: '+971', minDigits: 9, maxDigits: 9 },
-  { code: 'ZA', name: 'South Africa', flag: '🇿🇦', dialCode: '+27', minDigits: 9, maxDigits: 9 }
-] as const;
+// ─── Country data from react-phone-number-input ───────────────────────────
+const countryCodeList = getCountries();
 
-// Phone validation function
-function validatePhone(phone: string, country: typeof COUNTRIES[number]): string | null {
-  if (!phone || !phone.trim()) {
-    return "Phone number is required.";
+// Country flags mapping
+const countryFlags: Record<string, string> = {
+  'AU': '🇦🇺', 'US': '🇺🇸', 'GB': '🇬🇧', 'IN': '🇮🇳', 'CA': '🇨🇦', 'NZ': '🇳🇿', 
+  'SG': '🇸🇬', 'AE': '🇦🇪', 'SA': '🇸🇦', 'DE': '🇩🇪', 'FR': '🇫🇷', 'JP': '🇯🇵',
+  'CN': '🇨🇳', 'BR': '🇧🇷', 'PK': '🇵🇰', 'MY': '🇲🇾', 'PH': '🇵🇭', 'ID': '🇮🇩',
+  'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
+  'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'IE': '🇮🇪', 'PT': '🇵🇹',
+  'GR': '🇬🇷', 'PL': '🇵🇱', 'CZ': '🇨🇿', 'HU': '🇭🇺', 'TR': '🇹🇷', 'RU': '🇷🇺',
+  'KR': '🇰🇷', 'TH': '🇹🇭', 'VN': '🇻🇳', 'ZA': '🇿🇦', 'EG': '🇪🇬', 'NG': '🇳🇬',
+  'KE': '🇰🇪', 'MX': '🇲🇽', 'AR': '🇦🇷', 'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪',
+};
+
+// Country names mapping
+const countryNames: Record<string, string> = {
+  'AU': 'Australia', 'US': 'United States', 'GB': 'United Kingdom', 'IN': 'India', 
+  'CA': 'Canada', 'NZ': 'New Zealand', 'SG': 'Singapore', 'AE': 'United Arab Emirates',
+  'SA': 'Saudi Arabia', 'DE': 'Germany', 'FR': 'France', 'JP': 'Japan', 'CN': 'China',
+  'BR': 'Brazil', 'PK': 'Pakistan', 'MY': 'Malaysia', 'PH': 'Philippines', 'ID': 'Indonesia',
+  'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands', 'CH': 'Switzerland', 'AT': 'Austria',
+  'BE': 'Belgium', 'SE': 'Sweden', 'NO': 'Norway', 'DK': 'Denmark', 'FI': 'Finland',
+  'IE': 'Ireland', 'PT': 'Portugal', 'GR': 'Greece', 'PL': 'Poland', 'CZ': 'Czech Republic',
+  'HU': 'Hungary', 'TR': 'Turkey', 'RU': 'Russia', 'KR': 'South Korea', 'TH': 'Thailand',
+  'VN': 'Vietnam', 'ZA': 'South Africa', 'EG': 'Egypt', 'NG': 'Nigeria', 'KE': 'Kenya',
+  'MX': 'Mexico', 'AR': 'Argentina', 'CL': 'Chile', 'CO': 'Colombia', 'PE': 'Peru',
+};
+
+// Build COUNTRIES array from react-phone-number-input data
+const COUNTRIES = countryCodeList.map(code => ({
+  code,
+  flag: countryFlags[code] || '🏳️',
+  name: countryNames[code] || code,
+  dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
+})).filter(country => countryFlags[country.code]); // Only include countries with flags
+
+type Country = typeof COUNTRIES[number];
+
+// Phone validation using react-phone-number-input
+function validatePhone(digits: string, country: Country): string | null {
+  if (!digits.trim()) return 'Phone number is required.';
+  
+  // Create a full phone number with country calling code for validation
+  const fullNumber = `${country.dialCode}${digits.replace(/\D/g, '')}`;
+  
+  try {
+    const phoneNumber = parsePhoneNumberFromString(fullNumber);
+    if (!phoneNumber) return 'Invalid phone number format.';
+    
+    const isValid = isValidPhoneNumber(fullNumber);
+    if (!isValid) return `Invalid ${country.name} phone number.`;
+    
+    return null;
+  } catch (error) {
+    return 'Invalid phone number format.';
   }
-  
-  // Remove all non-digit characters for validation
-  const digits = phone.replace(/\D/g, '');
-  
-  if (digits.length < country.minDigits) {
-    return `Phone number must be at least ${country.minDigits} digits for ${country.name}.`;
-  }
-  
-  if (digits.length > country.maxDigits) {
-    return `Phone number must be at most ${country.maxDigits} digits for ${country.name}.`;
-  }
-  
-  return null;
 }
 
 const stripePromise = loadStripe(
@@ -165,7 +184,7 @@ export default function GuestCheckoutForm() {
   const [zipCode,       setZipCode]       = useState("");
   const [country,       setCountry]       = useState("Australia");
   // ── Phone number with country code ──────────────────────────────────────────
-  const [selectedCountry, setSelectedCountry] = useState<typeof COUNTRIES[number]>(COUNTRIES[0]); // Default to Australia
+  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]); // Default to Australia
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneTouched, setPhoneTouched] = useState(false);
@@ -214,7 +233,7 @@ export default function GuestCheckoutForm() {
     }
   };
 
-  const handleCountrySelect = (country: typeof COUNTRIES[number]) => {
+  const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country);
     setShowCountryDropdown(false);
     setCountrySearch("");

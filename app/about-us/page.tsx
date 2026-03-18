@@ -197,8 +197,10 @@ export default function Page() {
       {/* ══════════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════════ */}
-      <section className="relative min-h-[80vh] h-screen flex items-center justify-center bg-[url('/images/main.png')] bg-cover bg-center">
-        <div className="absolute inset-0 bg-linear-to-b from-black/60 via-black/50 to-black/70" />
+      <section className="relative min-h-[80vh] h-screen flex items-center justify-center bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
+        {/* Layered gradient overlay */}
+        <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
+        <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
         <div className="relative mt-16 z-10 text-white text-center px-4 max-w-3xl mx-auto">
           <p className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60 mb-4">
             Our Story
@@ -261,7 +263,7 @@ export default function Page() {
           OUR STORY
       ══════════════════════════════════════════════════ */}
       <section id="our-story" className="py-20 md:py-28 px-4">
-        <div className="max-w-screen-xl mx-auto flex gap-12 items-center">
+        <div className="max-w-7xl mx-auto flex gap-12 items-center">
           {/* Image */}
           <div className="flex-6/10">
             <Image
@@ -514,7 +516,7 @@ export default function Page() {
               Shopping that{" "}
               <span className="relative inline-block">
                 <span className="relative z-10 text-[#5A1E12]">feels personal.</span>
-                <span className="absolute left-0 -bottom-1 w-full h-[3px] rounded-full bg-[#5A1E12]/30" />
+                <span className="absolute left-0 -bottom-1 w-full h-0.75 rounded-full bg-[#5A1E12]/30" />
               </span>
             </h2>
             <p className="text-gray-500 leading-relaxed mb-4">

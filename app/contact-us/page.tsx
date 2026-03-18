@@ -127,37 +127,67 @@ import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Testimonials from "@/components/cards/Testimonials";
 import { MapPin, Phone, Mail, Send, ArrowRight } from "lucide-react";
+import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
+import { isValidPhoneNumber } from "react-phone-number-input";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import type { CountryCode } from "libphonenumber-js";
 
-// ─── Country phone data ───────────────────────────────────────────────────────
-const COUNTRIES = [
-  { code: 'AU', flag: '🇦🇺', name: 'Australia',      dialCode: '+61',  digits: [9,  9]  },
-  { code: 'US', flag: '🇺🇸', name: 'United States',  dialCode: '+1',   digits: [10, 10] },
-  { code: 'GB', flag: '🇬🇧', name: 'United Kingdom', dialCode: '+44',  digits: [10, 10] },
-  { code: 'IN', flag: '🇮🇳', name: 'India',          dialCode: '+91',  digits: [10, 10] },
-  { code: 'CA', flag: '🇨🇦', name: 'Canada',         dialCode: '+1',   digits: [10, 10] },
-  { code: 'NZ', flag: '🇳🇿', name: 'New Zealand',    dialCode: '+64',  digits: [8,  9]  },
-  { code: 'SG', flag: '🇸🇬', name: 'Singapore',      dialCode: '+65',  digits: [8,  8]  },
-  { code: 'AE', flag: '🇦🇪', name: 'UAE',            dialCode: '+971', digits: [9,  9]  },
-  { code: 'SA', flag: '🇸🇦', name: 'Saudi Arabia',   dialCode: '+966', digits: [9,  9]  },
-  { code: 'DE', flag: '🇩🇪', name: 'Germany',        dialCode: '+49',  digits: [10, 11] },
-  { code: 'FR', flag: '🇫🇷', name: 'France',         dialCode: '+33',  digits: [9,  9]  },
-  { code: 'JP', flag: '🇯🇵', name: 'Japan',          dialCode: '+81',  digits: [10, 11] },
-  { code: 'CN', flag: '🇨🇳', name: 'China',          dialCode: '+86',  digits: [11, 11] },
-  { code: 'BR', flag: '🇧🇷', name: 'Brazil',         dialCode: '+55',  digits: [10, 11] },
-  { code: 'PK', flag: '🇵🇰', name: 'Pakistan',       dialCode: '+92',  digits: [10, 10] },
-  { code: 'MY', flag: '🇲🇾', name: 'Malaysia',       dialCode: '+60',  digits: [9,  10] },
-  { code: 'PH', flag: '🇵🇭', name: 'Philippines',    dialCode: '+63',  digits: [10, 10] },
-  { code: 'ID', flag: '🇮🇩', name: 'Indonesia',      dialCode: '+62',  digits: [9,  12] },
-] as const;
+// ─── Country phone data from react-phone-number-input ────────────────────────
+const countryCodeList = getCountries();
+
+// Country flag emojis mapping
+const countryFlags: Record<string, string> = {
+  'AU': '🇦🇺', 'US': '🇺🇸', 'GB': '🇬🇧', 'IN': '🇮🇳', 'CA': '🇨🇦', 'NZ': '🇳🇿', 
+  'SG': '🇸🇬', 'AE': '🇦🇪', 'SA': '🇸🇦', 'DE': '🇩🇪', 'FR': '🇫🇷', 'JP': '🇯🇵',
+  'CN': '🇨🇳', 'BR': '🇧🇷', 'PK': '🇵🇰', 'MY': '🇲🇾', 'PH': '🇵🇭', 'ID': '🇮🇩',
+  'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
+  'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'IE': '🇮🇪', 'PT': '🇵🇹',
+  'GR': '🇬🇷', 'PL': '🇵🇱', 'CZ': '🇨🇿', 'HU': '🇭🇺', 'TR': '🇹🇷', 'RU': '🇷🇺',
+  'KR': '🇰🇷', 'TH': '🇹🇭', 'VN': '🇻🇳', 'ZA': '🇿🇦', 'EG': '🇪🇬', 'NG': '🇳🇬',
+  'KE': '🇰🇪', 'MX': '🇲🇽', 'AR': '🇦🇷', 'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪',
+};
+
+// Country names mapping
+const countryNames: Record<string, string> = {
+  'AU': 'Australia', 'US': 'United States', 'GB': 'United Kingdom', 'IN': 'India', 
+  'CA': 'Canada', 'NZ': 'New Zealand', 'SG': 'Singapore', 'AE': 'United Arab Emirates',
+  'SA': 'Saudi Arabia', 'DE': 'Germany', 'FR': 'France', 'JP': 'Japan', 'CN': 'China',
+  'BR': 'Brazil', 'PK': 'Pakistan', 'MY': 'Malaysia', 'PH': 'Philippines', 'ID': 'Indonesia',
+  'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands', 'CH': 'Switzerland', 'AT': 'Austria',
+  'BE': 'Belgium', 'SE': 'Sweden', 'NO': 'Norway', 'DK': 'Denmark', 'FI': 'Finland',
+  'IE': 'Ireland', 'PT': 'Portugal', 'GR': 'Greece', 'PL': 'Poland', 'CZ': 'Czech Republic',
+  'HU': 'Hungary', 'TR': 'Turkey', 'RU': 'Russia', 'KR': 'South Korea', 'TH': 'Thailand',
+  'VN': 'Vietnam', 'ZA': 'South Africa', 'EG': 'Egypt', 'NG': 'Nigeria', 'KE': 'Kenya',
+  'MX': 'Mexico', 'AR': 'Argentina', 'CL': 'Chile', 'CO': 'Colombia', 'PE': 'Peru',
+};
+
+// Build COUNTRIES array from react-phone-number-input data
+const COUNTRIES = countryCodeList.map(code => ({
+  code,
+  flag: countryFlags[code] || '🏳️',
+  name: countryNames[code] || code,
+  dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
+})).filter(country => countryFlags[country.code]); // Only include countries with flags
+
 type Country = typeof COUNTRIES[number];
 
 function validatePhone(digits: string, country: Country): string | null {
-  const clean = digits.replace(/\D/g, '');
-  if (!clean) return 'Phone number is required.';
-  const [min, max] = country.digits;
-  if (clean.length < min) return `Too short — ${country.name} numbers need ${min} digits.`;
-  if (clean.length > max) return `Too long — ${country.name} numbers need at most ${max} digits.`;
-  return null;
+  if (!digits.trim()) return 'Phone number is required.';
+  
+  // Create a full phone number with country calling code for validation
+  const fullNumber = `${country.dialCode}${digits.replace(/\D/g, '')}`;
+  
+  try {
+    const phoneNumber = parsePhoneNumberFromString(fullNumber);
+    if (!phoneNumber) return 'Invalid phone number format.';
+    
+    const isValid = isValidPhoneNumber(fullNumber);
+    if (!isValid) return `Invalid ${country.name} phone number.`;
+    
+    return null;
+  } catch (error) {
+    return 'Invalid phone number format.';
+  }
 }
 
 export default function Page() {
@@ -214,8 +244,10 @@ export default function Page() {
       {/* --- HERO SECTION --- */}
       {/* Added a subtle gradient overlay for better text readability */}
       <section className="relative h-[80vh] overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/images/main.png')] bg-cover bg-center animate-slow-zoom">
-            <div className="absolute inset-0 bg-black/60"></div>
+        <div className="absolute inset-0 bg-[url('/images/main.png')] bg-cover bg-center bg-fixed animate-slow-zoom">
+          {/* Layered gradient overlay */}
+          <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
+          <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
         </div>
 
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
@@ -292,7 +324,7 @@ export default function Page() {
                             if (phoneTouched) setPhoneInputError(validatePhone(v, phoneCountry));
                           }}
                           onBlur={() => { setPhoneTouched(true); setPhoneInputError(validatePhone(fields.phone, phoneCountry)); }}
-                          placeholder={`${phoneCountry.digits[0]}-digit number`}
+                          placeholder="Enter phone number"
                           className="flex-1 px-4 py-4 text-sm bg-transparent outline-none placeholder-gray-400 text-gray-700"
                         />
                       </div>
@@ -439,8 +471,8 @@ export default function Page() {
 
       {/* --- EXPLORE SECTION --- */}
       <section className="pb-12 px-4">
-        <div className="max-w-7xl mx-auto relative bg-[url('/images/contact-us.jpg')] bg-cover bg-center h-[500px] w-full rounded-[2.5rem] overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30 transition-opacity duration-500"></div>
+        <div className="max-w-7xl mx-auto relative bg-[url('/images/contact-us.jpg')] bg-cover bg-center h-125 w-full rounded-[2.5rem] overflow-hidden group">
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-black/30 transition-opacity duration-500"></div>
 
           <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-6">
             <Image

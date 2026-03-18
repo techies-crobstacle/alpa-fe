@@ -128,7 +128,7 @@ export default function Footer() {
           70 O’Sullivan Circuit, East Arm NT 0822
         </p>
         
-        <p className="text-white/80 max-w-[550px] text-right bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg flex items-start justify-top gap-2">
+        <p className="text-white/80 max-w-137.5 text-right bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg flex items-start justify-top gap-2">
           <FaHeart className="w-4 h-4 text-red-400 shrink-0 mt-1" />
           We operate with deep respect for Aboriginal culture and traditions. All products and experiences are shared with community consent.
         </p>
@@ -216,6 +216,8 @@ export default function Footer() {
           </Link>
         </div>
       </div>
+      
+      {/* Copyright */}
       <div>
         <p className="text-white/80 text-center">
           © 2026 Made in Arnhem Land. All rights reserved. | Respecting 65,000+ years of continuous culture
