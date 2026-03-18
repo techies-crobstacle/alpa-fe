@@ -103,8 +103,8 @@ export default function Header() {
       
       // Filter products
       const matchedProducts = products.filter((product) =>
-        product.title.toLowerCase().includes(searchLower) ||
-        product.description.toLowerCase().includes(searchLower) ||
+        (product.title && product.title.toLowerCase().includes(searchLower)) ||
+        (product.description && product.description.toLowerCase().includes(searchLower)) ||
         (product.brand && product.brand.toLowerCase().includes(searchLower))
       ).slice(0, 5);
       
@@ -112,8 +112,9 @@ export default function Header() {
       const categories = Array.from(
         new Set(
           products
-            .filter(p => p.category.toLowerCase().includes(searchLower))
+            .filter(p => p.category && p.category.toLowerCase().includes(searchLower))
             .map(p => p.category)
+            .filter((cat): cat is string => Boolean(cat))
         )
       ).slice(0, 5);
       
@@ -145,7 +146,9 @@ export default function Header() {
   // Handle search navigation (memoized to prevent re-renders)
   const handleSearchSelect = useCallback((product: Product) => {
     closeSearch();
-    router.push(`/shop?search=${encodeURIComponent(product.title)}`);
+    if (product.title) {
+      router.push(`/shop?search=${encodeURIComponent(product.title)}`);
+    }
   }, [router, closeSearch]);
 
   // Handle category filter
@@ -828,7 +831,7 @@ export default function Header() {
                         {segregatedSearchResults.products.slice(0, 4).map((product) => (
                           <button key={product.id} onClick={() => { setMobileMenuOpen(false); handleSearchSelect(product); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#5A1E12]/5 transition-colors">
                             <div className="w-9 h-9 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
-                              {product.images?.[0] ? <Image src={product.images[0]} alt={product.title} width={36} height={36} className="w-full h-full object-cover" /> : <Search className="w-4 h-4 text-gray-300 m-2" />}
+                              {product.images?.[0] ? <Image src={product.images[0]!} alt={product.title || 'Product'} width={36} height={36} className="w-full h-full object-cover" /> : <Search className="w-4 h-4 text-gray-300 m-2" />}
                             </div>
                             <div className="flex-1 min-w-0 text-left">
                               <p className="text-sm font-medium text-gray-800 truncate">{product.title}</p>
@@ -1262,8 +1265,8 @@ export default function Header() {
                                 <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-gray-200">
                                   {product.featuredImage || product.images?.[0] ? (
                                     <Image
-                                      src={product.featuredImage || product.images[0]}
-                                      alt={product.title}
+                                      src={product.featuredImage || (product.images?.[0] || '')}
+                                      alt={product.title || 'Product'}
                                       width={48}
                                       height={48}
                                       className="w-full h-full object-cover"
