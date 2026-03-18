@@ -70,6 +70,9 @@ export default function Footer() {
             <Link href="/contact-us" className="mb-2 hover:text-[#A48068] transition-colors">
               Contact Us
             </Link>
+            <Link href="/feedback" className="mb-2 hover:text-[#A48068] transition-colors">
+              Share Feedback
+            </Link>
             <Link href="/faq" className="mb-2 hover:text-[#A48068] transition-colors">
               FAQs
             </Link>
