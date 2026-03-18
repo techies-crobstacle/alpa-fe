@@ -1,17 +1,68 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
-import { Loader2, Tag, X, CheckCircle, ChevronRight } from "lucide-react";
+import { Loader2, Tag, X, CheckCircle, ChevronRight, ChevronDown } from "lucide-react";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { couponsApi, ValidatedCoupon } from "@/lib/api";
 import { guestCartUtils } from "@/lib/guestCartUtils";
 import GuestStripePaymentForm from "@/components/checkout/GuestStripePaymentForm";
 import Link from "next/link";
+
+// Add Google Maps type declarations
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
+// Country data with flags and dial codes
+const COUNTRIES = [
+  { code: 'AU', name: 'Australia', flag: '🇦🇺', dialCode: '+61', minDigits: 8, maxDigits: 9 },
+  { code: 'US', name: 'United States', flag: '🇺🇸', dialCode: '+1', minDigits: 10, maxDigits: 10 },
+  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', dialCode: '+44', minDigits: 10, maxDigits: 11 },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦', dialCode: '+1', minDigits: 10, maxDigits: 10 },
+  { code: 'IN', name: 'India', flag: '🇮🇳', dialCode: '+91', minDigits: 10, maxDigits: 10 },
+  { code: 'DE', name: 'Germany', flag: '🇩🇪', dialCode: '+49', minDigits: 10, maxDigits: 12 },
+  { code: 'FR', name: 'France', flag: '🇫🇷', dialCode: '+33', minDigits: 9, maxDigits: 10 },
+  { code: 'JP', name: 'Japan', flag: '🇯🇵', dialCode: '+81', minDigits: 10, maxDigits: 11 },
+  { code: 'SG', name: 'Singapore', flag: '🇸🇬', dialCode: '+65', minDigits: 8, maxDigits: 8 },
+  { code: 'NZ', name: 'New Zealand', flag: '🇳🇿', dialCode: '+64', minDigits: 8, maxDigits: 9 },
+  { code: 'HK', name: 'Hong Kong', flag: '🇭🇰', dialCode: '+852', minDigits: 8, maxDigits: 8 },
+  { code: 'MY', name: 'Malaysia', flag: '🇲🇾', dialCode: '+60', minDigits: 9, maxDigits: 10 },
+  { code: 'TH', name: 'Thailand', flag: '🇹🇭', dialCode: '+66', minDigits: 9, maxDigits: 9 },
+  { code: 'PH', name: 'Philippines', flag: '🇵🇭', dialCode: '+63', minDigits: 10, maxDigits: 10 },
+  { code: 'ID', name: 'Indonesia', flag: '🇮🇩', dialCode: '+62', minDigits: 10, maxDigits: 12 },
+  { code: 'VN', name: 'Vietnam', flag: '🇻🇳', dialCode: '+84', minDigits: 9, maxDigits: 10 },
+  { code: 'KR', name: 'South Korea', flag: '🇰🇷', dialCode: '+82', minDigits: 10, maxDigits: 11 },
+  { code: 'CN', name: 'China', flag: '🇨🇳', dialCode: '+86', minDigits: 11, maxDigits: 11 },
+  { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪', dialCode: '+971', minDigits: 9, maxDigits: 9 },
+  { code: 'ZA', name: 'South Africa', flag: '🇿🇦', dialCode: '+27', minDigits: 9, maxDigits: 9 }
+] as const;
+
+// Phone validation function
+function validatePhone(phone: string, country: typeof COUNTRIES[number]): string | null {
+  if (!phone || !phone.trim()) {
+    return "Phone number is required.";
+  }
+  
+  // Remove all non-digit characters for validation
+  const digits = phone.replace(/\D/g, '');
+  
+  if (digits.length < country.minDigits) {
+    return `Phone number must be at least ${country.minDigits} digits for ${country.name}.`;
+  }
+  
+  if (digits.length > country.maxDigits) {
+    return `Phone number must be at most ${country.maxDigits} digits for ${country.name}.`;
+  }
+  
+  return null;
+}
 
 const stripePromise = loadStripe(
   "pk_test_51SzBiiFXXR0MHwRIutvfNBi6ADMB8qZ5UNXswOwLzlIOgLfy1qVuTciKWGaBtWyJrDBkkZVVclg477Wv8KuEGdp800PKT4ny3K"
@@ -113,6 +164,17 @@ export default function GuestCheckoutForm() {
   const [state,         setState]         = useState("");
   const [zipCode,       setZipCode]       = useState("");
   const [country,       setCountry]       = useState("Australia");
+  // ── Phone number with country code ──────────────────────────────────────────
+  const [selectedCountry, setSelectedCountry] = useState<typeof COUNTRIES[number]>(COUNTRIES[0]); // Default to Australia
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  // ── Google Places Autocomplete ────────────────────────────────────────────
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteInstanceRef = useRef<any>(null);
 
   // ── Coupon ────────────────────────────────────────────────────────────────
   const [couponCode, setCouponCode] = useState("");
@@ -142,6 +204,126 @@ export default function GuestCheckoutForm() {
 
   // ── Field errors ──────────────────────────────────────────────────────────
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // ── Phone number handlers ───────────────────────────────────────────────────
+  const handlePhoneChange = (value: string) => {
+    // Only allow digits, spaces, hyphens, parentheses
+    const cleaned = value.replace(/[^\d\s\-().]/g, "");
+    setPhoneNumber(cleaned);
+    if (phoneTouched) {
+      setPhoneError(validatePhone(cleaned, selectedCountry));
+    }
+  };
+
+  const handleCountrySelect = (country: typeof COUNTRIES[number]) => {
+    setSelectedCountry(country);
+    setShowCountryDropdown(false);
+    setCountrySearch("");
+    if (phoneTouched && phoneNumber) {
+      setPhoneError(validatePhone(phoneNumber, country));
+    }
+  };
+
+  // ── Close country dropdown on outside click ────────────────────────────────
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+        setShowCountryDropdown(false);
+        setCountrySearch("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filter countries based on search
+  const filteredCountries = COUNTRIES.filter(country =>
+    country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    country.code.toLowerCase().includes(countrySearch.toLowerCase())
+  );
+  // ── Google Places Autocomplete Setup ──────────────────────────────────────
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.warn('Google Maps API key not found. Address autocomplete will not work.');
+      return;
+    }
+
+    const attachAutocomplete = () => {
+      if (!addressInputRef.current || autocompleteInstanceRef.current) return;
+      if (!window.google?.maps?.places?.Autocomplete) return;
+
+      const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+        types: ["address"],
+        fields: ["formatted_address", "address_components"],
+      });
+
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place?.address_components) return;
+
+        const getComponent = (type: string) =>
+          place.address_components.find((c: any) => c.types.includes(type))?.long_name || "";
+        
+        const getShortComponent = (type: string) =>
+          place.address_components.find((c: any) => c.types.includes(type))?.short_name || "";
+
+        // Auto-fill fields based on selected address
+        setAddressLine(place.formatted_address || "");
+        setCity(getComponent("locality") || getComponent("administrative_area_level_2"));
+        setState(getShortComponent("administrative_area_level_1") || getComponent("administrative_area_level_1"));
+        setZipCode(getComponent("postal_code"));
+        setCountry(getComponent("country"));
+
+        // Clear any existing field errors when autocomplete fills the form
+        setFieldErrors({});
+
+        // Show success toast
+        toast.success("🏠 Address details auto-filled successfully!", {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      });
+
+      autocompleteInstanceRef.current = autocomplete;
+    };
+
+    // Check if Google Maps is already loaded
+    if (window.google?.maps?.places?.Autocomplete) {
+      attachAutocomplete();
+      return;
+    }
+
+    // Check if script is already injected
+    if (document.querySelector(`script[src*="maps.googleapis.com/maps/api/js"]`)) {
+      const poll = setInterval(() => {
+        if (window.google?.maps?.places?.Autocomplete) {
+          attachAutocomplete();
+          clearInterval(poll);
+        }
+      }, 150);
+      return () => clearInterval(poll);
+    }
+
+    // Inject Google Maps script
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = attachAutocomplete;
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup on unmount
+      if (autocompleteInstanceRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners?.(autocompleteInstanceRef.current);
+        autocompleteInstanceRef.current = null;
+      }
+    };
+  }, []);
 
   // Final total after coupon
   const discountAmount = appliedCoupon?.discountAmount ?? 0;
@@ -183,7 +365,17 @@ export default function GuestCheckoutForm() {
     if (!customerEmail.trim()) errors.customerEmail = "Email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail))
       errors.customerEmail = "Invalid email address.";
-    if (!customerPhone.trim()) errors.customerPhone = "Phone number is required.";
+    
+    // Enhanced phone validation
+    if (!phoneNumber.trim()) {
+      errors.customerPhone = "Phone number is required.";
+    } else {
+      const phoneValidationError = validatePhone(phoneNumber, selectedCountry);
+      if (phoneValidationError) {
+        errors.customerPhone = phoneValidationError;
+      }
+    }
+    
     if (!addressLine.trim())   errors.addressLine   = "Address is required.";
     if (!city.trim())          errors.city          = "City is required.";
     if (!state.trim())         errors.state         = "State is required.";
@@ -205,7 +397,7 @@ export default function GuestCheckoutForm() {
         items: cartItems.map((i) => ({ productId: i.productId, quantity: i.quantity })),
         customerName:  customerName.trim(),
         customerEmail: customerEmail.trim(),
-        customerPhone: customerPhone.trim(),
+        customerPhone: `${selectedCountry.dialCode} ${phoneNumber}`.trim(),
         shippingAddress: {
           addressLine: addressLine.trim(),
           city:   city.trim(),
@@ -218,7 +410,7 @@ export default function GuestCheckoutForm() {
         city:         city.trim(),
         state:        state.trim(),
         zipCode:      zipCode.trim(),
-        mobileNumber: customerPhone.trim(),
+        mobileNumber: `${selectedCountry.dialCode} ${phoneNumber}`.trim(),
         ...(gstId && { gstId }),
         ...(appliedCoupon?.code && { couponCode: appliedCoupon.code }),
       };
@@ -346,9 +538,82 @@ export default function GuestCheckoutForm() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#5A1E12] mb-1">Phone Number <span className="text-red-500">*</span></label>
-                  <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="0400 000 000"
-                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.customerPhone ? "border-red-400" : "border-[#5A1E12]/20"}`} />
-                  {fieldErrors.customerPhone && <p className="mt-1 text-xs text-red-500">{fieldErrors.customerPhone}</p>}
+                  <div className="flex gap-2">
+                    {/* Country Code Dropdown */}
+                    <div className="relative" ref={countryDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                        className="flex items-center gap-2 px-3 py-3 bg-white border border-[#5A1E12]/20 rounded-lg hover:border-[#5A1E12]/40 focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm min-w-30"
+                      >
+                        <span className="text-base">{selectedCountry.flag}</span>
+                        <span className="text-xs text-gray-600">{selectedCountry.dialCode}</span>
+                        <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {/* Country Dropdown */}
+                      {showCountryDropdown && (
+                        <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-hidden">
+                          {/* Search Input */}
+                          <div className="p-3 border-b border-gray-100">
+                            <input
+                              type="text"
+                              placeholder="Search countries..."
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] focus:border-[#5A1E12]"
+                              autoFocus
+                            />
+                          </div>
+                          
+                          {/* Countries List */}
+                          <div className="max-h-48 overflow-y-auto">
+                            {filteredCountries.length > 0 ? (
+                              filteredCountries.map((country) => (
+                                <button
+                                  key={country.code}
+                                  type="button"
+                                  onClick={() => handleCountrySelect(country)}
+                                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                                >
+                                  <span className="text-base">{country.flag}</span>
+                                  <span className="flex-1 text-sm text-gray-900">{country.name}</span>
+                                  <span className="text-xs text-gray-500">{country.dialCode}</span>
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                                No countries found
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Phone Number Input */}
+                    <input 
+                      type="tel" 
+                      value={phoneNumber} 
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      onBlur={() => {
+                        setPhoneTouched(true);
+                        if (phoneNumber) {
+                          setPhoneError(validatePhone(phoneNumber, selectedCountry));
+                        }
+                      }}
+                      placeholder="400 000 000"
+                      className={`flex-1 px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm transition-all ${
+                        fieldErrors.customerPhone || phoneError ? "border-red-400" : "border-[#5A1E12]/20"
+                      }`} 
+                    />
+                  </div>
+                  {(fieldErrors.customerPhone || phoneError) && (
+                    <p className="mt-1 text-xs text-red-500">{fieldErrors.customerPhone || phoneError}</p>
+                  )}
+                  {!fieldErrors.customerPhone && !phoneError && phoneTouched && phoneNumber && (
+                    <p className="mt-1 text-xs text-green-600">✓ Valid phone number</p>
+                  )}
                 </div>
               </div>
               <div className="mt-4">
@@ -364,10 +629,23 @@ export default function GuestCheckoutForm() {
               <h3 className="text-base font-semibold text-[#5A1E12] mb-4">Shipping Address</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#5A1E12] mb-1">Address Line <span className="text-red-500">*</span></label>
-                  <input type="text" value={addressLine} onChange={(e) => setAddressLine(e.target.value)} placeholder="123 Main St"
-                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.addressLine ? "border-red-400" : "border-[#5A1E12]/20"}`} />
+                  <label className="block text-sm font-medium text-[#5A1E12] mb-1">
+                    Address Line <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    ref={addressInputRef}
+                    type="text" 
+                    value={addressLine} 
+                    onChange={(e) => setAddressLine(e.target.value)} 
+                    placeholder="Start typing your address..." 
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm transition-all ${
+                      fieldErrors.addressLine ? "border-red-400" : "border-[#5A1E12]/20"
+                    }`} 
+                  />
                   {fieldErrors.addressLine && <p className="mt-1 text-xs text-red-500">{fieldErrors.addressLine}</p>}
+                  <p className="mt-1 text-xs text-[#5A1E12]/60">
+                    💡 Start typing for address suggestions
+                  </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
