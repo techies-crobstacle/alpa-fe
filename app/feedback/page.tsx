@@ -142,6 +142,8 @@ export default function FeedbackPage() {
     if (!rating) { setError("Please select a star rating."); return; }
     if (!name.trim()) { setError("Please enter your name."); return; }
     if (!email.trim()) { setError("Please enter your email."); return; }
+    if (!comment.trim()) { setError("Please enter your feedback description."); return; }
+    if (comment.trim().length < 20) { setError("Feedback description must be at least 20 characters long."); return; }
     setError(null);
     setSubmitting(true);
     try {
@@ -383,16 +385,43 @@ export default function FeedbackPage() {
 
                 {/* Comment */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-[#973c00]/70 uppercase tracking-wider">
-                    Your Feedback
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[#973c00]/70 uppercase tracking-wider">
+                      Your Feedback <span className="text-[#973c00]">*</span>
+                    </label>
+                    <span className={`text-xs font-medium ${
+                      comment.trim().length >= 20
+                        ? 'text-green-600'
+                        : comment.trim().length > 0
+                        ? 'text-amber-600'
+                        : 'text-[#973c00]/50'
+                    }`}>
+                      {comment.trim().length}/20 min
+                    </span>
+                  </div>
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Tell us what went well, what could be better, or anything else on your mind…"
+                    placeholder="Tell us what went well, what could be better, or anything else on your mind… (minimum 20 characters)"
                     rows={5}
-                    className="w-full px-4 py-3 text-sm rounded-xl border border-[#973c00]/20 bg-[#fdf7f1] text-[#3b1a08] placeholder-[#973c00]/30 outline-none focus:border-[#5A1E12] focus:ring-2 focus:ring-[#5A1E12]/10 transition-all resize-none leading-relaxed"
+                    className={`w-full px-4 py-3 text-sm rounded-xl border ${
+                      comment.trim().length >= 20
+                        ? 'border-green-300 focus:border-green-500 focus:ring-green-500/10'
+                        : comment.trim().length > 0
+                        ? 'border-amber-300 focus:border-amber-500 focus:ring-amber-500/10'
+                        : 'border-[#973c00]/20 focus:border-[#5A1E12] focus:ring-[#5A1E12]/10'
+                    } bg-[#fdf7f1] text-[#3b1a08] placeholder-[#973c00]/30 outline-none focus:ring-2 transition-all resize-none leading-relaxed`}
                   />
+                  {comment.trim().length > 0 && comment.trim().length < 20 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      {20 - comment.trim().length} more characters needed
+                    </p>
+                  )}
+                  {comment.trim().length >= 20 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ Minimum requirement met
+                    </p>
+                  )}
                 </div>
 
                 {/* Error */}
