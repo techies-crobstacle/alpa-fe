@@ -48,9 +48,7 @@ function validateGiftCode(v: string) {
 
 const PAYMENT_OPTIONS = [
   { value: "card",   label: "Credit / Debit Card",  icon: "💳" },
-  { value: "paypal", label: "PayPal",                icon: "🅿️" },
   { value: "gift",   label: "Gift Card",             icon: "🎁" },
-  { value: "cod",    label: "Cash on Delivery",      icon: "💵" },
 ];
 
 export default function PaymentCart({ onPaymentMethodChange }: PaymentCartProps) {
@@ -231,15 +229,6 @@ export default function PaymentCart({ onPaymentMethodChange }: PaymentCartProps)
               )}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* PayPal */}
-      {paymentMethod === "paypal" && (
-        <div className="rounded-xl border border-[#d6b896] bg-white/60 p-5 text-center">
-          <p className="text-2xl mb-2">🅿️</p>
-          <p className="text-sm font-semibold text-gray-800">Continue with PayPal</p>
-          <p className="text-xs text-gray-500 mt-1">You'll be redirected to PayPal to complete payment securely.</p>
         </div>
       )}
 

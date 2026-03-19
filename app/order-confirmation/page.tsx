@@ -26,6 +26,7 @@ import { detectMultiSellerOrder, logApiResponse } from "@/lib/orderUtils";
 
 interface OrderStatus {
   orderId: string;
+  displayId?: string;
   status: string;
   paymentStatus: string;
   isMultiSeller?: boolean;
@@ -287,6 +288,7 @@ function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const { token, user } = useAuth();
   const orderId = searchParams.get("orderId");
+  const displayId = searchParams.get("displayId");
   const paymentMethodParam = searchParams.get("paymentMethod");
   const isCOD = paymentMethodParam === "cod";
 
@@ -320,10 +322,11 @@ function OrderConfirmationContent() {
           
           basicOrderStatus = {
             orderId,
-            status: data.status || "Confirmed",
+            displayId: data.order?.displayId,
+            status: data.status || data.order?.status || "Confirmed",
             paymentStatus: isCOD
               ? "Cash on Delivery"
-              : data.paymentStatus || "Paid",
+              : data.paymentStatus || data.order?.paymentStatus || "Paid",
             isMultiSeller: data.isMultiSeller || false,
             segregatedData: undefined,
           };
@@ -458,7 +461,7 @@ function OrderConfirmationContent() {
                   <div className="flex items-center justify-between py-3">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Order ID</span>
                     <span className="text-sm font-bold font-mono text-white">
-                      #{orderStatus.orderId.slice(-8).toUpperCase()}
+                      {orderStatus.displayId || displayId || `#${orderStatus.orderId.slice(-8).toUpperCase()}`}
                     </span>
                   </div>
                   <div className="flex items-center justify-between py-3">

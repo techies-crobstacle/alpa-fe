@@ -1255,14 +1255,30 @@ interface OrderItem {
 
 interface TrackOrder {
   id: string;
+  displayId: string;
+  orderType: string;
   status: string;
   totalAmount: string;
   customerName: string;
-  shippingAddressLine: string;
-  shippingCity: string;
-  shippingState: string;
-  shippingCountry: string;
-  shippingZipCode: string;
+  customerPhone: string;
+  shippingAddress: {
+    addressLine: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    phone: string;
+  };
+  orderSummary: {
+    subtotal: string;
+    gstAmount: string;
+    couponCode: string | null;
+    finalTotal: number;
+    grandTotal: string;
+    shippingCost: string;
+    discountAmount: number;
+    shippingMethod: any;
+  } | null;
   trackingNumber: string | null;
   estimatedDelivery: string | null;
   items: OrderItem[];
@@ -1532,7 +1548,7 @@ function TrackOrderContent() {
   const [updatingParentStatus, setUpdatingParentStatus] = useState(false);
 
   useEffect(() => {
-    if (!orderId) setOrderId(sessionStorage.getItem("guestOrderId")    || "");
+    if (!orderId) setOrderId(sessionStorage.getItem("guestOrderDisplayId") || sessionStorage.getItem("guestOrderId") || "");
     if (!email)   setEmail  (sessionStorage.getItem("guestOrderEmail") || "");
   }, [orderId, email]);
 
@@ -2195,7 +2211,7 @@ function TrackOrderContent() {
             {/* Key stats row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10">
               {[
-                { icon: Hash,         label: "Order ID",  value: order.id.slice(0, 12) + "…" },
+                { icon: Hash,         label: "Order ID",  value: order.displayId || order.id.slice(0, 12) + "…" },
                 { icon: CalendarDays, label: "Placed",    value: new Date(order.createdAt).toLocaleDateString("en-AU") },
                 { icon: User,         label: "Customer",  value: order.customerName },
                 { icon: Tag,          label: "Total",     value: `$${parseFloat(order.totalAmount).toFixed(2)}` },
@@ -2228,8 +2244,8 @@ function TrackOrderContent() {
                 <h3 className="text-sm font-bold text-[#5A1E12]">Shipping Address</h3>
               </div>
               <p className="text-sm text-[#5A1E12]/70 leading-relaxed">
-                {order.shippingAddressLine}, {order.shippingCity},{" "}
-                {order.shippingState} {order.shippingZipCode}, {order.shippingCountry}
+                {order.shippingAddress.addressLine}, {order.shippingAddress.city},{" "}
+                {order.shippingAddress.state} {order.shippingAddress.zipCode}, {order.shippingAddress.country}
               </p>
             </div>
 
