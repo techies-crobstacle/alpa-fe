@@ -255,8 +255,11 @@ function ShopContent() {
     const artistMap = new Map<string, number>();
 
     products.forEach((product) => {
-      const artist = product.artistName || 'Unknown Artist';
-      artistMap.set(artist, (artistMap.get(artist) || 0) + 1);
+      // Only count products that actually have an artist name
+      if (product.artistName && product.artistName.trim()) {
+        const artist = product.artistName;
+        artistMap.set(artist, (artistMap.get(artist) || 0) + 1);
+      }
     });
 
     return Array.from(artistMap.entries()).map(([name, count]) => ({
@@ -1037,7 +1040,7 @@ function ShopContent() {
                     rating={product.rating || 0}
                     tags={product.tags || []}
                     featured={product.featured || false}
-                    artistName={product.artistName || 'Unknown Artist'}
+                    artistName={product.artistName} // Only pass if it exists, undefined otherwise
                   />
                 ))}
               </div>

@@ -66,7 +66,8 @@ export function useProducts() {
           // Safe slug generation
           slug: product.title ? product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `product-${product.id}`,
           rating: product.avgRating ?? 0,
-          artistName: product.artistName || 'Unknown Artist',
+          // Keep artistName as-is (undefined if not available)
+          artistName: product.artistName,
           // Handle featured/discount fields safely
           featured: product.featured ?? false,
           discount: product.discount ?? false,
