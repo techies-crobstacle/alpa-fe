@@ -126,11 +126,35 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Testimonials from "@/components/cards/Testimonials";
-import { MapPin, Phone, Mail, Send, ArrowRight } from "lucide-react";
+import { MapPin, Phone, Mail, Send, ArrowRight, ChevronDown } from "lucide-react";
 import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
 import { isValidPhoneNumber } from "react-phone-number-input";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import type { CountryCode } from "libphonenumber-js";
+
+// ─── FAQ Data ────────────────────────────────────────────────────────────────
+const FAQS = [
+  {
+    question: "How do I become a verified seller on the marketplace?",
+    answer: "Becoming a seller is easy! Click on 'Seller Onboarding' at the bottom of the page, fill out your business profile, verify your identity, and set up your storefront. Once approved, you can start listing products immediately."
+  },
+  {
+    question: "How are shipping and commissions handled?",
+    answer: "Our platform takes a small flat commission on every successful sale. Sellers have the freedom to set their own shipping rates or use our integrated logistics partners for standardized global delivery."
+  },
+  {
+    question: "What happens if a buyer requests a refund?",
+    answer: "If a buyer is unsatisfied, they can initiate a return within our 30-day buyer protection window. The dispute is first handled directly between the buyer and seller. If unresolved, our support team steps in to mediate based on marketplace policies."
+  },
+  {
+    question: "How often do sellers receive their payouts?",
+    answer: "Seller payouts are processed automatically via Stripe Connect. Once an order is delivered and the dispute window closes, funds are transferred directly to your registered bank account on a bi-weekly schedule."
+  },
+  {
+    question: "Can I manage my store inventory from a mobile device?",
+    answer: "Absolutely! Our seller dashboard is fully responsive. You can add new products, track active orders, respond to customer inquiries, and view analytics directly from your smartphone or tablet."
+  }
+];
 
 // ─── Country phone data from react-phone-number-input ────────────────────────
 const countryCodeList = getCountries();
@@ -194,6 +218,9 @@ export default function Page() {
   const [fields, setFields] = useState({ name: "", phone: "", email: "", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  
+  // FAQ accordion state
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Phone country picker
   const [phoneCountry, setPhoneCountry] = useState<Country>(COUNTRIES[0]);
@@ -466,6 +493,47 @@ export default function Page() {
             </div>
 
           </div>
+        </div>
+      </section>
+
+      {/* --- FAQ SECTION --- */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-[#3b0f06] mb-4">Frequently Asked Questions</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">Find answers to some of the most common questions below.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4">
+          {FAQS.map((faq, index) => {
+            const isOpen = openFaqIndex === index;
+            return (
+              <div 
+                key={index}
+                className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all duration-300 ${isOpen ? 'border-[#3b0f06]/40 shadow-md' : 'border-gray-100 hover:border-[#3b0f06]/20'}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                  className="w-full flex items-center justify-between p-6 text-left focus:outline-none"
+                >
+                  <h3 className={`font-bold text-lg transition-colors ${isOpen ? 'text-[#3b0f06]' : 'text-gray-800'}`}>
+                    {faq.question}
+                  </h3>
+                  <ChevronDown className={`w-5 h-5 shrink-0 text-[#3b0f06] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <div 
+                  className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                    isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <p className="px-6 pb-6 text-gray-600 text-sm leading-relaxed">
+                      {faq.answer}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
