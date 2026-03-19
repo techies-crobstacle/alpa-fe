@@ -223,21 +223,27 @@ export function useEnhancedCart() {
     if (!currentShipping && cartData?.calculations?.selectedShipping) {
       currentShipping = cartData.calculations.selectedShipping;
     }
-    
-    if (!cartData || !currentShipping) {
+
+    if (!cartData) {
       return {
         subtotal: 0,
         shippingCost: 0,
         gstAmount: 0,
         grandTotal: 0,
-        gstPercentage: 10, // Default GST
+        gstPercentage: 10,
       };
     }
 
-    const subtotal = parseFloat(cartData.calculations.subtotal || '0');
-    const shippingCost = parseFloat(currentShipping.cost || '0');
+    // Compute subtotal directly from cart items so optimistic add/remove/qty
+    // changes are reflected instantly — no need to wait for a server re-fetch
+    // to return updated calculations.subtotal.
+    const subtotal = cartData.cart.reduce(
+      (sum, item) => sum + parseFloat(item.product.price || '0') * item.quantity,
+      0
+    );
+    const shippingCost = currentShipping ? parseFloat(currentShipping.cost || '0') : 0;
     const gstPercentage = 10; // GST rate for display — prices are already GST-inclusive
-    
+
     // Prices are GST-inclusive. Extract the GST component (Price ÷ 11).
     // Grand total = subtotal + shipping (no additional GST added on top).
     const grandTotal = subtotal + shippingCost;
@@ -291,12 +297,12 @@ export function useEnhancedCart() {
 
         if (!response.ok) throw new Error("Failed to update quantity");
       }
-
-      // Refresh cart data
-      await fetchCartData(true);
+      // Optimistic update already applied — no re-fetch on success.
+      // The caller (useSharedEnhancedCart) will revert via fetchCartData on error.
     } catch (err) {
       console.error("Error updating quantity:", err);
       setError(err instanceof Error ? err.message : "Failed to update quantity");
+      throw err; // propagate so caller can revert optimistic state
     }
   };
 
@@ -321,12 +327,11 @@ export function useEnhancedCart() {
       });
 
       if (!response.ok) throw new Error("Failed to remove item");
-
-      // Refresh cart data
-      await fetchCartData(true);
+      // Optimistic update already applied — no re-fetch on success.
     } catch (err) {
       console.error("Error removing item:", err);
       setError(err instanceof Error ? err.message : "Failed to remove item");
+      throw err; // propagate so caller can revert optimistic state
     }
   };
 

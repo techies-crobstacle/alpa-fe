@@ -24,6 +24,8 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
   
   // Create refs to store update functions so we can trigger updates across components
   const updateCallbacks = useRef<Set<() => void>>(new Set());
+  // Per-product debounce timers for quantity updates
+  const qtyDebounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
   
   // Function to trigger updates across all subscribed components
   const triggerUpdate = useCallback(() => {
@@ -100,45 +102,48 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
       });
 
       if (!response.ok) throw new Error("Failed to add to cart");
-      
-      // Small delay to ensure backend is updated before triggering refresh
-      setTimeout(() => {
-        cartData.fetchCartData(true); // Fetch fresh data from backend
-        triggerUpdate();
-      }, 100);
+
+      // Optimistic update already applied above — no re-fetch needed on success.
+      // Trigger a lightweight UI sync without a full GET /api/cart.
+      triggerUpdate();
       
     } catch (error) {
       console.error('Enhanced add to cart error:', error);
-      // Revert optimistic update here if needed (could trigger a force fetch)
+      // Revert optimistic update by force-fetching server state
       cartData.fetchCartData(true);
       throw error;
     }
   }, [triggerUpdate, cartData]);
 
-  // Enhanced update function that notifies all components
+  // Enhanced update function with debounce — optimistic update fires instantly,
+  // the API call is debounced 400 ms so rapid +/- clicks only send one request.
   const enhancedUpdateQuantity = useCallback(async (productId: string, newQuantity: number) => {
-    // 1. OPTIMISTIC UPDATE FIRST
+    // 1. OPTIMISTIC UPDATE IMMEDIATELY (instant UI)
     if (newQuantity > 0) {
-       cartData.optimisticUpdateItem(productId, newQuantity);
+      cartData.optimisticUpdateItem(productId, newQuantity);
     } else {
-       cartData.optimisticRemoveItem(productId);
+      cartData.optimisticRemoveItem(productId);
     }
 
-    try {
-      const result = await cartData.updateQuantity(productId, newQuantity);
-      
-      // Small delay to ensure backend is updated before triggering refresh
-      setTimeout(() => {
-        triggerUpdate();
-      }, 100);
-      
-      return result;
-    } catch (error) {
-      console.error('Enhanced update quantity error:', error);
-      // Revert
-      cartData.fetchCartData(true);
-      throw error;
+    // 2. Debounce the actual API call per product (400 ms)
+    if (qtyDebounceTimers.current[productId]) {
+      clearTimeout(qtyDebounceTimers.current[productId]);
     }
+
+    return new Promise<void>((resolve) => {
+      qtyDebounceTimers.current[productId] = setTimeout(async () => {
+        delete qtyDebounceTimers.current[productId];
+        try {
+          await cartData.updateQuantity(productId, newQuantity);
+          triggerUpdate();
+        } catch (error) {
+          console.error('Enhanced update quantity error:', error);
+          // API failed — re-fetch server state to revert optimistic update
+          cartData.fetchCartData(true);
+        }
+        resolve();
+      }, 400);
+    });
   }, [cartData, triggerUpdate]);
 
   // Enhanced remove function that notifies all components
@@ -148,16 +153,11 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
 
     try {
       const result = await cartData.removeItem(productId);
-      
-      // Small delay to ensure backend is updated before triggering refresh
-      setTimeout(() => {
-        triggerUpdate();
-      }, 100);
-      
+      triggerUpdate();
       return result;
     } catch (error) {
       console.error('Enhanced remove item error:', error);
-      // Revert
+      // API failed — re-fetch server state to revert optimistic update
       cartData.fetchCartData(true);
       throw error;
     }

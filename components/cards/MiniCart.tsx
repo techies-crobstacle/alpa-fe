@@ -36,13 +36,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
     onOverstock: (productId, newStock) => handleQuantityUpdate(productId, newStock),
   });
   
-  const { subtotal: backendSubtotal } = calculateTotals;
-
-  // Derive subtotal directly from cartItems as a fallback so it's always
-  // accurate immediately after an optimistic add (before the backend re-fetch).
-  const subtotal = cartItems.length > 0 && backendSubtotal === 0
-    ? cartItems.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0)
-    : backendSubtotal;
+  const { subtotal } = calculateTotals;
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const router = useRouter();
 
