@@ -131,6 +131,7 @@ import { getCountries, getCountryCallingCode } from "react-phone-number-input/in
 import { isValidPhoneNumber } from "react-phone-number-input";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import type { CountryCode } from "libphonenumber-js";
+import { apiClient } from "@/lib/api";
 
 // ─── FAQ Data ────────────────────────────────────────────────────────────────
 const FAQS = [
@@ -214,10 +215,20 @@ function validatePhone(digits: string, country: Country): string | null {
   }
 }
 
+const ISSUE_TYPES = [
+  "Customer Order Support",
+  "Seller Registration",
+  "Becoming a Marketplace Partner",
+  "Cultural or Community Enquiries",
+  "Media / Press",
+  "General Enquiry"
+];
+
 export default function Page() {
-  const [fields, setFields] = useState({ name: "", phone: "", email: "", message: "" });
+  const [fields, setFields] = useState({ issueType: "", name: "", phone: "", email: "", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // FAQ accordion state
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -242,23 +253,47 @@ export default function Page() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFields((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
+    if (!fields.issueType)      newErrors.issueType = 'Please select an issue type.';
     if (!fields.name.trim())    newErrors.name    = 'Full name is required.';
     if (!fields.email.trim())   newErrors.email   = 'Email address is required.';
     if (!fields.message.trim()) newErrors.message = 'Message is required.';
-    const phoneErr = validatePhone(fields.phone, phoneCountry);
-    if (phoneErr) newErrors.phone = phoneErr;
+    
+    // Optional phone number - only validate if it's partially filled
+    if (fields.phone.trim()) {
+      const phoneErr = validatePhone(fields.phone, phoneCountry);
+      if (phoneErr) newErrors.phone = phoneErr;
+    }
+    
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
-    setSubmitted(true);
+    
+    setIsSubmitting(true);
+    try {
+      // Send the payload to the API
+      await apiClient.post("/contact", {
+        issueType: fields.issueType,
+        fullName: fields.name.trim(),
+        email: fields.email.trim(),
+        message: fields.message.trim(),
+        phoneNumber: fields.phone.trim() || undefined
+      }, false); // false for no auth
+      
+      setSubmitted(true);
+      setFields({ issueType: "", name: "", phone: "", email: "", message: "" });
+    } catch (error: any) {
+      setErrors({ form: error.message || "Failed to submit form. Please try again later." });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const inputBase = "w-full px-5 py-4 rounded-xl outline-none transition-all";
@@ -306,6 +341,33 @@ export default function Page() {
                   Message sent! We'll get back to you within 24 hours.
                 </div>
               )}
+
+              {errors.form && (
+                <div className="flex items-center gap-3 px-5 py-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm font-medium">
+                  {errors.form}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-600 ml-1">Issue Type <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <select
+                    name="issueType"
+                    value={fields.issueType}
+                    onChange={handleChange}
+                    className={`${errors.issueType ? inputError : inputNormal} appearance-none cursor-pointer`}
+                  >
+                    <option value="" disabled>Select an issue type</option>
+                    {ISSUE_TYPES.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
+                    <ChevronDown className="w-5 h-5" />
+                  </div>
+                </div>
+                {errors.issueType && <p className="text-xs text-red-500 ml-1">{errors.issueType}</p>}
+              </div>
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
@@ -431,10 +493,11 @@ export default function Page() {
 
               <button
                 type="submit"
-                className="group flex items-center justify-center gap-2 w-full md:w-auto bg-[#3b0f06] text-white px-10 py-4 rounded-xl font-semibold hover:bg-[#582419] transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+                disabled={isSubmitting}
+                className="group flex items-center justify-center gap-2 w-full md:w-auto bg-[#3b0f06] text-white px-10 py-4 rounded-xl font-semibold hover:bg-[#582419] transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
-                Send Message
-                <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                {isSubmitting ? "Sending..." : "Send Message"}
+                {!isSubmitting && <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
               </button>
             </form>
           </div>
