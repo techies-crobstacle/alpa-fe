@@ -16,7 +16,7 @@ const ALL_BLOG_POSTS = [
     date: "12 Mar 2026",
     cta: "Read the story",
     image: "/images/about2.png",
-    href: "/blog/yolngu-art-symbols",
+    href: "/blog/about-us-what-we-offer.jpg",
     featured: true,
   },
   {
