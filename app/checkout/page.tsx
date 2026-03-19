@@ -90,7 +90,6 @@ export default function CheckOutPage() {
     const savedStep = localStorage.getItem("checkoutStep");
     const savedGuestForm = localStorage.getItem("showGuestForm");
     const savedGuestData = localStorage.getItem("guestCheckoutData");
-    const savedPromoCode = localStorage.getItem("promoCode");
     const savedPaymentMethod = localStorage.getItem("paymentMethod");
 
     if (savedStep) {
@@ -113,9 +112,6 @@ export default function CheckOutPage() {
       } catch (error) {
         console.error("Failed to load guest data:", error);
       }
-    }
-    if (savedPromoCode) {
-      setPromoCode(savedPromoCode);
     }
     if (savedPaymentMethod) {
       setPaymentMethod(savedPaymentMethod);
@@ -164,10 +160,6 @@ export default function CheckOutPage() {
     shippingState,
     shippingZipCode,
   ]);
-
-  useEffect(() => {
-    localStorage.setItem("promoCode", promoCode);
-  }, [promoCode]);
 
   useEffect(() => {
     localStorage.setItem("paymentMethod", paymentMethod);

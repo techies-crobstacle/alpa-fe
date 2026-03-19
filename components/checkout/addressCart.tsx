@@ -776,7 +776,6 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
                   </>
                 ) : (
                   <>
-                    <span>💾</span>
                     Save Address
                   </>
                 )}
@@ -792,7 +791,6 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
           <div className="p-4 bg-linear-to-r from-[#5A1E12] to-[#4a1810] text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xl">📍</span>
                 <h3 className="text-lg font-semibold">Saved Addresses</h3>
                 {savedAddresses.length > 0 && (
                   <span className="bg-white/20 text-xs px-2 py-1 rounded-full font-medium">{savedAddresses.length}</span>
@@ -822,7 +820,7 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
                     onClick={fetchSavedAddresses}
                     className="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-lg transition-all"
                   >
-                    🔄 Refresh Addresses
+                    Refresh Addresses
                   </button>
                 </div>
               )}
