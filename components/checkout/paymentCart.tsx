@@ -49,7 +49,6 @@ function validateGiftCode(v: string) {
 const PAYMENT_OPTIONS = [
   { value: "card",   label: "Credit / Debit Card",  icon: "💳" },
   { value: "gift",   label: "Gift Card",             icon: "🎁" },
-  { value: "cod",    label: "Cash on Delivery",      icon: "💵" },
 ];
 
 export default function PaymentCart({ onPaymentMethodChange }: PaymentCartProps) {
