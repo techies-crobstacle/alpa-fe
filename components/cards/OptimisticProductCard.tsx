@@ -252,10 +252,14 @@ export default function OptimisticProductCard({
       <div className="flex flex-col grow p-4 bg-white">
         {/* Header: Artist & Rating */}
         <div className="flex justify-between items-start mb-2">
-           <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-             {artistName || "Collection"}
-           </span>
-           {renderStars(rating)}
+          {artistName && (
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+              {artistName}
+            </span>
+          )}
+          <div className={artistName ? "ml-auto" : ""}>
+            {renderStars(rating)}
+          </div>
         </div>
 
         {/* Title */}
