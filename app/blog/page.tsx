@@ -1,126 +1,102 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-// ─────────────────────────────────────────────
-// Blog post data
-// ─────────────────────────────────────────────
-const ALL_BLOG_POSTS = [
-  {
-    title: "Understanding Yolŋu Art: Symbols, Stories & Sacred Meaning",
-    excerpt:
-      "Every dot, line, and colour in Yolŋu art carries generations of knowledge. We explore the visual language behind some of our most celebrated works.",
-    tags: ["Culture", "Art"],
-    readTime: "5 min read",
-    date: "12 Mar 2026",
-    cta: "Read the story",
-    image: "/images/about2.png",
-    href: "/blog/about-us-what-we-offer.jpg",
-    featured: true,
+// Custom styles for text truncation
+const truncateStyles = {
+  title: {
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
-  {
-    title: "From Arnhem Land to Your Doorstep: How We Ship with Care",
-    excerpt:
-      "Sending fragile, handcrafted pieces across Australia isn't simple. Here's how our fulfilment team ensures every order arrives safely and on time.",
-    tags: ["Delivery", "Behind the Scenes"],
-    readTime: "4 min read",
-    date: "28 Feb 2026",
-    cta: "Learn how we do it",
-    image: "/images/about-us-what-we-offer.jpg",
-    href: "/blog/how-we-ship",
-    featured: false,
+  excerpt: {
+    display: '-webkit-box',
+    WebkitLineClamp: 4,
+    WebkitBoxOrient: 'vertical' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
-  {
-    title: "Meet the Makers: Spotlight on Three Aboriginal Artists",
-    excerpt:
-      "We sat down with three creators from our seller community to hear their stories, their craft, and what inspires their most iconic pieces.",
-    tags: ["Makers", "Community"],
-    readTime: "6 min read",
-    date: "15 Feb 2026",
-    cta: "Meet the artists",
-    image: "/images/main.png",
-    href: "/blog/meet-the-makers",
-    featured: false,
+  featuredTitle: {
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
-  {
-    title: "The Significance of Bark Painting in Yolŋu Ceremony",
-    excerpt:
-      "Bark paintings are far more than decorative artworks — they are sacred maps, ancestral records, and living connections to Country. Discover their deeper meaning.",
-    tags: ["Culture", "Art"],
-    readTime: "7 min read",
-    date: "5 Feb 2026",
-    cta: "Explore the tradition",
-    image: "/images/about2.png",
-    href: "/blog/bark-painting-ceremony",
-    featured: false,
+  featuredExcerpt: {
+    display: '-webkit-box',
+    WebkitLineClamp: 4,
+    WebkitBoxOrient: 'vertical' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
-  {
-    title: "How to Identify Authentic Aboriginal Art When You Shop",
-    excerpt:
-      "With the rise of inauthentic replicas, knowing how to recognise genuine Aboriginal artwork is more important than ever. Here's your practical guide.",
-    tags: ["Art", "Guide"],
-    readTime: "5 min read",
-    date: "22 Jan 2026",
-    cta: "Read the guide",
-    image: "/images/about-us-what-we-offer.jpg",
-    href: "/blog/identify-authentic-art",
-    featured: false,
-  },
-  {
-    title: "The Didgeridoo: Voice of the Ancestors",
-    excerpt:
-      "One of the world's oldest musical instruments, the didgeridoo carries ceremony, healing, and story within every breath. We trace its origins and its makers.",
-    tags: ["Culture", "Music"],
-    readTime: "4 min read",
-    date: "10 Jan 2026",
-    cta: "Listen to the story",
-    image: "/images/main.png",
-    href: "/blog/didgeridoo-voice-of-ancestors",
-    featured: false,
-  },
-  {
-    title: "Sustainable Packaging: Our Journey Toward Zero Waste",
-    excerpt:
-      "We've been quietly reimagining how we pack and ship your orders without adding to landfill. Here's a transparent look at where we are and where we're headed.",
-    tags: ["Behind the Scenes", "Sustainability"],
-    readTime: "3 min read",
-    date: "29 Dec 2025",
-    cta: "See our commitment",
-    image: "/images/about-us-what-we-offer.jpg",
-    href: "/blog/sustainable-packaging",
-    featured: false,
-  },
-  {
-    title: "Community Stories: Life and Craft in Arnhem Land",
-    excerpt:
-      "Through the eyes of artists, elders, and families, we share what everyday life looks like in the remote communities that power this marketplace.",
-    tags: ["Community", "Culture"],
-    readTime: "8 min read",
-    date: "14 Dec 2025",
-    cta: "Hear their stories",
-    image: "/images/about2.png",
-    href: "/blog/community-stories",
-    featured: false,
-  },
-  {
-    title: "A Complete Buyer's Guide to Aboriginal Weaving & Textiles",
-    excerpt:
-      "From pandanus baskets to woven mats, Aboriginal textiles are tactile stories of land and lineage. Learn what to look for before you buy.",
-    tags: ["Guide", "Art"],
-    readTime: "6 min read",
-    date: "1 Dec 2025",
-    cta: "Start reading",
-    image: "/images/main.png",
-    href: "/blog/weaving-textiles-guide",
-    featured: false,
-  },
-];
+};
 
-const ALL_TAGS = [
-  "All",
-  ...Array.from(new Set(ALL_BLOG_POSTS.flatMap((p) => p.tags))),
-];
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+interface ApiBlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  coverImage: string;
+  shortDescription: string;
+  tags: string[];
+  ctaText: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BlogPost {
+  title: string;
+  excerpt: string;
+  tags: string[];
+  readTime: string;  
+  date: string;
+  cta: string;
+  image: string;
+  href: string;
+  featured: boolean;
+}
+
+// ─────────────────────────────────────────────
+// Utility functions
+// ─────────────────────────────────────────────
+const API_BASE_URL = "https://alpa-be.onrender.com/api";
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+const slugify = (slug: string): string => {
+  return slug
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '')
+    .replace(/--+/g, '-');
+};
+const transformApiDataToBlogPost = (apiPost: ApiBlogPost, index: number): BlogPost => {
+  return {
+    title: apiPost.title,
+    excerpt: apiPost.shortDescription,
+    tags: apiPost.tags.length > 0 ? apiPost.tags : ["General"],
+    readTime: "5 min read", // Default read time since API doesn't provide it
+    date: formatDate(apiPost.createdAt),
+    cta: apiPost.ctaText || "Read more",
+    image: apiPost.coverImage || "/images/default-blog.jpg",
+    href: `/blog/${slugify(apiPost.slug)}`, 
+    featured: index === 0, // First blog post is featured
+  };
+};
 
 // ─────────────────────────────────────────────
 // Components
@@ -128,12 +104,13 @@ const ALL_TAGS = [
 function BlogCard({
   post,
 }: {
-  post: (typeof ALL_BLOG_POSTS)[number];
+  post: BlogPost;
 }) {
   return (
-    <article className="group flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    <Link href={post.href} className="group block h-130"> 
+    <article className="group flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-130">
       {/* Image */}
-      <div className="relative w-full aspect-video overflow-hidden bg-[#F4E9DC]">
+      <div className="relative w-full h-56 min-h-56 overflow-hidden bg-[#F4E9DC]">
         <Image
           src={post.image}
           alt={post.title}
@@ -162,35 +139,39 @@ function BlogCard({
       </div>
 
       {/* Body */}
-      <div className="flex flex-col flex-1 p-6">
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {post.tags.map((tag) => (
-            <span
-              key={tag}
-              className="px-3 py-1 rounded-full bg-[#F4E9DC] text-[#803512] text-[11px] font-semibold tracking-wide border border-[#e8d5c0]"
-            >
-              {tag}
-            </span>
-          ))}
+      <div className="flex flex-col p-6 flex-1">
+        <div className="flex-1 min-h-0">
+          {/* Tags */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {post.tags.map((tag) => (
+              <span
+                key={tag}
+                className="px-3 py-1 rounded-full bg-[#F4E9DC] text-[#803512] text-[11px] font-semibold tracking-wide border border-[#e8d5c0]"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Date */}
+          <p className="text-[11px] text-[#803512]/50 font-medium mb-2 tracking-wide">
+            {post.date}
+          </p>
+
+          <h3 className="text-lg font-bold text-[#1a0a06] leading-snug mb-3 group-hover:text-[#803512] transition-colors duration-200" style={truncateStyles.title}>
+            {post.title}
+          </h3>
+          <div className="overflow-hidden">
+            <p className="text-sm text-gray-500 leading-relaxed" style={truncateStyles.excerpt}>
+              {post.excerpt}
+            </p>
+          </div>
         </div>
 
-        {/* Date */}
-        <p className="text-[11px] text-[#803512]/50 font-medium mb-2 tracking-wide">
-          {post.date}
-        </p>
-
-        <h3 className="text-lg font-bold text-[#1a0a06] leading-snug mb-3 group-hover:text-[#803512] transition-colors duration-200">
-          {post.title}
-        </h3>
-        <p className="text-sm text-gray-500 leading-relaxed flex-1 mb-5">
-          {post.excerpt}
-        </p>
-
-        {/* CTA */}
-        <div className="pt-4 border-t border-[#e8d5c0]">
-          <Link
-            href={post.href}
+        {/* CTA - Always at bottom */}
+        <div className="pt-4 border-t border-[#e8d5c0] mt-auto">
+          <span
+            // href={post.href}
             className="inline-flex items-center gap-2 text-sm font-semibold text-[#803512] hover:text-[#5A1E12] transition-colors group/cta"
           >
             {post.cta}
@@ -207,10 +188,11 @@ function BlogCard({
                 d="M17 8l4 4m0 0l-4 4m4-4H3"
               />
             </svg>
-          </Link>
+          </span>
         </div>
       </div>
     </article>
+     </Link>
   );
 }
 
@@ -219,14 +201,99 @@ function BlogCard({
 // ─────────────────────────────────────────────
 export default function BlogPage() {
   const [activeTag, setActiveTag] = useState("All");
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const featured = ALL_BLOG_POSTS.find((p) => p.featured)!;
+  // Fetch blog posts from API
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/blogs`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch blogs');
+        }
+
+        const data = await response.json();
+        
+        // Handle different possible response formats
+        let blogArray;
+        if (Array.isArray(data)) {
+          blogArray = data;
+        } else if (data && Array.isArray(data.data)) {
+          blogArray = data.data;
+        } else if (data && Array.isArray(data.blogs)) {
+          blogArray = data.blogs;
+        } else {
+          console.error('Unexpected API response format:', data);
+          throw new Error('Invalid data format - expected array of blogs');
+        }
+
+        const transformedPosts = blogArray
+          .filter((post: ApiBlogPost) => post.status === 'PUBLISHED')
+          .map((post: ApiBlogPost, index: number) => transformApiDataToBlogPost(post, index));
+        setBlogPosts(transformedPosts);
+      } catch (err) {
+        console.error('Error fetching blogs:', err);
+        setError(err instanceof Error ? err.message : 'Something went wrong');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogs();
+  }, []);
+
+  // Generate tags from fetched posts
+  const allTags = [
+    "All",
+    ...Array.from(new Set(blogPosts.flatMap((p) => p.tags))),
+  ];
+
+  const featured = blogPosts.find((p) => p.featured);
   const filtered =
     activeTag === "All"
-      ? ALL_BLOG_POSTS.filter((p) => !p.featured)
-      : ALL_BLOG_POSTS.filter(
+      ? blogPosts.filter((p) => !p.featured)
+      : blogPosts.filter(
           (p) => !p.featured && p.tags.includes(activeTag)
         );
+
+  // Loading state
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#803512] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#803512] font-semibold">Loading blogs...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <main className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 font-semibold mb-4">Error loading blogs</p>
+          <p className="text-[#803512]">{error}</p>
+        </div>
+      </main>
+    );
+  }
+
+  // No blogs state
+  if (blogPosts.length === 0) {
+    return (
+      <main className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-[#803512] font-semibold">No blogs available</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#EAD7B7]">
@@ -322,7 +389,8 @@ export default function BlogPage() {
             Featured Story
           </span>
 
-          <Link href={featured.href} className="group block">
+          {featured && (
+            <Link href={featured.href} className="group block">
             <article className="relative grid grid-cols-1 lg:grid-cols-2 bg-white border border-[#e8d5c0] rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
               {/* Image */}
               <div className="relative w-full min-h-72 lg:min-h-96 overflow-hidden bg-[#F4E9DC]">
@@ -377,10 +445,10 @@ export default function BlogPage() {
                   {featured.date}
                 </p>
 
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#1a0a06] leading-snug mb-4 group-hover:text-[#803512] transition-colors duration-300">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#1a0a06] leading-snug mb-4 group-hover:text-[#803512] transition-colors duration-300" style={truncateStyles.featuredTitle}>
                   {featured.title}
                 </h2>
-                <p className="text-base text-gray-500 leading-relaxed mb-8">
+                <p className="text-base text-gray-500 leading-relaxed mb-8" style={truncateStyles.featuredExcerpt}>
                   {featured.excerpt}
                 </p>
 
@@ -405,6 +473,7 @@ export default function BlogPage() {
               </div>
             </article>
           </Link>
+          )}
         </div>
       </section>
 
@@ -433,7 +502,7 @@ export default function BlogPage() {
 
           {/* Tag filter pills */}
           <div className="flex flex-wrap gap-2 mb-12">
-            {ALL_TAGS.map((tag) => (
+            {allTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setActiveTag(tag)}
