@@ -186,16 +186,39 @@ const transformApiDataToBlogPost = (apiPost: ApiBlogPost): BlogPost => {
   // Transform content string to ContentBlock array
   const contentBlocks: ContentBlock[] = [];
   
+  // Debug: Log the content received from API
+  console.log('📝 Blog Content Debug:', {
+    hasContent: !!apiPost.content,
+    contentType: typeof apiPost.content,
+    contentLength: apiPost.content?.length || 0,
+    contentPreview: apiPost.content?.substring(0, 100) + '...' || 'NO CONTENT',
+    fullPost: apiPost
+  });
+  
   // Split content by paragraphs and create basic structure
-  if (apiPost.content) {
+  if (apiPost.content && typeof apiPost.content === 'string' && apiPost.content.trim()) {
     const paragraphs = apiPost.content.split('\n\n').filter(p => p.trim());
+    console.log('📝 Content Paragraphs:', paragraphs.length, paragraphs);
+    
     paragraphs.forEach(paragraph => {
-      contentBlocks.push({
-        type: "paragraph",
-        text: paragraph.trim()
-      });
+      const trimmed = paragraph.trim();
+      if (trimmed) {
+        contentBlocks.push({
+          type: "paragraph",
+          text: trimmed
+        });
+      }
+    });
+  } else {
+    console.warn('⚠️ No content found or content is empty:', apiPost.content);
+    // Add a fallback paragraph
+    contentBlocks.push({
+      type: "paragraph",
+      text: "Content is being loaded. Please try refreshing the page."
     });
   }
+  
+  console.log('📝 Final Content Blocks:', contentBlocks);
 
   return {
     slug: apiPost.slug,
@@ -248,70 +271,9 @@ export default function BlogPostPage() {
       try {
         setLoading(true);
         
-        // Option 1: Try to fetch single blog by slug (if your API supports /api/blogs/slug/:slug)
-        try {
-          const response = await fetch(`${API_BASE_URL}/blogs/slug/${encodeURIComponent(slug)}`);
-          
-          if (response.ok) {
-            // Handle single blog response format: { success: true, blog: {...} }
-            const data = await response.json();
-            
-            if (data.success && data.blog && data.blog.status === 'PUBLISHED') {
-              const transformedPost = transformApiDataToBlogPost(data.blog);
-              setPost(transformedPost);
-              
-              // Fetch related posts separately
-              const allBlogsResponse = await fetch(`${API_BASE_URL}/blogs`);
-              if (allBlogsResponse.ok) {
-                const allBlogsData = await allBlogsResponse.json();
-                let blogArray = extractBlogArray(allBlogsData);
-                
-                console.log('Debug: Current blog data:', data.blog);
-                console.log('Debug: Total blogs available:', blogArray.length);
-                console.log('Debug: Current slug:', slug);
-                
-                const relatedPosts = blogArray
-                  .filter((blog: ApiBlogPost) => {
-                    if (!blog || blog.status !== 'PUBLISHED' || blog.slug === slug) {
-                      return false;
-                    }
-                    
-                    // Check for shared tags
-                    const blogTags = blog.tags && Array.isArray(blog.tags) ? blog.tags : [];
-                    const currentTags = data.blog.tags && Array.isArray(data.blog.tags) ? data.blog.tags : [];
-                    
-                    return blogTags.length > 0 && currentTags.length > 0 && 
-                           blogTags.some(tag => currentTags.includes(tag));
-                  })
-                  .slice(0, 3)
-                  .map(transformApiDataToBlogPost);
-                
-                console.log('Debug: Related posts with tags:', relatedPosts.length);
-                
-                // If no related posts found, show recent posts instead
-                if (relatedPosts.length === 0) {
-                  console.log('Debug: No related posts found, showing recent posts');
-                  const recentPosts = blogArray
-                    .filter((blog: ApiBlogPost) => 
-                      blog && blog.status === 'PUBLISHED' && blog.slug !== slug
-                    )
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    .slice(0, 3)
-                    .map(transformApiDataToBlogPost);
-                  console.log('Debug: Recent posts fallback:', recentPosts.length);
-                  setRelated(recentPosts);
-                } else {
-                  setRelated(relatedPosts);
-                }
-              }
-              return; // Successfully found and processed blog post
-            }
-          }
-        } catch (slugError) {
-          // Slug endpoint not available, using fallback approach
-        }
+        console.log('🔍 Fetching blog with slug:', slug);
         
-        // Option 2: Fallback to fetching all blogs and filtering by slug
+        // Step 1: Get all blogs to find the blog ID by slug
         const allBlogsResponse = await fetch(`${API_BASE_URL}/blogs`);
         
         if (!allBlogsResponse.ok) {
@@ -320,6 +282,8 @@ export default function BlogPostPage() {
 
         const allBlogsData = await allBlogsResponse.json();
         const blogArray = extractBlogArray(allBlogsData);
+        
+        console.log('📚 All blogs fetched:', blogArray.length);
 
         // Find the blog post by slug
         const foundBlog = blogArray.find((blog: ApiBlogPost) => 
@@ -329,15 +293,38 @@ export default function BlogPostPage() {
         if (!foundBlog) {
           throw new Error('Blog post not found');
         }
+        
+        console.log('🔍 Found blog by slug:', foundBlog.id, foundBlog.title);
 
-        // Transform and set the main post
-        const transformedPost = transformApiDataToBlogPost(foundBlog);
+        // Step 2: Fetch the full blog content by ID
+        const blogByIdResponse = await fetch(`${API_BASE_URL}/blogs/${foundBlog.id}`);
+        
+        if (!blogByIdResponse.ok) {
+          throw new Error('Failed to fetch blog content');
+        }
+        
+        const blogByIdData = await blogByIdResponse.json();
+        console.log('✅ Blog by ID API response:', blogByIdData);
+        
+        let fullBlogData;
+        if (blogByIdData.success && blogByIdData.blog) {
+          fullBlogData = blogByIdData.blog;
+        } else if (blogByIdData.id) {
+          // Direct blog object response
+          fullBlogData = blogByIdData;
+        } else {
+          throw new Error('Invalid blog response format');
+        }
+        
+        console.log('📝 Full blog data with content:', fullBlogData);
+        console.log('📝 Content field:', fullBlogData.content);
+        console.log('📝 Content exists:', !!fullBlogData.content);
+        console.log('📝 Content type:', typeof fullBlogData.content);
+        
+        const transformedPost = transformApiDataToBlogPost(fullBlogData);
         setPost(transformedPost);
         
-        console.log('Debug: Found blog from fallback:', foundBlog);
-        console.log('Debug: Total blogs in fallback:', blogArray.length);
-
-        // Find related posts (same tags, different post)
+        // Step 3: Find related posts
         const relatedPosts = blogArray
           .filter((blog: ApiBlogPost) => {
             if (!blog || blog.status !== 'PUBLISHED' || blog.slug === slug) {
@@ -346,7 +333,7 @@ export default function BlogPostPage() {
             
             // Check for shared tags
             const blogTags = blog.tags && Array.isArray(blog.tags) ? blog.tags : [];
-            const currentTags = foundBlog.tags && Array.isArray(foundBlog.tags) ? foundBlog.tags : [];
+            const currentTags = fullBlogData.tags && Array.isArray(fullBlogData.tags) ? fullBlogData.tags : [];
             
             return blogTags.length > 0 && currentTags.length > 0 && 
                    blogTags.some(tag => currentTags.includes(tag));
@@ -354,12 +341,11 @@ export default function BlogPostPage() {
           .slice(0, 3)
           .map(transformApiDataToBlogPost);
         
-        console.log('Debug: Related posts from fallback:', relatedPosts.length);
-
+        console.log('🔗 Related posts with tags:', relatedPosts.length);
         
         // If no related posts found, show recent posts instead
         if (relatedPosts.length === 0) {
-          console.log('Debug: No related posts in fallback, showing recent');
+          console.log('🔗 No related posts found, showing recent posts');
           const recentPosts = blogArray
             .filter((blog: ApiBlogPost) => 
               blog && blog.status === 'PUBLISHED' && blog.slug !== slug
@@ -367,7 +353,7 @@ export default function BlogPostPage() {
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 3)
             .map(transformApiDataToBlogPost);
-          console.log('Debug: Recent posts in fallback:', recentPosts.length);
+          console.log('🔗 Recent posts fallback:', recentPosts.length);
           setRelated(recentPosts);
         } else {
           setRelated(relatedPosts);

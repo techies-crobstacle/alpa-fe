@@ -8,39 +8,48 @@ import { motion } from "framer-motion";
 import Sponsored from "@/components/cards/Sponsored";
 
 const SLIDE_COUNT = 2;
+const API_BASE_URL = "https://alpa-be.onrender.com/api";
 
-const BLOG_POSTS = [
-  {
-    title: "Understanding Yolŋu Art: Symbols, Stories & Sacred Meaning",
-    excerpt:
-      "Every dot, line, and colour in Yolŋu art carries generations of knowledge. We explore the visual language behind some of our most celebrated works.",
-    tags: ["Culture", "Art"],
-    readTime: "5 min read",
-    cta: "Read the story",
-    image: "/images/about2.png",
-    href: "/blog/yolngu-art-symbols",
-  },
-  {
-    title: "From Arnhem Land to Your Doorstep: How We Ship with Care",
-    excerpt:
-      "Sending fragile, handcrafted pieces across Australia isn't simple. Here's how our fulfilment team ensures every order arrives safely and on time.",
-    tags: ["Delivery", "Behind the Scenes"],
-    readTime: "4 min read",
-    cta: "Learn how we do it",
-    image: "/images/about-us-what-we-offer.jpg",
-    href: "/blog/how-we-ship",
-  },
-  {
-    title: "Meet the Makers: Spotlight on Three Aboriginal Artists",
-    excerpt:
-      "We sat down with three creators from our seller community to hear their stories, their craft, and what inspires their most iconic pieces.",
-    tags: ["Makers", "Community"],
-    readTime: "6 min read",
-    cta: "Meet the artists",
-    image: "/images/main.png",
-    href: "/blog/meet-the-makers",
-  },
-];
+// Blog post type for homepage
+interface ApiBlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  shortDescription: string;
+  coverImage: string;
+  tags: string[];
+  ctaText: string;
+  status: string;
+  createdAt: string;
+}
+
+interface HomeBlogPost {
+  title: string;
+  excerpt: string;
+  tags: string[];
+  readTime: string;
+  cta: string;
+  image: string;
+  href: string;
+}
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const transformApiBlogToHomePost = (apiPost: ApiBlogPost): HomeBlogPost => ({
+  title: apiPost.title,
+  excerpt: apiPost.shortDescription,
+  tags: apiPost.tags.length > 0 ? apiPost.tags : ["General"],
+  readTime: "5 min read", // Default read time 
+  cta: apiPost.ctaText || "Read more",
+  image: apiPost.coverImage || "/images/default-blog.jpg",
+  href: `/blog/${apiPost.slug}`
+});
 
 const Page = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -48,6 +57,56 @@ const Page = () => {
   const [activeSlide, setActiveSlide] = useState(0);
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const limitedProducts = products.slice(0, 12);
+
+  // Blog state management
+  const [blogPosts, setBlogPosts] = useState<HomeBlogPost[]>([]);
+  const [blogsLoading, setBlogsLoading] = useState(true);
+  const [blogsError, setBlogsError] = useState<string | null>(null);
+
+  // Fetch blogs for homepage
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        setBlogsLoading(true);
+        setBlogsError(null);
+        
+        const response = await fetch(`${API_BASE_URL}/blogs`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch blogs');
+        }
+        
+        const responseData = await response.json();
+        console.log('API Response:', responseData); // Debug log
+        
+        // Handle different response structures
+        let blogData: ApiBlogPost[] = [];
+        if (Array.isArray(responseData)) {
+          blogData = responseData;
+        } else if (responseData.data && Array.isArray(responseData.data)) {
+          blogData = responseData.data;
+        } else if (responseData.blogs && Array.isArray(responseData.blogs)) {
+          blogData = responseData.blogs;
+        } else {
+          throw new Error('Invalid API response structure');
+        }
+        
+        const transformedPosts = blogData
+          .filter(post => post.status?.toLowerCase() === 'published')
+          .slice(0, 3) // Limit to 3 posts for homepage
+          .map(transformApiBlogToHomePost);
+          
+        setBlogPosts(transformedPosts);
+      } catch (error) {
+        console.error('Error fetching blogs:', error);
+        setBlogsError(error instanceof Error ? error.message : 'Failed to fetch blogs');
+        setBlogPosts([]);
+      } finally {
+        setBlogsLoading(false);
+      }
+    };
+
+    fetchBlogs();
+  }, []);
 
   const scrollToSlide = (index: number) => {
     if (scrollRef.current) {
@@ -188,10 +247,10 @@ const Page = () => {
               className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-16 md:mb-20"
             >
               <Link
-                href="/shop"
+                href="/about-us"
                 className="group relative inline-flex items-center gap-2 px-8 py-3.5 bg-[#5A1E12] hover:bg-[#7a2a1a] text-white font-semibold text-sm tracking-wide uppercase rounded-full transition-all duration-300 shadow-[0_8px_24px_rgba(90,30,18,0.45)] hover:shadow-[0_12px_32px_rgba(90,30,18,0.55)] hover:-translate-y-0.5 active:translate-y-0"
               >
-                Start Your Journey
+                Explore More
                 <svg
                   className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
                   fill="none"
@@ -210,7 +269,7 @@ const Page = () => {
                 href="/shop"
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/70 text-white/80 hover:text-white font-medium text-sm tracking-wide uppercase rounded-full backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
               >
-                Explore Art
+                Shop Now
               </Link>
             </motion.div>
 
@@ -536,9 +595,9 @@ const Page = () => {
 
       {/* ================= SPLIT EXPLORE STRIP ================= */}
       <section className="grid grid-cols-1 lg:grid-cols-2 min-h-64 overflow-hidden">
-        {/* ── LEFT: Explore Marketplace ── */}
+        {/* ── LEFT: Register as Seller ── */}
         <Link
-          href="/shop"
+          href="/sellerOnboarding"
           className="group relative flex flex-col justify-between p-6 md:p-8 bg-[#3a1208] overflow-hidden cursor-pointer"
         >
           {/* Animated dot-grid background */}
@@ -575,27 +634,26 @@ const Page = () => {
               <div className="w-0.5 h-8 bg-[#ead7b7]/60" />
             </div>
             <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#ead7b7]/50 mt-1">
-              01 / Shop
+              01 / Sell
             </span>
           </div>
 
           {/* Text block */}
           <div className="relative z-10 mt-4">
             <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#ead7b7]/70 mb-2">
-              Discover Products
+              Join Our Community
             </p>
             <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-2 group-hover:text-amber-100 transition-colors duration-300">
-              Explore the
+              Become a
               <br />
-              <span className="text-[#ead7b7]">Marketplace</span>
+              <span className="text-[#ead7b7]">Seller</span>
             </h3>
             <p className="text-sm text-white/50 max-w-xs leading-relaxed mb-4">
-              Thousands of authentic Aboriginal products like art, crafts,
-              textiles, and more, curated with care.
+              Share your authentic art and crafts with a global audience. Join our community of artists and creators.
             </p>
             <div className="inline-flex items-center gap-3 text-[#ead7b7] text-sm font-semibold tracking-wide uppercase">
               <span className="w-8 h-px bg-[#ead7b7]/60 group-hover:w-14 transition-all duration-400" />
-              Browse Now
+              Register Now
               <svg
                 className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300"
                 fill="none"
@@ -619,9 +677,9 @@ const Page = () => {
           </div>
         </Link>
 
-        {/* ── RIGHT: Explore Yolŋu Culture ── */}
+        {/* ── RIGHT: Explore Blog ── */}
         <Link
-          href="/about-us"
+          href="/blog"
           className="group relative flex flex-col justify-between p-6 md:p-8 bg-[#803512] overflow-hidden cursor-pointer"
         >
           {/* Animated dot-grid background */}
@@ -691,7 +749,7 @@ const Page = () => {
           {/* Corner bracket top-right */}
           <div className="relative z-10 flex items-start justify-between mb-auto">
             <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-orange-200/50 mt-1">
-              02 / Culture
+              02 / Blog
             </span>
             <div className="flex flex-col items-end gap-1">
               <div className="w-8 h-0.5 bg-orange-200/60" />
@@ -702,20 +760,19 @@ const Page = () => {
           {/* Text block */}
           <div className="relative z-10 mt-4">
             <p className="text-xs font-semibold tracking-[0.25em] uppercase text-orange-200/60 mb-2">
-              Living Heritage
+              Stories & Insights
             </p>
             <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-2 group-hover:text-orange-100 transition-colors duration-300">
-              Explore
+              Read Our
               <br />
-              <span className="text-orange-200">Yolŋu Culture</span>
+              <span className="text-orange-200">Blog</span>
             </h3>
             <p className="text-sm text-white/50 max-w-xs leading-relaxed mb-4">
-              Dive into the world's oldest living culture — stories, ceremony,
-              language, and land passed through generations.
+              Discover stories, cultural insights, artist features, and the latest news from our Aboriginal art community.
             </p>
             <div className="inline-flex items-center gap-3 text-orange-200 text-sm font-semibold tracking-wide uppercase">
               <span className="w-8 h-px bg-orange-300/60 group-hover:w-14 transition-all duration-400" />
-              Learn More
+              Read Articles
               <svg
                 className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300"
                 fill="none"
@@ -739,6 +796,7 @@ const Page = () => {
           </div>
         </Link>
       </section>
+
 
       {/* STATIC VIDEO SECTION */}
       <section className=" mx-auto px-12 bg-white pt-22 pb-28">
@@ -811,85 +869,146 @@ const Page = () => {
 
           {/* Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {BLOG_POSTS.map((post) => (
-              <article
-                key={post.title}
-                className="group flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-              >
-                {/* Image */}
-                <div className="relative w-full aspect-video overflow-hidden bg-[#F4E9DC]">
-                  <Image
-                    src={post.image}
-                    alt={post.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {/* Read time pill — top right */}
-                  <div className="absolute top-3 right-3">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-[10px] font-semibold text-white/90">
-                      <svg
-                        className="w-3 h-3 shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      {post.readTime}
-                    </span>
+            {blogsLoading ? (
+              // Blog loading skeletons
+              [...Array(3)].map((_, i) => (
+                <article
+                  key={i}
+                  className="flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm animate-pulse"
+                >
+                  {/* Image skeleton */}
+                  <div className="relative w-full aspect-video overflow-hidden bg-[#F4E9DC]">
+                    <div className="w-full h-full bg-linear-to-r from-[#F4E9DC] via-[#e8d5c0] to-[#F4E9DC] bg-size-[200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite]" />
+                    <div className="absolute top-3 right-3">
+                      <div className="w-20 h-6 rounded-full bg-[#e8d5c0]" />
+                    </div>
                   </div>
-                </div>
-
-                {/* Body */}
-                <div className="flex flex-col flex-1 p-6">
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {post.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-3 py-1 rounded-full bg-[#F4E9DC] text-[#803512] text-[11px] font-semibold tracking-wide border border-[#e8d5c0]"
-                      >
-                        {tag}
+                  
+                  {/* Content skeleton */}
+                  <div className="flex flex-col flex-1 p-6">
+                    {/* Tags skeleton */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <div className="w-16 h-5 rounded-full bg-[#F4E9DC]" />
+                      <div className="w-12 h-5 rounded-full bg-[#F4E9DC]" />
+                    </div>
+                    
+                    {/* Title skeleton */}
+                    <div className="space-y-2 mb-3">
+                      <div className="w-full h-5 rounded bg-[#F4E9DC]" />
+                      <div className="w-3/4 h-5 rounded bg-[#F4E9DC]" />
+                    </div>
+                    
+                    {/* Excerpt skeleton */}
+                    <div className="space-y-2 flex-1 mb-5">
+                      <div className="w-full h-4 rounded bg-[#F4E9DC]" />
+                      <div className="w-full h-4 rounded bg-[#F4E9DC]" />
+                      <div className="w-2/3 h-4 rounded bg-[#F4E9DC]" />
+                    </div>
+                    
+                    {/* CTA skeleton */}
+                    <div className="pt-4 border-t border-[#e8d5c0]">
+                      <div className="w-24 h-4 rounded bg-[#F4E9DC]" />
+                    </div>
+                  </div>
+                </article>
+              ))
+            ) : blogsError ? (
+              // Error state
+              <div className="col-span-full text-center py-8">
+                <p className="text-[#803512] font-semibold mb-2">Unable to load blog posts</p>
+                <p className="text-[#803512]/60 text-sm">{blogsError}</p>
+              </div>
+            ) : blogPosts.length === 0 ? (
+              // No posts state
+              <div className="col-span-full text-center py-8">
+                <p className="text-[#803512]/60">No blog posts available</p>
+              </div>
+            ) : (
+              // Actual blog posts
+              blogPosts.map((post, index) => (
+                <article
+                  key={`${post.href}-${index}`}
+                  className="group flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                >
+                  {/* Image */}
+                  <div className="relative w-full aspect-video overflow-hidden bg-[#F4E9DC]">
+                    <Image
+                      src={post.image}
+                      alt={post.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/default-blog.jpg';
+                      }}
+                    />
+                    {/* Read time pill — top right */}
+                    <div className="absolute top-3 right-3">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-[10px] font-semibold text-white/90">
+                        <svg
+                          className="w-3 h-3 shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        {post.readTime}
                       </span>
-                    ))}
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-[#1a0a06] leading-snug mb-3 group-hover:text-[#803512] transition-colors duration-200">
-                    {post.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 leading-relaxed flex-1 mb-5">
-                    {post.excerpt}
-                  </p>
 
-                  {/* CTA */}
-                  <div className="pt-4 border-t border-[#e8d5c0]">
-                    <Link
-                      href={post.href}
-                      className="inline-flex items-center gap-2 text-sm font-semibold text-[#803512] hover:text-[#5A1E12] transition-colors group/cta"
-                    >
-                      {post.cta}
-                      <svg
-                        className="w-4 h-4 group-hover/cta:translate-x-1 transition-transform duration-200"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                  {/* Body */}
+                  <div className="flex flex-col flex-1 p-6">
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {post.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-3 py-1 rounded-full bg-[#F4E9DC] text-[#803512] text-[11px] font-semibold tracking-wide border border-[#e8d5c0]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <h3 className="text-lg font-bold text-[#1a0a06] leading-snug mb-3 group-hover:text-[#803512] transition-colors duration-200 line-clamp-2">
+                      {post.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 leading-relaxed flex-1 mb-5 line-clamp-4">
+                      {post.excerpt}
+                    </p>
+
+                    {/* CTA */}
+                    <div className="pt-4 border-t border-[#e8d5c0]">
+                      <Link
+                        href={post.href}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-[#803512] hover:text-[#5A1E12] transition-colors group/cta"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 8l4 4m0 0l-4 4m4-4H3"
-                        />
-                      </svg>
-                    </Link>
+                        {post.cta}
+                        <svg
+                          className="w-4 h-4 group-hover/cta:translate-x-1 transition-transform duration-200"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"
+                          />
+                        </svg>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))
+            )}
           </div>
         </div>
       </section>

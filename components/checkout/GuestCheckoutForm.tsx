@@ -54,12 +54,18 @@ const countryNames: Record<string, string> = {
 };
 
 // Build COUNTRIES array from react-phone-number-input data
-const COUNTRIES = countryCodeList.map(code => ({
+const COUNTRIES_RAW = countryCodeList.map(code => ({
   code,
   flag: countryFlags[code] || '🏳️',
   name: countryNames[code] || code,
   dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
 })).filter(country => countryFlags[country.code]); // Only include countries with flags
+
+// Reorder to put Australia first
+const auIndex = COUNTRIES_RAW.findIndex(country => country.code === 'AU');
+const COUNTRIES = auIndex !== -1 
+  ? [COUNTRIES_RAW[auIndex], ...COUNTRIES_RAW.filter(country => country.code !== 'AU')]
+  : COUNTRIES_RAW;
 
 type Country = typeof COUNTRIES[number];
 
@@ -296,16 +302,6 @@ export default function GuestCheckoutForm() {
 
         // Clear any existing field errors when autocomplete fills the form
         setFieldErrors({});
-
-        // Show success toast
-        toast.success("🏠 Address details auto-filled successfully!", {
-          position: "top-right",
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
       });
 
       autocompleteInstanceRef.current = autocomplete;
@@ -397,7 +393,7 @@ export default function GuestCheckoutForm() {
     }
     
     if (!addressLine.trim())   errors.addressLine   = "Address is required.";
-    if (!city.trim())          errors.city          = "City is required.";
+    if (!city.trim())          errors.city          = "Suburb is required.";
     if (!state.trim())         errors.state         = "State is required.";
     if (!zipCode.trim())       errors.zipCode       = "Postcode is required.";
     if (!selectedShipping)     errors.shippingMethodId = "Please select a shipping method.";
@@ -536,12 +532,12 @@ export default function GuestCheckoutForm() {
               ? "Fill in your details below to proceed."
               : "Enter your card details to securely complete your order."}
           </p>
-          <p className="text-sm mt-2 text-[#5A1E12]/70">
+          {/* <p className="text-sm mt-2 text-[#5A1E12]/70">
             Have an account?{" "}
             <Link href="/login" className="underline font-semibold text-[#5A1E12] hover:text-[#441208]">Log in</Link>
             {" "}or{" "}
             <Link href="/signup" className="underline font-semibold text-[#5A1E12] hover:text-[#441208]">Create Account</Link>
-          </p>
+          </p> */}
         </div>
 
         {/* STEP 1: FORM */}
@@ -671,7 +667,7 @@ export default function GuestCheckoutForm() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#5A1E12] mb-1">City <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-[#5A1E12] mb-1">Suburb <span className="text-red-500">*</span></label>
                     <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Sydney"
                       className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20"}`} />
                     {fieldErrors.city && <p className="mt-1 text-xs text-red-500">{fieldErrors.city}</p>}

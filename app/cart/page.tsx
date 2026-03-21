@@ -1,6 +1,6 @@
 "use client";
 
-import { TruckElectric, Plus, Minus, Trash2, Loader, Loader2, ArrowRight, Tag, X, LogIn, UserX } from "lucide-react";
+import { TruckElectric, Plus, Minus, Trash2, Loader, Loader2, ArrowRight, Tag, X, LogIn, UserX, User } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -225,8 +225,8 @@ export default function Page() {
           <span className="mb-4 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-sm font-medium backdrop-blur-md">
             Review your items
           </span>
-          <h1 className="text-6xl font-bold mb-6 tracking-tight">Your Cart</h1>
-          <p className="text-base text-gray-200 max-w-2xl leading-relaxed">
+          <h1 className="text-6xl font-bold mb-6 tracking-tight">Your Cart Summary</h1>
+          <p className="text-xl text-gray-200 max-w-2xl leading-relaxed">
             Review your selected items and proceed to checkout when you're ready.
           </p>
         </div>
@@ -558,7 +558,9 @@ export default function Page() {
               <div className="w-14 h-14 bg-[#5A1E12]/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <LogIn className="h-7 w-7 text-[#5A1E12]" />
               </div>
+              {/* <h2 className="text-2xl font-serif font-bold text-[#2C1810] mb-2">You&apos;re currently not logged in.</h2> */}
               <h2 className="text-2xl font-serif font-bold text-[#2C1810] mb-2">How would you like to proceed?</h2>
+              
               <p className="text-sm text-[#8B5E3C]">
                 You&apos;re currently not logged in. Please choose an option below to continue.
               </p>
@@ -582,7 +584,7 @@ export default function Page() {
                 }}
                 className="w-full py-3.5 bg-white border-2 border-[#5A1E12] text-[#5A1E12] rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-[#5A1E12]/5 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
-                <UserX className="h-5 w-5" />
+                <User className="h-5 w-5" />
                 Continue as Guest
               </button>
             </div>

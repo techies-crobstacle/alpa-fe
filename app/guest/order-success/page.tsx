@@ -155,9 +155,9 @@ function OrderSuccessContent() {
           </div>
           <h1 className="text-3xl font-bold text-white">Thank You!</h1>
           <p className="text-white/80 text-sm leading-relaxed">
-            Your order has been placed and we&apos;re already on it.
+            Your order has been placed successfully 
             <br />
-            We appreciate your trust in us!
+            
           </p>
         </div>
 

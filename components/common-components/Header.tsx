@@ -602,6 +602,15 @@ export default function Header() {
                           </span>
                           Create account
                         </button>
+                        <button
+                          onClick={() => handleNavigation("/login")}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 text-sm font-medium group"
+                        >
+                          <span className="w-7 h-7 rounded-lg bg-gray-100 group-hover:bg-[#5A1E12]/10 flex items-center justify-center transition-colors">
+                            <User className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#5A1E12]" />
+                          </span>
+                          Login as seller
+                        </button>
                         <div className="pt-1 mt-0.5 border-t border-gray-100">
                           <button
                             onClick={() => handleNavigation("/sellerOnboarding")}
@@ -1193,7 +1202,7 @@ export default function Header() {
             {/* Backdrop */}
             <motion.div
               key="search-backdrop"
-              className="fixed inset-0 z-200 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-200 bg-black/40 backdrop-blur-[2px]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -1237,10 +1246,10 @@ export default function Header() {
                 )}
                 <button
                   onClick={closeSearch}
-                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors shrink-0 border border-gray-200 text-xs font-medium px-2"
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors shrink-0"
                   aria-label="Close search"
                 >
-                  Esc
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 

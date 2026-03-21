@@ -71,12 +71,18 @@ const countryNames: Record<string, string> = {
 };
 
 // Build COUNTRIES array from react-phone-number-input data
-const COUNTRIES = countryCodeList.map(code => ({
+const COUNTRIES_RAW = countryCodeList.map(code => ({
   code,
   flag: countryFlags[code] || '🏳️',
   name: countryNames[code] || code,
   dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
 })).filter(country => countryFlags[country.code]); // Only include countries with flags
+
+// Reorder to put Australia first
+const auIndex = COUNTRIES_RAW.findIndex(country => country.code === 'AU');
+const COUNTRIES = auIndex !== -1 
+  ? [COUNTRIES_RAW[auIndex], ...COUNTRIES_RAW.filter(country => country.code !== 'AU')]
+  : COUNTRIES_RAW;
 
 type Country = typeof COUNTRIES[number];
 
@@ -129,7 +135,7 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
 
   const fieldErrors = {
     country: formData.country.trim().length < 2 ? "Country is required" : null,
-    city:    formData.city.trim().length < 2    ? "City is required"    : null,
+    city:    formData.city.trim().length < 2    ? "Suburb is required"    : null,
     zip:     !formData.zip.trim()               ? "Postal code is required" : !/^[\w\s-]{3,10}$/.test(formData.zip.trim()) ? "Invalid postal code" : null,
     state:   formData.state.trim().length < 2  ? "State is required"   : null,
   };
@@ -350,26 +356,6 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
     });
     
     setShowSavedAddresses(false);
-    
-    // Show success feedback
-    const addressLabel = `Address ${savedAddresses.indexOf(address) + 1}`;
-    setTimeout(() => {
-      toast.success(`🎯 ${addressLabel} has been auto-filled successfully!`, {
-        position: "top-center",
-        autoClose: 2500,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        style: {
-          background: "linear-gradient(135deg, #5A1E12, #8B5E3C)",
-          color: "white",
-          borderRadius: "12px",
-          boxShadow: "0 8px 20px rgba(90, 30, 18, 0.4)",
-          fontWeight: "600"
-        }
-      });
-    }, 100);
   };
 
   // Load saved address data from localStorage on mount
@@ -389,8 +375,16 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
         if (data.selectedCountryCode) {
           const found = COUNTRIES.find(c => c.code === data.selectedCountryCode);
           if (found) setSelectedCountry(found);
+        } else {
+          // If no saved country, default to Australia
+          const auCountry = COUNTRIES.find(c => c.code === 'AU');
+          if (auCountry) setSelectedCountry(auCountry);
         }
       } catch {}
+    } else {
+      // If no localStorage data at all, default to Australia
+      const auCountry = COUNTRIES.find(c => c.code === 'AU');
+      if (auCountry) setSelectedCountry(auCountry);
     }
     setDataLoaded(true);
   }, []);
@@ -607,7 +601,7 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="city" className="text-sm font-medium text-gray-600">
-            City <span className="text-red-500">*</span>
+            Suburb <span className="text-red-500">*</span>
           </label>
           <input
             id="city"
