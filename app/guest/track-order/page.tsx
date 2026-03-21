@@ -2394,7 +2394,7 @@ function TrackOrderContent() {
                   </div>
                   
                   {/* Debug Info - Remove in production */}
-                  {(!order.segregatedData || !order.segregatedData.sellerOrders) && (
+                  {/* {(!order.segregatedData || !order.segregatedData.sellerOrders) && (
                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-xs text-yellow-800 mb-2">
                         <strong>Debug Info:</strong> Segregated data not available.
@@ -2414,7 +2414,7 @@ function TrackOrderContent() {
                         </pre>
                       </details>
                     </div>
-                  )}
+                  )} */}
                 </div>
                 
                 {/* Individual Seller Sections */}
