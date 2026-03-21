@@ -130,7 +130,7 @@ export default function Footer() {
         
         <p className="text-white/80 max-w-137.5 text-right bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg flex items-start justify-top gap-2">
           <FaHeart className="w-4 h-4 text-red-400 shrink-0 mt-1" />
-          We operate with deep respect for Aboriginal culture and traditions. All products and experiences are shared with community consent.
+          We operate with deep respect for the First Nation culture and traditions. All products and experiences are shared with community consent.
         </p>
       </div>
 
