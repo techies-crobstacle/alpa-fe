@@ -1294,109 +1294,16 @@ const ORDER_STEPS = [
   { key: "DELIVERED",  label: "Delivered",  icon: PackageCheck },
 ] as const;
 
-// ─── Seller Status Editor ─────────────────────────────────────────────────────
-function SellerStatusEditor({ 
-  sellerOrder, 
-  onStatusUpdate 
+// ─── Removed SellerStatusEditor - users can only view status, not edit ───
+
+// ─── Simplified Seller Section (No progress bars, just status) ─────────────────
+function SimplifiedSellerSection({ 
+  sellerOrder
 }: { 
-  sellerOrder: SellerOrder; 
-  onStatusUpdate: (sellerId: string, newStatus: string) => void; 
+  sellerOrder: SellerOrder;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newStatus, setNewStatus] = useState(sellerOrder.status);
-  const [updating, setUpdating] = useState(false);
-
-  const handleSave = async () => {
-    if (newStatus === sellerOrder.status) {
-      setIsEditing(false);
-      return;
-    }
-    
-    setUpdating(true);
-    try {
-      // API call would go here
-      await onStatusUpdate(sellerOrder.sellerId, newStatus);
-      setIsEditing(false);
-      toast.success(`${sellerOrder.seller.name} order status updated!`);
-    } catch (error) {
-      toast.error("Failed to update status");
-      setNewStatus(sellerOrder.status); // Reset on error
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setNewStatus(sellerOrder.status);
-    setIsEditing(false);
-  };
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-2">
-        <select 
-          value={newStatus}
-          onChange={(e) => setNewStatus(e.target.value)}
-          className="text-xs px-2 py-1 rounded border border-[#5A1E12]/20 bg-white text-[#5A1E12]"
-          disabled={updating}
-        >
-          {SELLER_ORDER_STEPS.map(step => (
-            <option key={step.key} value={step.key}>{step.label}</option>
-          ))}
-        </select>
-        <button 
-          onClick={handleSave} 
-          disabled={updating}
-          className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
-        >
-          {updating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-        </button>
-        <button 
-          onClick={handleCancel}
-          className="p-1 text-red-600 hover:bg-red-50 rounded"
-        >
-          <X className="w-3 h-3" />
-        </button>
-      </div>
-    );
-  }
-
-  const statusConfig = ORDER_STATUS_MAPPING[newStatus as keyof typeof ORDER_STATUS_MAPPING];
-  return (
-    <div className="flex items-center gap-2">
-      <div 
-        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border"
-        style={{ 
-          backgroundColor: `${statusConfig?.color || '#10b981'}20`, 
-          color: statusConfig?.color || '#10b981',
-          borderColor: `${statusConfig?.color || '#10b981'}40`
-        }}
-      >
-        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusConfig?.color || '#10b981' }} />
-        {statusConfig?.label || newStatus}
-        <span className="w-1 h-1 rounded-full bg-green-500 ml-1" title="Status from API"></span>
-      </div>
-      <button 
-        onClick={() => setIsEditing(true)}
-        className="p-1 text-[#5A1E12]/60 hover:text-[#5A1E12] hover:bg-[#5A1E12]/10 rounded transition-colors"
-        title="Edit status"
-      >
-        <Edit3 className="w-3 h-3" />
-      </button>
-    </div>
-  );
-}
-
-// ─── Seller Order Section ─────────────────────────────────────────────────────
-function SellerOrderSection({ 
-  sellerOrder, 
-  onStatusUpdate 
-}: { 
-  sellerOrder: SellerOrder; 
-  onStatusUpdate: (sellerId: string, newStatus: string) => void; 
-}) {
-  const currentStepIndex = SELLER_ORDER_STEPS.findIndex((s) => s.key === sellerOrder.status);
-
+  const statusConfig = ORDER_STATUS_MAPPING[sellerOrder.status as keyof typeof ORDER_STATUS_MAPPING];
+  
   return (
     <div className="bg-white rounded-2xl border border-[#5A1E12]/8 p-4 md:p-6 mb-4 md:mb-6">
       {/* Seller Header */}
@@ -1408,67 +1315,34 @@ function SellerOrderSection({
           <div className="min-w-0 flex-1">
             <h3 className="text-base md:text-lg font-bold text-[#5A1E12] flex items-center gap-2 truncate">
               <span className="truncate">{sellerOrder.seller.name}</span>
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" title="Real-time status from API"></span>
             </h3>
             <p className="text-xs md:text-sm text-[#5A1E12]/60 flex items-center gap-1">
               <span className="truncate">Sub Order: #{sellerOrder.id?.slice(-8).toUpperCase() || 'No ID'}</span>
-              <span className="text-[8px] md:text-[10px] px-1 md:px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full font-medium shrink-0">API</span>
             </p>
           </div>
         </div>
         <div className="text-right shrink-0 ml-2">
-          <div className="mb-1">
-            <SellerStatusEditor sellerOrder={sellerOrder} onStatusUpdate={onStatusUpdate} />
+          {/* Current status badge */}
+          <div className="mb-2">
+            <div 
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border"
+              style={{ 
+                backgroundColor: `${statusConfig?.color || '#10b981'}20`, 
+                color: statusConfig?.color || '#10b981',
+                borderColor: `${statusConfig?.color || '#10b981'}40`
+              }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusConfig?.color || '#10b981' }} />
+              {statusConfig?.label || sellerOrder.status}
+            </div>
           </div>
           <p className="text-sm md:text-lg font-bold text-[#5A1E12]">${parseFloat(sellerOrder.subTotal || '0').toFixed(2)}</p>
         </div>
       </div>
 
-      {/* Progress Steps */}
-      <div className="mb-4 md:mb-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#5A1E12]/40 mb-3 md:mb-4">Delivery Progress</p>
-        <div className="flex items-start">
-          {SELLER_ORDER_STEPS.map((step, i) => {
-            const isCompleted = i <= currentStepIndex;
-            const isCurrent = i === currentStepIndex;
-            const isLast = i === SELLER_ORDER_STEPS.length - 1;
-            const StepIcon = i === 0 ? CheckCircle2 : i === 1 ? Settings2 : i === 2 ? Truck : PackageCheck;
-            
-            return (
-              <div key={step.key} className="flex items-start flex-1 last:flex-none">
-                <div className="flex flex-col items-center gap-1 md:gap-2 shrink-0">
-                  <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    isCompleted ? "bg-[#5A1E12]" : "bg-[#5A1E12]/8 border border-[#5A1E12]/15"
-                  } ${isCurrent ? "ring-2 ring-[#5A1E12]/30 ring-offset-2 ring-offset-white" : ""}`}>
-                    <StepIcon className={`w-2.5 h-2.5 md:w-3 md:h-3 ${isCompleted ? "text-[#ead7b7]" : "text-[#5A1E12]/30"}`} />
-                  </div>
-                  <p className={`text-[10px] md:text-xs font-semibold text-center whitespace-nowrap px-1 ${
-                    isCurrent ? "text-[#5A1E12]" : isCompleted ? "text-[#5A1E12]/60" : "text-[#5A1E12]/25"
-                  }`}>
-                    {step.label}
-                  </p>
-                  {isCurrent && (
-                    <span className="text-[8px] md:text-[10px] text-[#5A1E12]/40 -mt-0.5 md:-mt-1">Current</span>
-                  )}
-                </div>
-                {!isLast && (
-                  <div className="flex-1 h-0.5 mt-3 md:mt-4 mx-1 md:mx-2 relative">
-                    <div className="absolute inset-0 bg-[#5A1E12]/10 rounded-full" />
-                    <div
-                      className="absolute inset-y-0 left-0 bg-[#5A1E12] rounded-full transition-all duration-700"
-                      style={{ width: i < currentStepIndex ? "100%" : "0%" }}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Tracking Info */}
       {sellerOrder.trackingNumber && (
-        <div className="flex items-center gap-3 bg-[#5A1E12]/5 border border-[#5A1E12]/10 rounded-xl px-3 md:px-4 py-2 md:py-3 mb-3 md:mb-4">
+        <div className="flex items-center gap-3 bg-[#5A1E12]/5 border border-[#5A1E12]/10 rounded-xl px-3 md:px-4 py-2 md:py-3 mb-4">
           <Truck className="w-4 h-4 text-[#5A1E12] shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-xs text-[#5A1E12]/50 font-medium">Tracking Number</p>
@@ -1498,30 +1372,9 @@ function SellerOrderSection({
               </div>
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <p className="font-semibold text-sm text-[#5A1E12] truncate">{item.product?.title}</p>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-0.5">
-                  <p className="text-xs text-[#5A1E12]/50">
-                    Qty {item.quantity} × ${parseFloat(item.price).toFixed(2)}
-                  </p>
-                  {/* Show this seller's status for this specific product */}
-                  {sellerOrder.status && (() => {
-                    const statusConfig = ORDER_STATUS_MAPPING[sellerOrder.status as keyof typeof ORDER_STATUS_MAPPING];
-                    return (
-                      <span 
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border max-w-fit"
-                        style={{ 
-                          backgroundColor: `${statusConfig?.color || '#10b981'}15`, 
-                          color: statusConfig?.color || '#10b981',
-                          borderColor: `${statusConfig?.color || '#10b981'}30`
-                        }}
-                        title={`Status: ${statusConfig?.label || sellerOrder.status} (from API)`}
-                      >
-                        <div className="w-1 h-1 rounded-full" style={{ backgroundColor: statusConfig?.color || '#10b981' }} />
-                        {statusConfig?.label || sellerOrder.status}
-                        <span className="w-1 h-1 rounded-full bg-green-500 opacity-75" title="From API"></span>
-                      </span>
-                    );
-                  })()}
-                </div>
+                <p className="text-xs text-[#5A1E12]/50 mt-0.5">
+                  Qty {item.quantity} × ${parseFloat(item.price).toFixed(2)}
+                </p>
               </div>
               <div className="flex items-center shrink-0">
                 <p className="text-sm font-bold text-[#5A1E12]">
@@ -1545,7 +1398,8 @@ function TrackOrderContent() {
   const [isLoading, setIsLoading]       = useState(false);
   const [errorMsg, setErrorMsg]         = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
-  const [updatingParentStatus, setUpdatingParentStatus] = useState(false);
+  // Users cannot edit status - removed parent status updating
+  // const [updatingParentStatus, setUpdatingParentStatus] = useState(false);
 
   useEffect(() => {
     if (!orderId) setOrderId(sessionStorage.getItem("guestOrderDisplayId") || sessionStorage.getItem("guestOrderId") || "");
@@ -1836,7 +1690,8 @@ function TrackOrderContent() {
     }
   };
 
-  // Handle seller status updates
+  // Users cannot edit status - removed seller status updating
+  /*
   const handleSellerStatusUpdate = async (sellerId: string, newStatus: string) => {
     if (!order || !order.segregatedData) return;
     
@@ -1930,8 +1785,10 @@ function TrackOrderContent() {
       throw error;
     }
   };
+  */
 
-  // Handle parent order status update
+  // Users cannot edit status - removed parent status updating
+  /*
   const handleParentStatusUpdate = async (newStatus: string, showToast: boolean = true) => {
     if (showToast) setUpdatingParentStatus(true);
     
@@ -1966,6 +1823,7 @@ function TrackOrderContent() {
       if (showToast) setUpdatingParentStatus(false);
     }
   };
+  */
 
   const handleDownloadInvoice = async () => {
     setIsDownloading(true);
@@ -2095,111 +1953,62 @@ function TrackOrderContent() {
         {order && !isLoading && (
           <div className="px-6 md:px-8 py-6 md:py-10 w-full">
 
-            {/* Parent Order Progress (for multi-seller) or Regular Progress */}
-            {!order.isMultiSeller ? (
-              <div className="bg-white rounded-2xl border border-[#5A1E12]/8 p-4 md:p-6 mb-6 md:mb-8">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#5A1E12]/40 mb-4 md:mb-6">Delivery Progress</p>
-                <div className="flex items-start">
-                  {ORDER_STEPS.map((step, i) => {
-                    const isCompleted = i <= currentStepIndex;
-                    const isCurrent   = i === currentStepIndex;
-                    const isLast      = i === ORDER_STEPS.length - 1;
-                    const StepIcon    = step.icon;
-                    return (
-                      <div key={step.key} className="flex items-start flex-1 last:flex-none">
-                        {/* Step node + label */}
-                        <div className="flex flex-col items-center gap-1 md:gap-2 shrink-0">
-                          <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                            isCompleted ? "bg-[#5A1E12]" : "bg-[#5A1E12]/8 border border-[#5A1E12]/15"
-                          } ${isCurrent ? "ring-2 ring-[#5A1E12]/30 ring-offset-2 ring-offset-white" : ""}`}>
-                            <StepIcon className={`w-3 h-3 md:w-4 md:h-4 ${isCompleted ? "text-[#ead7b7]" : "text-[#5A1E12]/30"}`} />
-                          </div>
-                          <p className={`text-[10px] md:text-xs font-semibold text-center whitespace-nowrap px-1 ${
-                            isCurrent ? "text-[#5A1E12]" : isCompleted ? "text-[#5A1E12]/60" : "text-[#5A1E12]/25"
-                          }`}>
-                            {step.label}
-                          </p>
-                          {isCurrent && (
-                            <span className="text-[8px] md:text-[10px] text-[#5A1E12]/40 -mt-0.5 md:-mt-1">Now</span>
-                          )}
+            {/* Parent Order Progress - Same for both single and multi-seller */}
+            <div className="bg-white rounded-2xl border border-[#5A1E12]/8 p-4 md:p-6 mb-6 md:mb-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#5A1E12]/40 mb-4 md:mb-6">Delivery Progress</p>
+              <div className="flex items-start">
+                {ORDER_STEPS.map((step, i) => {
+                  const isCompleted = i <= currentStepIndex;
+                  const isCurrent   = i === currentStepIndex;
+                  const isLast      = i === ORDER_STEPS.length - 1;
+                  const StepIcon    = step.icon;
+                  return (
+                    <div key={step.key} className="flex items-start flex-1 last:flex-none">
+                      {/* Step node + label */}
+                      <div className="flex flex-col items-center gap-1 md:gap-2 shrink-0">
+                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                          isCompleted ? "bg-[#5A1E12]" : "bg-[#5A1E12]/8 border border-[#5A1E12]/15"
+                        } ${isCurrent ? "ring-2 ring-[#5A1E12]/30 ring-offset-2 ring-offset-white" : ""}`}>
+                          <StepIcon className={`w-3 h-3 md:w-4 md:h-4 ${isCompleted ? "text-[#ead7b7]" : "text-[#5A1E12]/30"}`} />
                         </div>
-                        {/* Connector line between steps */}
-                        {!isLast && (
-                          <div className="flex-1 h-0.5 mt-4 md:mt-5 mx-1 md:mx-2 relative">
-                            <div className="absolute inset-0 bg-[#5A1E12]/10 rounded-full" />
-                            <div
-                              className="absolute inset-y-0 left-0 bg-[#5A1E12] rounded-full transition-all duration-700"
-                              style={{ width: i < currentStepIndex ? "100%" : "0%" }}
-                            />
-                          </div>
+                        <p className={`text-[10px] md:text-xs font-semibold text-center whitespace-nowrap px-1 ${
+                          isCurrent ? "text-[#5A1E12]" : isCompleted ? "text-[#5A1E12]/60" : "text-[#5A1E12]/25"
+                        }`}>
+                          {step.label}
+                        </p>
+                        {isCurrent && (
+                          <span className="text-[8px] md:text-[10px] text-[#5A1E12]/40 -mt-0.5 md:-mt-1">Now</span>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
+                      {/* Connector line between steps */}
+                      {!isLast && (
+                        <div className="flex-1 h-0.5 mt-4 md:mt-5 mx-1 md:mx-2 relative">
+                          <div className="absolute inset-0 bg-[#5A1E12]/10 rounded-full" />
+                          <div
+                            className="absolute inset-y-0 left-0 bg-[#5A1E12] rounded-full transition-all duration-700"
+                            style={{ width: i < currentStepIndex ? "100%" : "0%" }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-[#5A1E12]/8 p-4 md:p-6 mb-6 md:mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-[#5A1E12]/40">Parent Order Status</p>
-                  <div className="flex items-center gap-2">
-                    <select 
-                      value={order.status}
-                      onChange={(e) => handleParentStatusUpdate(e.target.value)}
-                      disabled={updatingParentStatus}
-                      className="text-xs md:text-sm px-2 md:px-3 py-1 rounded border border-[#5A1E12]/20 bg-white text-[#5A1E12] focus:outline-none focus:ring-2 focus:ring-[#5A1E12]/20"
-                    >
-                      {ORDER_STEPS.map(step => (
-                        <option key={step.key} value={step.key}>{step.label}</option>
-                      ))}
-                    </select>
-                    {updatingParentStatus && <Loader2 className="w-4 h-4 animate-spin text-[#5A1E12]" />}
-                  </div>
-                </div>
-                <div className="bg-[#5A1E12]/5 rounded-xl p-3 md:p-4">
+              
+              {/* Multi-seller info */}
+              {order.isMultiSeller && (
+                <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-[#5A1E12]/8">
                   <div className="flex items-center gap-2 text-sm text-[#5A1E12]">
                     <Store className="w-4 h-4" />
                     <span className="font-semibold">Multi-Seller Order</span>
-                    <span className="text-[#5A1E12]/60">• {order.segregatedData?.subOrders.length} sellers</span>
+                    <span className="text-[#5A1E12]/60">• {order.segregatedData?.subOrders?.length || 0} sellers</span>
                   </div>
                   <p className="text-xs text-[#5A1E12]/70 mt-2">
-                    Track individual seller progress below. Parent order status is automatically managed by the system based on seller progress.
+                    Track individual seller details below. Overall delivery progress is shown above.
                   </p>
-                  
-                  {/* Status Info from API */}
-                  {order.segregatedData?.subOrders && (
-                    <div className="mt-3 text-xs">
-                      <div className="flex flex-wrap gap-1">
-                        {order.segregatedData.subOrders.map((so: { status: string; id: Key | null | undefined; seller: { name: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }; }, idx: any) => {
-                          const statusConfig = ORDER_STATUS_MAPPING[so.status as keyof typeof ORDER_STATUS_MAPPING];
-                          return (
-                            <span 
-                              key={so.id}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border"
-                              style={{ 
-                                backgroundColor: `${statusConfig?.color || '#10b981'}20`, 
-                                color: statusConfig?.color || '#10b981',
-                                borderColor: `${statusConfig?.color || '#10b981'}40`
-                              }}
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" title="Status from API"></span>
-                              {so.seller.name}: {statusConfig?.label || so.status || 'No Status'}
-                            </span>
-                          );
-                        })}
-                      </div>
-                      <p className="text-[#5A1E12]/60 mt-1 flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-blue-500" title="Parent status from API"></span>
-                        Current parent status: <strong>{ORDER_STATUS_MAPPING[order.status as keyof typeof ORDER_STATUS_MAPPING]?.label || order.status}</strong>
-                      </p>
-                      <p className="text-[10px] text-[#5A1E12]/40 mt-1 italic">
-                        🔗 All statuses fetched from API • Green dot = Individual seller sub-order status • Blue dot = Parent order status
-                      </p>
-                    </div>
-                  )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Page heading */}
             <div className="mb-6 md:mb-8">
@@ -2384,37 +2193,15 @@ function TrackOrderContent() {
                 <div className="bg-white rounded-2xl border border-[#5A1E12]/8 p-4 md:p-6 mb-4 md:mb-6">
                   <div className="flex items-center justify-between mb-4 md:mb-5">
                     <h3 className="text-sm font-bold text-[#5A1E12]">Multi-Seller Order Summary</h3>
-                    <span className="text-xs bg-[#5A1E12]/8 text-[#5A1E12] font-semibold px-2.5 py-1 rounded-full">
+                    {/* <span className="text-xs bg-[#5A1E12]/8 text-[#5A1E12] font-semibold px-2.5 py-1 rounded-full">
                       {order.segregatedData?.sellerOrders?.length || 0} sellers
-                    </span>
+                    </span> */}
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-bold text-[#5A1E12]">Total Amount</span>
                     <span className="text-base md:text-lg font-bold text-[#5A1E12]">${parseFloat(order.totalAmount).toFixed(2)}</span>
                   </div>
-                  
-                  {/* Debug Info - Remove in production */}
-                  {/* {(!order.segregatedData || !order.segregatedData.sellerOrders) && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-xs text-yellow-800 mb-2">
-                        <strong>Debug Info:</strong> Segregated data not available.
-                      </p>
-                      <details className="text-xs">
-                        <summary className="cursor-pointer text-yellow-700 hover:text-yellow-900">
-                          Show order data structure
-                        </summary>
-                        <pre className="mt-2 p-2 bg-yellow-100 rounded text-[10px] overflow-auto max-h-32">
-                          {JSON.stringify({
-                            hasItems: !!order.items,
-                            itemCount: order.items?.length || 0,
-                            isMultiSeller: order.isMultiSeller,
-                            hasSegregatedData: !!order.segregatedData,
-                            sellerOrdersCount: order.segregatedData?.sellerOrders?.length || 0
-                          }, null, 2)}
-                        </pre>
-                      </details>
-                    </div>
-                  )} */}
+                  {/* Remove debug info - commented out section removed completely */}
                 </div>
                 
                 {/* Individual Seller Sections */}
@@ -2427,10 +2214,9 @@ function TrackOrderContent() {
                       </p>
                     </div>
                     {order.segregatedData.subOrders.map((subOrder: SellerOrder) => (
-                      <SellerOrderSection
+                      <SimplifiedSellerSection
                         key={subOrder.id}
                         sellerOrder={subOrder}
-                        onStatusUpdate={handleSellerStatusUpdate}
                       />
                     ))}
                   </div>
