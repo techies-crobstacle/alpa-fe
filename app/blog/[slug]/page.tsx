@@ -5,6 +5,133 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { notFound } from "next/navigation";
 
+// Skeleton Components
+const SkeletonBox = ({ className }: { className: string }) => (
+  <div className={`animate-pulse bg-linear-to-r from-[#F4E9DC] via-[#e8d5c0] to-[#F4E9DC] bg-size-[200%_100%] ${className}`} />
+);
+
+const RelatedCardSkeleton = () => (
+  <article className="group flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm h-96">
+    {/* Image skeleton */}
+    <div className="relative w-full h-48 overflow-hidden bg-[#F4E9DC]">
+      <SkeletonBox className="w-full h-full" />
+      <div className="absolute top-3 right-3">
+        <SkeletonBox className="w-16 h-5 rounded-full" />
+      </div>
+    </div>
+    
+    {/* Content skeleton */}
+    <div className="flex flex-col p-4 flex-1">
+      {/* Tags */}
+      <div className="flex flex-wrap gap-2 mb-2">
+        <SkeletonBox className="w-12 h-4 rounded-full" />
+        <SkeletonBox className="w-16 h-4 rounded-full" />
+      </div>
+      
+      {/* Date */}
+      <SkeletonBox className="w-18 h-3 rounded mb-2" />
+      
+      {/* Title */}
+      <div className="space-y-1 mb-2">
+        <SkeletonBox className="w-full h-4 rounded" />
+        <SkeletonBox className="w-3/4 h-4 rounded" />
+      </div>
+      
+      {/* Excerpt */}
+      <div className="space-y-1 mb-auto">
+        <SkeletonBox className="w-full h-3 rounded" />
+        <SkeletonBox className="w-5/6 h-3 rounded" />
+      </div>
+      
+      {/* CTA */}
+      <div className="pt-3 border-t border-[#e8d5c0] mt-3">
+        <SkeletonBox className="w-20 h-3 rounded" />
+      </div>
+    </div>
+  </article>
+);
+
+const BlogPostSkeleton = () => (
+  <main className="min-h-screen bg-[#EAD7B7]">
+    {/* Hero Section Skeleton */}
+    <section className="relative bg-[#3a1208] overflow-hidden pt-52 pb-20 px-6">
+      <div className="relative z-10 max-w-4xl mx-auto text-center">
+        {/* Breadcrumb skeleton */}
+        <SkeletonBox className="w-40 h-3 rounded mb-8 mx-auto" />
+        
+        {/* Tags skeleton */}
+        <div className="flex flex-wrap gap-2 justify-center mb-6">
+          <SkeletonBox className="w-16 h-5 rounded-full" />
+          <SkeletonBox className="w-20 h-5 rounded-full" />
+        </div>
+        
+        {/* Title skeleton */}
+        <div className="space-y-4 mb-8">
+          <SkeletonBox className="w-full max-w-3xl h-12 rounded mx-auto" />
+          <SkeletonBox className="w-2/3 max-w-2xl h-12 rounded mx-auto" />
+        </div>
+        
+        {/* Meta info skeleton */}
+        <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <SkeletonBox className="w-8 h-8 rounded-full" />
+            <SkeletonBox className="w-24 h-4 rounded" />
+          </div>
+          <SkeletonBox className="w-20 h-4 rounded" />
+          <SkeletonBox className="w-16 h-4 rounded" />
+        </div>
+      </div>
+    </section>
+    
+    {/* Article Content Skeleton */}
+    <section className="bg-[#EAD7B7] py-16 px-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Featured image skeleton */}
+        <div className="relative w-full aspect-video mb-12 rounded-3xl overflow-hidden bg-white border border-[#e8d5c0] shadow-sm">
+          <SkeletonBox className="w-full h-full" />
+        </div>
+        
+        {/* Content skeleton */}
+        <div className="bg-white rounded-3xl border border-[#e8d5c0] shadow-sm p-8 lg:p-12">
+          <div className="prose prose-lg max-w-none">
+            {/* Paragraphs */}
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="mb-6">
+                <div className="space-y-3">
+                  <SkeletonBox className="w-full h-5 rounded" />
+                  <SkeletonBox className="w-full h-5 rounded" />
+                  <SkeletonBox className="w-4/5 h-5 rounded" />
+                  {i === 2 && (
+                    <div className="my-8">
+                      <SkeletonBox className="w-3/4 h-8 rounded mb-4" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    {/* Related Posts Skeleton */}
+    <section className="bg-[#EAD7B7] pb-20 px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <SkeletonBox className="w-32 h-4 rounded mb-3 mx-auto" />
+          <SkeletonBox className="w-48 h-8 rounded mx-auto" />
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[...Array(3)].map((_, i) => (
+            <RelatedCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    </section>
+  </main>
+);
+
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
@@ -259,14 +386,7 @@ export default function BlogPostPage() {
 
   // Loading state
   if (loading) {
-    return (
-      <main className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#803512] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#803512] font-semibold">Loading article...</p>
-        </div>
-      </main>
-    );
+    return <BlogPostSkeleton />;
   }
 
   // Error or not found state

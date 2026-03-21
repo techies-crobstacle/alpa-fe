@@ -34,6 +34,11 @@ html {
   to   { transform: scale(1.08); }
 }
 
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .animate-slow-zoom {
   animation: slow-zoom 10s ease-in-out infinite alternate;
 }

@@ -3,6 +3,165 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+// Skeleton Components
+const SkeletonBox = ({ className }: { className: string }) => (
+  <div className={`animate-pulse bg-gradient-to-r from-[#F4E9DC] via-[#e8d5c0] to-[#F4E9DC] bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite] ${className}`} />
+);
+
+const FeaturedSkeleton = () => (
+  <article className="grid grid-cols-1 lg:grid-cols-2 bg-white border border-[#e8d5c0] rounded-3xl overflow-hidden shadow-sm">
+    {/* Image skeleton */}
+    <div className="relative w-full min-h-72 lg:min-h-96 overflow-hidden bg-[#F4E9DC]">
+      <SkeletonBox className="w-full h-full" />
+      {/* Badges skeleton */}
+      <div className="absolute top-4 right-4">
+        <SkeletonBox className="w-20 h-7 rounded-full" />
+      </div>
+      <div className="absolute top-4 left-4">
+        <SkeletonBox className="w-16 h-7 rounded-full" />
+      </div>
+    </div>
+    
+    {/* Content skeleton */}
+    <div className="flex flex-col justify-center p-8 lg:p-12">
+      {/* Tags */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <SkeletonBox className="w-16 h-6 rounded-full" />
+        <SkeletonBox className="w-20 h-6 rounded-full" />
+      </div>
+      
+      {/* Date */}
+      <SkeletonBox className="w-24 h-3 rounded mb-3" />
+      
+      {/* Title */}
+      <div className="space-y-2 mb-4">
+        <SkeletonBox className="w-full h-8 rounded" />
+        <SkeletonBox className="w-3/4 h-8 rounded" />
+      </div>
+      
+      {/* Excerpt */}
+      <div className="space-y-2 mb-8">
+        <SkeletonBox className="w-full h-4 rounded" />
+        <SkeletonBox className="w-full h-4 rounded" />
+        <SkeletonBox className="w-2/3 h-4 rounded" />
+      </div>
+      
+      {/* CTA */}
+      <div className="pt-6 border-t border-[#e8d5c0]">
+        <SkeletonBox className="w-32 h-5 rounded" />
+      </div>
+    </div>
+  </article>
+);
+
+const BlogCardSkeleton = () => (
+  <article className="flex flex-col bg-white border border-[#e8d5c0] rounded-2xl overflow-hidden shadow-sm h-130">
+    {/* Image skeleton */}
+    <div className="relative w-full h-56 min-h-56 overflow-hidden bg-[#F4E9DC]">
+      <SkeletonBox className="w-full h-full" />
+      {/* Read time pill */}
+      <div className="absolute top-3 right-3">
+        <SkeletonBox className="w-20 h-6 rounded-full" />
+      </div>
+    </div>
+    
+    {/* Content skeleton */}
+    <div className="flex flex-col p-6 flex-1">
+      {/* Tags */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        <SkeletonBox className="w-14 h-5 rounded-full" />
+        <SkeletonBox className="w-18 h-5 rounded-full" />
+      </div>
+      
+      {/* Date */}
+      <SkeletonBox className="w-20 h-3 rounded mb-2" />
+      
+      {/* Title */}
+      <div className="space-y-2 mb-3">
+        <SkeletonBox className="w-full h-5 rounded" />
+        <SkeletonBox className="w-4/5 h-5 rounded" />
+      </div>
+      
+      {/* Excerpt */}
+      <div className="space-y-2 mb-auto">
+        <SkeletonBox className="w-full h-3 rounded" />
+        <SkeletonBox className="w-full h-3 rounded" />
+        <SkeletonBox className="w-3/4 h-3 rounded" />
+      </div>
+      
+      {/* CTA */}
+      <div className="pt-4 border-t border-[#e8d5c0] mt-4">
+        <SkeletonBox className="w-24 h-4 rounded" />
+      </div>
+    </div>
+  </article>
+);
+
+const BlogPageSkeleton = () => (
+  <main className="min-h-screen bg-[#EAD7B7]">
+    {/* Header Section Skeleton */}
+    <section className="relative bg-[#3a1208] overflow-hidden pt-52 pb-32 px-6">
+      <div className="relative z-10 max-w-7xl mx-auto">
+        {/* Breadcrumb skeleton */}
+        <SkeletonBox className="w-32 h-3 rounded mb-6" />
+        
+        {/* Label skeleton */}
+        <SkeletonBox className="w-40 h-4 rounded mb-4" />
+        
+        {/* Title skeleton */}
+        <div className="space-y-4 mb-5">
+          <SkeletonBox className="w-full max-w-2xl h-12 rounded" />
+          <SkeletonBox className="w-3/4 max-w-xl h-12 rounded" />
+        </div>
+        
+        {/* Description skeleton */}
+        <div className="space-y-2 max-w-xl">
+          <SkeletonBox className="w-full h-4 rounded" />
+          <SkeletonBox className="w-2/3 h-4 rounded" />
+        </div>
+      </div>
+    </section>
+    
+    {/* Featured Post Skeleton */}
+    <section className="bg-[#EAD7B7] pt-16 pb-0 px-4">
+      <div className="max-w-7xl mx-auto">
+        <SkeletonBox className="w-40 h-4 rounded mb-6" />
+        <FeaturedSkeleton />
+      </div>
+    </section>
+    
+    {/* All Posts Skeleton */}
+    <section className="bg-[#EAD7B7] py-16 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Section header skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-10">
+          <div>
+            <SkeletonBox className="w-32 h-4 rounded mb-2" />
+            <SkeletonBox className="w-64 h-8 rounded" />
+          </div>
+          <SkeletonBox className="w-24 h-4 rounded" />
+        </div>
+        
+        {/* Filter tags skeleton */}
+        <div className="flex flex-wrap gap-3 mb-10">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonBox key={i} className={`h-9 rounded-full ${
+              i === 0 ? 'w-12' : i === 1 ? 'w-20' : i === 2 ? 'w-16' : i === 3 ? 'w-24' : i === 4 ? 'w-18' : 'w-14'
+            }`} />
+          ))}
+        </div>
+        
+        {/* Blog cards grid skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[...Array(6)].map((_, i) => (
+            <BlogCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    </section>
+  </main>
+);
+
 // Custom styles for text truncation
 const truncateStyles = {
   title: {
@@ -21,7 +180,7 @@ const truncateStyles = {
   },
   featuredTitle: {
     display: '-webkit-box',
-    WebkitLineClamp: 3,
+    WebkitLineClamp: 2,
     WebkitBoxOrient: 'vertical' as const,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -262,14 +421,7 @@ export default function BlogPage() {
 
   // Loading state
   if (loading) {
-    return (
-      <main className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#803512] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#803512] font-semibold">Loading blogs...</p>
-        </div>
-      </main>
-    );
+    return <BlogPageSkeleton />;
   }
 
   // Error state
