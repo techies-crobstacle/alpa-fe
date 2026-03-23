@@ -44,7 +44,7 @@ export default function CheckOutPage() {
   const [shippingZipCode, setShippingZipCode] = useState("");
   const [shippingCountry, setShippingCountry] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("stripe");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   // ── Coupon state ────────────────────────────────────────────────────────────
@@ -825,32 +825,6 @@ export default function CheckOutPage() {
                                   <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded tracking-wide">MC</span>
                                 </div>
                               </label>
-
-                              {/* Cash on Delivery */}
-                              <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                                paymentMethod === "cod"
-                                  ? "border-[#5A1E12] bg-[#5A1E12]/5 shadow-sm"
-                                  : "border-[#5A1E12]/15 hover:border-[#5A1E12]/40 hover:bg-[#5A1E12]/2"
-                              }`}>
-                                <input
-                                  type="radio"
-                                  name="paymentMethodSelect"
-                                  value="cod"
-                                  checked={paymentMethod === "cod"}
-                                  onChange={() => setPaymentMethod("cod")}
-                                  className="accent-[#5A1E12] w-4 h-4 shrink-0"
-                                />
-                                <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
-                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-[#3b1a08] text-sm">Cash on Delivery</p>
-                                  <p className="text-xs text-black mt-0.5">Pay in cash when your order arrives at the door</p>
-                                </div>
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded shrink-0 tracking-wide">COD</span>
-                              </label>
                             </div>
 
                             {/* Security assurance */}
@@ -892,33 +866,19 @@ export default function CheckOutPage() {
                         Continue
                       </button>
                     ) : !clientSecret ? (
-                      paymentMethod === "cod" ? (
-                        <button
-                          onClick={handlePlaceOrder}
-                          disabled={isPlacingOrder || cartItems.length === 0}
-                          className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
-                        >
-                          {isPlacingOrder ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" />Placing Order&hellip;</>
-                          ) : (
-                            "Place Order"
-                          )}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleCreateIntent}
-                          disabled={isCreatingIntent || cartItems.length === 0 || !paymentMethod}
-                          className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
-                        >
-                          {isCreatingIntent ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" />Creating Order&hellip;</>
-                          ) : !paymentMethod ? (
-                            "Select a Payment Method"
-                          ) : (
-                            "Proceed to Pay"
-                          )}
-                        </button>
-                      )
+                      <button
+                        onClick={handleCreateIntent}
+                        disabled={isCreatingIntent || cartItems.length === 0 || !paymentMethod}
+                        className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+                      >
+                        {isCreatingIntent ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" />Creating Order&hellip;</>
+                        ) : !paymentMethod ? (
+                          "Select a Payment Method"
+                        ) : (
+                          "Proceed to Pay"
+                        )}
+                      </button>
                     ) : null /* Stripe form has its own submit button */}
                   </div>
                 </div>
@@ -1078,11 +1038,11 @@ export default function CheckOutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Shipping</span>
-                  <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                  <span>{shippingCost === 0 ? "Free" : `$${shippingCost.toFixed(2)}`}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">GST (incl. {gstPercentage?.toFixed(1)}%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>${gstAmount.toFixed(2)}</span>
                 </div>
                 {appliedCoupon && (
                   <div className="flex justify-between text-sm text-green-600 font-medium">
@@ -1098,7 +1058,7 @@ export default function CheckOutPage() {
 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>${discountedTotal.toFixed(2)}</span>
+                  <span>${grandTotal.toFixed(2)}</span>
                 </div>
               </div>
 

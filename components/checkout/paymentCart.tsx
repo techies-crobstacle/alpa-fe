@@ -256,14 +256,6 @@ export default function PaymentCart({ onPaymentMethodChange }: PaymentCartProps)
         </div>
       )}
 
-      {/* COD */}
-      {paymentMethod === "cod" && (
-        <div className="rounded-xl border border-[#d6b896] bg-white/60 p-5">
-          <p className="text-2xl mb-2">💵</p>
-          <p className="text-sm font-semibold text-gray-800">Cash on Delivery</p>
-          <p className="text-xs text-gray-500 mt-1">Pay in cash when your order arrives at your door.</p>
-        </div>
-      )}
     </section>
   );
 }
