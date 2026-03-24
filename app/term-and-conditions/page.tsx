@@ -30,7 +30,7 @@ export default function Page() {
             {[
               { id: "introduction", label: "Introduction" },
               { id: "eligibility", label: "1. Eligibility and Registration" },
-              { id: "certification", label: "2. MIA Certification System" },
+              { id: "certification", label: "2. Made in Arnhem Land Certification System" },
               { id: "seller-responsibilities", label: "3. Seller Responsibilities" },
               { id: "products", label: "4. Products and Services" },
               { id: "order-management", label: "5. Order Management and Delivery" },
@@ -77,7 +77,7 @@ export default function Page() {
           <section id="introduction" className="scroll-mt-32 mb-16">
             <h2 className="text-2xl font-bold mb-4">Introduction</h2>
             <p className="leading-relaxed mb-4">
-              The Made in Arnhem Land (MIA) Marketplace is a collaborative trading platform designed to connect
+              The Made in Arnhem Land Marketplace is a collaborative trading platform designed to connect
               producers, artists, and service providers from Arnhem Land with national and international buyers.
             </p>
             <p className="leading-relaxed mb-4">
@@ -89,7 +89,7 @@ export default function Page() {
               including certification requirements, seller responsibilities, payment systems, and cultural obligations.
             </p>
             <p className="leading-relaxed">
-              All participants agree to uphold the values of respect, integrity, and transparency central to the MIA initiative.
+              All participants agree to uphold the values of respect, integrity, and transparency central to the Made in Arnhem Land initiative.
             </p>
           </section>
 
@@ -116,7 +116,7 @@ export default function Page() {
               The Made in Arnhem Land (MIA) Certification System upholds authenticity, quality, and cultural integrity.
             </p>
             <p className="leading-relaxed mb-4">
-              Certification is voluntary but strongly encouraged. Certified sellers gain permission to use the MIA brand
+              Certification is voluntary but strongly encouraged. Certified sellers gain permission to use the Made in Arnhem Land brand
               and the &ldquo;100% Arnhem Land Certified&rdquo; logo, and access to VIP promotional services.
             </p>
             <p className="leading-relaxed mb-4">
@@ -289,7 +289,7 @@ export default function Page() {
               Arnhem Land.
             </p>
             <p className="leading-relaxed mb-4">
-              A key initiative is the MIA Business Builder Program, which provides mentoring, certification support,
+              A key initiative is the Made in Arnhem Land Business Builder Program, which provides mentoring, certification support,
               and start-up assistance for emerging local entrepreneurs.
             </p>
             <p className="leading-relaxed mb-4">
@@ -297,7 +297,7 @@ export default function Page() {
               inclusion, and wellbeing outcomes in Arnhem Land.
             </p>
             <p className="leading-relaxed">
-              Reports on reinvestment outcomes are published annually through the MIA Impact Report.
+              Reports on reinvestment outcomes are published annually through the Made in Arnhem Land Impact Report.
             </p>
           </section>
 
@@ -323,7 +323,7 @@ export default function Page() {
           <section id="platform-use" className="scroll-mt-32 mb-16">
             <h2 className="text-2xl font-bold mb-4">11. Platform Use Policy</h2>
             <p className="leading-relaxed mb-4">
-              All users must act respectfully, lawfully, and in accordance with MIA values. Prohibited conduct
+              All users must act respectfully, lawfully, and in accordance with Made in Arnhem Land values. Prohibited conduct
               includes harassment, fraud, offensive language, impersonation, and cultural misrepresentation.
               Sellers must protect customer data and use the platform responsibly.
             </p>
@@ -382,7 +382,7 @@ export default function Page() {
             </p>
             <p className="leading-relaxed mb-4">
               Appeals may be submitted in writing within 14 days of termination notice. Reinstatement is at
-              the discretion of MIA Marketplace management.
+              the discretion of Made in Arnhem Land Marketplace management.
             </p>
             <p className="leading-relaxed">
               In the event of account suspension or termination, sellers remain responsible for fulfilling any
@@ -419,7 +419,7 @@ export default function Page() {
               </li>
               <li>Agree to be bound by these Terms in full; and</li>
               <li>
-                Commit to upholding the values of respect, authenticity, and integrity that underpin the MIA initiative.
+                Commit to upholding the values of respect, authenticity, and integrity that underpin the Made in Arnhem Land initiative.
               </li>
             </ul>
             <p className="leading-relaxed mb-4">

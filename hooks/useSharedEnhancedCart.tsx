@@ -14,6 +14,7 @@ type SharedCartContextType = ReturnType<typeof useEnhancedCart> & {
     images?: string[],
     galleryImages?: string[]
   }) => Promise<void>;
+  clearCart: () => void;
 };
 
 const EnhancedCartContext = createContext<SharedCartContextType | null>(null);
@@ -189,11 +190,18 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
     };
   }, []);
 
+  // Enhanced clear cart function that triggers updates
+  const enhancedClearCart = useCallback(() => {
+    cartData.clearCart();
+    triggerUpdate();
+  }, [cartData.clearCart, triggerUpdate]);
+
   const contextValue: SharedCartContextType = {
     ...cartData,
     updateQuantity: enhancedUpdateQuantity,
     removeItem: enhancedRemoveItem,
     fetchCartData: enhancedFetchCartData,
+    clearCart: enhancedClearCart,
     subscribeToUpdates,
     triggerUpdate,
     addToCart: enhancedAddToCart,

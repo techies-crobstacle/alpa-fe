@@ -375,7 +375,7 @@ export default function GuestCheckoutForm() {
   };
 
   // ── Form validation ───────────────────────────────────────────────────────
-  const validateForm = (): boolean => {
+  const validateForm = (): boolean | string => {
     const errors: Record<string, string> = {};
     if (!customerName.trim())  errors.customerName  = "Full name is required.";
     if (!customerEmail.trim()) errors.customerEmail = "Email is required.";
@@ -398,12 +398,22 @@ export default function GuestCheckoutForm() {
     if (!zipCode.trim())       errors.zipCode       = "Postcode is required.";
     if (!selectedShipping)     errors.shippingMethodId = "Please select a shipping method.";
     setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    
+    // Return the first error message for toast display, or true if no errors
+    const errorMessages = Object.values(errors);
+    if (errorMessages.length > 0) {
+      return errorMessages[0]; // Return first error message
+    }
+    return true; // No errors
   };
 
   // ── Step A: Create PaymentIntent ──────────────────────────────────────────
   const handleContinueToPayment = async () => {
-    if (!validateForm()) { toast.error("Please fill in all required fields."); return; }
+    const validationResult = validateForm();
+    if (validationResult !== true) { 
+      toast.error(typeof validationResult === 'string' ? validationResult : "Please fill in all required fields."); 
+      return; 
+    }
     if (cartItems.length === 0) { toast.error("Your cart is empty."); return; }
 
     setIsCreatingIntent(true);
@@ -432,12 +442,20 @@ export default function GuestCheckoutForm() {
         ...(appliedCoupon?.code && { couponCode: appliedCoupon.code }),
       };
 
+      console.log("=== GUEST ORDER DEBUG ===");
+      console.log("Frontend calculated totals:", { subtotal, shippingCost, gstAmount, grandTotal });
+      console.log("Cart items:", cartItems);
+      console.log("Request body being sent:", body);
+
       const res  = await fetch("https://alpa-be.onrender.com/api/payments/guest/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       const data = await res.json();
+
+      console.log("Backend response:", data);
+      console.log("Backend order summary:", data.orderSummary);
 
       if (!res.ok || !data.success) {
         const msg = data.message || data.error || "Failed to create payment. Please try again.";
@@ -454,6 +472,15 @@ export default function GuestCheckoutForm() {
       setStripeCurrency(data.currency || "aud");
       setConfirmedOrderId(data.orderId);
       setConfirmedOrderSummary(data.orderSummary);
+      
+      // Validation: Check if backend returned proper totals
+      const backendTotal = parseFloat(data.orderSummary?.grandTotal || "0");
+      const frontendTotal = parseFloat(String(grandTotal) || "0");
+      if (backendTotal === 0 && frontendTotal > 0) {
+        console.error("❌ TOTAL MISMATCH: Backend returned $0 but frontend calculated $" + frontendTotal);
+        toast.error(`Order total calculation error. Expected $${frontendTotal.toFixed(2)} but received $0.00. Please contact support.`);
+      }
+      
       setCurrentStep("payment");
 
       sessionStorage.setItem("guestOrderId",    data.orderId);
@@ -765,12 +792,19 @@ export default function GuestCheckoutForm() {
         {/* STEP 2: PAYMENT */}
         {currentStep === "payment" && clientSecret && paymentIntentId && (
           <div className="bg-white rounded-2xl p-6 shadow-sm">
+            {/* COMMENTED OUT: Backend returning $0.00 total issue 
             {confirmedOrderSummary && (
               <div className="mb-6 p-4 bg-[#5A1E12]/5 rounded-xl border border-[#5A1E12]/15">
                 <p className="text-sm text-[#5A1E12]/70">Amount to pay</p>
                 <p className="text-3xl font-bold text-[#5A1E12]">
-                  ${parseFloat(confirmedOrderSummary.grandTotal).toFixed(2)} AUD
+                  ${parseFloat(confirmedOrderSummary.grandTotal || "0").toFixed(2)} AUD
                 </p>
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
+                    <strong>DEBUG:</strong> Backend total: {confirmedOrderSummary.grandTotal}, 
+                    Frontend total: {grandTotal}
+                  </div>
+                )}
                 {confirmedOrderSummary.discountAmount && parseFloat(confirmedOrderSummary.discountAmount) > 0 && (
                   <p className="text-sm text-green-600 mt-1">
                     Includes {confirmedOrderSummary.couponCode} coupon saving of ${parseFloat(confirmedOrderSummary.discountAmount).toFixed(2)}
@@ -778,6 +812,7 @@ export default function GuestCheckoutForm() {
                 )}
               </div>
             )}
+            */}
             <Elements stripe={stripePromise} options={{
               clientSecret,
               appearance: {

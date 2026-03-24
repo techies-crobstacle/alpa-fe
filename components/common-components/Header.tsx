@@ -97,6 +97,12 @@ export default function Header() {
     return persistedCartCount;
   }, [cartData, cartItems, cartData?.cart, persistedCartCount]);
 
+  // Persist cart count to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("alpa_cart_count", cartItemCount.toString());
+    setPersistedCartCount(cartItemCount);
+  }, [cartItemCount]);
+
   // Search functionality with segregated results (Products, Categories, Artists)
   const segregatedSearchResults = useMemo(() => {
     if (searchTerm.trim().length > 1) {

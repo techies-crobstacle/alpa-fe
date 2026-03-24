@@ -474,6 +474,16 @@ export function useEnhancedCart() {
     });
   };
 
+  const clearCart = () => {
+    setCartData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        cart: []
+      };
+    });
+  };
+
   return {
     cartData,
     selectedShipping,
@@ -485,6 +495,7 @@ export function useEnhancedCart() {
     calculateTotals: calculateTotals(),
     updateQuantity,
     removeItem,
+    clearCart,
     optimisticAddItem,
     optimisticUpdateItem,
     optimisticRemoveItem

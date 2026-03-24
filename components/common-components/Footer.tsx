@@ -47,9 +47,9 @@ export default function Footer() {
           {/* Column 2 - Sellers */}
           <div className="flex flex-col">
             <h2 className="mb-4 text-lg font-semibold">Sellers</h2>
-            <Link href="/sellerOnboarding" className="mb-2 hover:text-[#A48068] transition-colors">
+            {/* <Link href="/sellerOnboarding" className="mb-2 hover:text-[#A48068] transition-colors">
               Sell with MIA
-            </Link>
+            </Link> */}
             <Link href="/sellerOnboarding" className="mb-2 hover:text-[#A48068] transition-colors">
               Seller Registration
             </Link>

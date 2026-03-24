@@ -59,9 +59,10 @@ export default function CheckOutPage() {
   const [stripeCurrency, setStripeCurrency] = useState("aud");
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
 
-  const { cartData, selectedShipping, calculateTotals, updateQuantity } =
+  const { cartData, selectedShipping, calculateTotals, updateQuantity, triggerUpdate, clearCart: clearSharedCart } =
     useSharedEnhancedCart();
   const { token, loading, user } = useAuth();
+  const { clearCart } = useCart();
 
   // Track the name entered in step 1 for personalised headings
   const [userName, setUserName] = useState("");
@@ -450,12 +451,19 @@ export default function CheckOutPage() {
 
         if (showGuestForm) {
           guestCartUtils.clearGuestCart();
+          // Trigger update to refresh cart display components
+          triggerUpdate();
+        } else {
+          // Clear both cart systems for authenticated users
+          clearSharedCart(); // Clear enhanced cart data
+          clearCart(); // Clear regular CartContext data
         }
 
         setAppliedCoupon(null);
         setPromoCode("");
         setCouponError("");
         localStorage.removeItem("cartAppliedCoupon");
+        localStorage.removeItem("alpa_cart_count"); // Clear cart count for header
         localStorage.removeItem("checkoutStep");
         localStorage.removeItem("showGuestForm");
         localStorage.removeItem("guestCheckoutData");
@@ -763,7 +771,12 @@ export default function CheckOutPage() {
                                 amount={stripeAmount}
                                 currency={stripeCurrency}
                                 onSuccess={(orderId, displayId) => {
+                                  // Clear both cart systems immediately after successful Stripe payment
+                                  clearSharedCart(); // Clear enhanced cart data
+                                  clearCart(); // Clear regular CartContext data
+                                  
                                   localStorage.removeItem("checkoutStep");
+                                  localStorage.removeItem("alpa_cart_count"); // Clear cart count for header
                                   localStorage.removeItem("showGuestForm");
                                   localStorage.removeItem("guestCheckoutData");
                                   localStorage.removeItem("promoCode");
