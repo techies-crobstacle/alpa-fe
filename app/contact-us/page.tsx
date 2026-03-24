@@ -125,6 +125,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import Testimonials from "@/components/cards/Testimonials";
 import { MapPin, Phone, Mail, Send, ArrowRight, ChevronDown } from "lucide-react";
 import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
@@ -517,8 +518,8 @@ export default function Page() {
                         <div>
                             <p className="font-semibold text-white">Our Location</p>
                             <p className="text-sm text-white/70 leading-relaxed mt-1">
-                                123 Business Avenue,<br />
-                                Suite 400, New York, NY 10012
+                                70 O’Sullivan Circuit East Arm<br />
+                                 NT 0822
                             </p>
                         </div>
                     </div>
@@ -529,7 +530,7 @@ export default function Page() {
                         </div>
                         <div>
                             <p className="font-semibold text-white">Phone Number</p>
-                            <p className="text-sm text-white/70 mt-1">+1 (800) 123-4567</p>
+                            <p className="text-sm text-white/70 mt-1">+61 (08) 8944 6444</p>
                         </div>
                     </div>
 
@@ -539,7 +540,7 @@ export default function Page() {
                         </div>
                         <div>
                             <p className="font-semibold text-white">Email Address</p>
-                            <p className="text-sm text-white/70 mt-1">support@yourdomain.com</p>
+                            <p className="text-sm text-white/70 mt-1">reception@alpa.asn.au</p>
                         </div>
                     </div>
                 </div>
@@ -548,7 +549,7 @@ export default function Page() {
             {/* Map Widget */}
             <div className="h-80 w-full rounded-3xl overflow-hidden shadow-lg border-4 border-white">
                <iframe
-                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.1!2d-73.98!3d40.75!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zM40zMCcxNS42Ilc!5e0!3m2!1sen!2sus!4v1234567890"
+                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3895.6913516580225!2d130.91642767464342!3d-12.47026374992954!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2cc097a791e164fb%3A0xac9093a704258e94!2s70%20O&#39;Sullivan%20Cct%2C%20East%20Arm%20NT%200822%2C%20Australia!5e0!3m2!1sen!2sin!4v1774333564171!5m2!1sen!2sin"
                  className="w-full h-full border-0 grayscale hover:grayscale-0 transition-all duration-700"
                  loading="lazy"
                  referrerPolicy="no-referrer-when-downgrade"
@@ -560,7 +561,7 @@ export default function Page() {
       </section>
 
       {/* --- FAQ SECTION --- */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
+      <section id="faq" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-[#3b0f06] mb-4">Frequently Asked Questions</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">Find answers to some of the most common questions below.</p>
@@ -621,10 +622,12 @@ export default function Page() {
                Discover our marketplace and find exactly what you need with our curated collection of premium items.
             </p>
 
-            <button className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#d3b994] text-[#3b0f06] font-bold hover:bg-white transition-all duration-300 shadow-lg hover:shadow-orange-500/20">
-              Explore Marketplace
-              <ArrowRight className="w-5 h-5" />
-            </button>
+            <Link href="/shop">
+              <button className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#d3b994] text-[#3b0f06] font-bold hover:bg-white transition-all duration-300 shadow-lg hover:shadow-orange-500/20">
+                Explore Marketplace
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </Link>
           </div>
         </div>
       </section>

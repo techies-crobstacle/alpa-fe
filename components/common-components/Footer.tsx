@@ -73,7 +73,7 @@ export default function Footer() {
             <Link href="/feedback" className="mb-2 hover:text-[#A48068] transition-colors">
               Share Feedback
             </Link>
-            <Link href="/faq" className="mb-2 hover:text-[#A48068] transition-colors">
+            <Link href="/contact-us#faq" className="mb-2 hover:text-[#A48068] transition-colors">
               FAQs
             </Link>
             <Link href="/guest/track-order" className="mb-2 hover:text-[#A48068] transition-colors">
@@ -119,6 +119,11 @@ export default function Footer() {
               <FaEnvelope className="w-5 h-5 text-black" />
             </button>
           </div>
+          
+          <p className="text-white/80 text-sm md:text-base bg-white/10 backdrop-blur-sm px-4 py-3 rounded-lg flex items-start gap-2 mt-8">
+            <FaHeart className="w-4 h-4 text-red-400 shrink-0 mt-1" />
+            We operate with deep respect for the First Nation culture and traditions. All products and experiences are shared with community consent.
+          </p>
         </div>
       </div>
 
@@ -127,11 +132,7 @@ export default function Footer() {
         <p className="text-white/80">
           70 O’Sullivan Circuit, East Arm NT 0822
         </p>
-        
-        <p className="text-white/80 max-w-137.5 text-right bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg flex items-start justify-top gap-2">
-          <FaHeart className="w-4 h-4 text-red-400 shrink-0 mt-1" />
-          We operate with deep respect for the First Nation culture and traditions. All products and experiences are shared with community consent.
-        </p>
+
       </div>
 
       <hr className="border-[#A5816B] mb-6" />
