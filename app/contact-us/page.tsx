@@ -235,7 +235,7 @@ export default function Page() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Phone country picker
-  const [phoneCountry, setPhoneCountry] = useState<Country>(COUNTRIES[0]);
+  const [phoneCountry, setPhoneCountry] = useState<Country>(COUNTRIES[3]);
   const [phoneSearch, setPhoneSearch] = useState('');
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
