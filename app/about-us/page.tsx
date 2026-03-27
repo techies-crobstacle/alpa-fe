@@ -601,7 +601,7 @@ export default function Page() {
       {/* ══════════════════════════════════════════════════
           CTA BANNER
       ══════════════════════════════════════════════════ */}
-      <section className="bg-[#5A1E12] py-16 md:py-20 px-4">
+      {/* <section className="bg-[#5A1E12] py-16 md:py-20 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to start shopping?
@@ -625,7 +625,73 @@ export default function Page() {
             </Link>
           </div>
         </div>
-      </section>
+      </section> */}
+
+      {/* Certifications & Recognition */}
+    {/* ══════════════════════════════════════════════════
+    CERTIFICATIONS & RECOGNITION
+══════════════════════════════════════════════════ */}
+{/* ══════════════════════════════════════════════════
+    CERTIFICATIONS & RECOGNITION
+══════════════════════════════════════════════════ */}
+<section className="bg-[#f4e9dc] py-20 md:py-28 px-4 border-t border-[#e8d5c0]">
+  <div className="max-w-5xl mx-auto">
+
+    <div className="text-center mb-14">
+      <p className="text-xs font-bold tracking-[0.28em] uppercase text-[#5A1E12] mb-3">
+        Recognition & Trust
+      </p>
+      <h2 className="text-3xl md:text-4xl font-bold text-[#1a0a06] mb-4">
+        Certifications & Recognition
+      </h2>
+      <p className="text-[#7a6558] text-sm md:text-base leading-relaxed">
+        Our commitment to quality and authenticity is recognized by leading organizations.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {[
+        { badge: "Certified", name: "Cultural Heritage Certified", org: "Aboriginal Heritage Council",
+          icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /> },
+        { badge: "Gold Standard", name: "Eco-Tourism Gold Standard", org: "Sustainable Tourism Australia",
+          icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /> },
+        { badge: "Listed", name: "Indigenous Business Directory", org: "Supply Nation",
+          icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /> },
+        { badge: "Approved", name: "Fair Trade Approved", org: "Fair Trade Australia",
+          icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /> },
+      ].map((cert) => (
+        <div key={cert.name}
+          className="group relative bg-white border border-[#e8d5c0] hover:border-[#c8856a] hover:shadow-[0_8px_28px_rgba(90,30,18,0.10)] hover:-translate-y-1 transition-all duration-300 rounded-[18px] p-7 text-center overflow-hidden"
+        >
+          {/* Bottom accent bar on hover */}
+          <div className="absolute bottom-0 left-0 right-0 h-0.75 bg-linear-to-r from-[#5A1E12] to-[#c8856a] rounded-b-[18px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          <div className="w-13 h-13 rounded-[14px] bg-[#F4E9DC] border border-[#e8d5c0] flex items-center justify-center mx-auto mb-4">
+            <svg className="w-5 h-5 text-[#5A1E12]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {cert.icon}
+            </svg>
+          </div>
+
+          <span className="inline-block text-[10px] font-bold tracking-[0.14em] uppercase text-[#5A1E12] bg-[#F4E9DC] border border-[#e8d5c0] rounded-full px-3 py-1 mb-3">
+            {cert.badge}
+          </span>
+          <p className="text-[13px] font-semibold text-[#1a0a06] leading-snug mb-1.5">{cert.name}</p>
+          <p className="text-[11.5px] text-[#a08070] leading-relaxed">{cert.org}</p>
+        </div>
+      ))}
+    </div>
+
+    <div className="flex items-center gap-3 max-w-xs mx-auto mt-14">
+      <div className="flex-1 h-px bg-[#e8d5c0]" />
+      <span className="text-[10.5px] tracking-[0.13em] uppercase text-[#b09080] whitespace-nowrap">
+        Verified & Trusted
+      </span>
+      <div className="flex-1 h-px bg-[#e8d5c0]" />
+    </div>
+
+  </div>
+</section>
+    
     </main>
   );
 }
