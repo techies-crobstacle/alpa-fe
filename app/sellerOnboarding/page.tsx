@@ -612,7 +612,7 @@ export default function ArtistOnboardingForm() {
                 </div>
 
                 <div className="mt-6 text-center space-y-2">
-                  <button onClick={() => { setMode('onboarding'); setErrors({}); }} className="text-sm text-[#5A1E12] hover:underline">
+                  <button onClick={() => { setMode('onboarding'); setErrors({}); }} className="text-sm text-[#5A1E12] hover:underline cursor-pointer">
                     ← Start a new application
                   </button>
                 </div>

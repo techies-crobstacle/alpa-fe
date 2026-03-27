@@ -94,6 +94,21 @@ export default function OptimisticProductCard({
     });
   }, [wishlistData, id, optimisticWishlist]);
 
+  // Get server-side wishlist status (for API calls - ignoring optimistic state)
+  const serverWishlistStatus = useMemo(() => {
+    if (!wishlistData) return false;
+    
+    const wishlistArray = Array.isArray(wishlistData) 
+      ? wishlistData 
+      : Array.isArray(wishlistData.wishlist) 
+        ? wishlistData.wishlist 
+        : [];
+    
+    return wishlistArray.some((item: any) => {
+      return item.id === id || item.productId === id || item.product?.id === id;
+    });
+  }, [wishlistData, id]); // Note: no optimisticWishlist dependency
+
   // Sync Optimistic State — reset in both directions:
   // qty > 0 means real cart confirmed, clear optimistic flag
   // qty === 0 means item was removed, revert CTA to "Add to Cart"
@@ -102,6 +117,14 @@ export default function OptimisticProductCard({
       setOptimisticAdded(false);
     }
   }, [qty]);
+
+  // Reset optimistic wishlist state when server state changes
+  useEffect(() => {
+    if (optimisticWishlist !== null && toggleWishlistMutation.isSuccess) {
+      // Reset optimistic state after successful mutation
+      setOptimisticWishlist(null);
+    }
+  }, [toggleWishlistMutation.isSuccess, optimisticWishlist]);
 
   // --- HANDLERS ---
 
@@ -135,11 +158,14 @@ export default function OptimisticProductCard({
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    // Debug: Log auth state for troubleshooting
-    console.log('Wishlist Auth Check:', { 
+    // Debug: Log auth and wishlist state for troubleshooting
+    console.log('Wishlist Toggle Debug:', { 
       token: !!token, 
       authUser: !!authUser, 
       isAuthenticated,
+      isWishlisted,
+      serverWishlistStatus,
+      optimisticWishlist,
       component: 'OptimisticProductCard'
     });
 
@@ -156,15 +182,15 @@ export default function OptimisticProductCard({
       return;
     }
 
-    if (isWishlisted) return;
-
+    // Toggle animation and optimistic state
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 300);
-    setOptimisticWishlist(true);
+    setOptimisticWishlist(!isWishlisted);
 
+    // Call the toggle mutation using server state (not optimistic state)
     toggleWishlistMutation.debouncedMutate({
       productId: id,
-      isCurrentlyWishlisted: false,
+      isCurrentlyWishlisted: serverWishlistStatus, // Use actual server state
     });
   };
 
@@ -301,10 +327,9 @@ export default function OptimisticProductCard({
             {/* Wishlist Button */}
             <button
               onClick={handleWishlist}
-              disabled={isWishlisted}
-              className={`p-2 rounded-full transition-all duration-300 relative group/btn ${
+              className={`p-2 rounded-full transition-all duration-300 relative group/btn cursor-pointer ${
                 isWishlisted 
-                  ? "bg-stone-100 cursor-not-allowed" 
+                  ? "bg-[#fdf4ef] border border-[#973c00]/20" 
                   : "bg-white hover:bg-[#fdf4ef] border border-stone-200 hover:border-[#973c00]/20"
               }`}
             >
@@ -328,7 +353,7 @@ export default function OptimisticProductCard({
                   ? "bg-stone-200 text-stone-400 cursor-not-allowed" 
                   : isInCart
                     ? "bg-[#f8efe9] text-[#973c00] border border-[#973c00]/30 cursor-default"
-                    : "bg-[#973c00] text-white hover:bg-[#7a3100] shadow-md hover:shadow-lg shadow-[#973c00]/20 active:scale-95"
+                    : "bg-[#973c00] text-white hover:bg-[#7a3100] shadow-md hover:shadow-lg shadow-[#973c00]/20 active:scale-95 cursor-pointer"
                 }
               `}
             >

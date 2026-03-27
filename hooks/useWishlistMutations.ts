@@ -19,18 +19,15 @@ export function useToggleWishlist() {
 
   const mutation = useMutation({
     mutationFn: async ({ productId, isCurrentlyWishlisted }: { productId: string; isCurrentlyWishlisted: boolean }) => {
-      // Only allow adding to wishlist, not removing
-      if (!isCurrentlyWishlisted) {
-        console.log("Adding to wishlist, productId:", productId, typeof productId);
-        // Convert to number if the API expects numeric IDs
-        const numericId = parseInt(productId, 10);
-        const idToSend = isNaN(numericId) ? productId : numericId;
-        console.log("Sending ID:", idToSend, typeof idToSend);
-        
-        return wishlistApi.addToWishlist({ productId: idToSend });
-      }
-      // If already wishlisted, do nothing
-      return Promise.resolve({ success: true, message: "Already in wishlist" });
+      console.log("Toggling wishlist for productId:", productId, "currently wishlisted:", isCurrentlyWishlisted);
+      
+      // Convert to number if the API expects numeric IDs
+      const numericId = parseInt(productId, 10);
+      const idToSend = isNaN(numericId) ? productId : numericId;
+      console.log("Sending ID for toggle:", idToSend, typeof idToSend);
+      
+      // Use the new toggle API that intelligently handles both add and remove
+      return wishlistApi.toggleWishlist({ productId: idToSend });
     },
     // Optimistic update - immediately update UI
     onMutate: async ({ productId, isCurrentlyWishlisted }) => {
@@ -49,11 +46,16 @@ export function useToggleWishlist() {
           ? (previousWishlistData as any).wishlist
           : [];
 
-      // Optimistically update both caches (add-only)
+      // Optimistically update both caches with toggle behavior
       let optimisticWishlist: WishlistItem[];
+      const newWishlistState = !isCurrentlyWishlisted;
+      
       if (isCurrentlyWishlisted) {
-        // If already wishlisted, keep current state
-        optimisticWishlist = previousWishlist;
+        // Remove from wishlist
+        optimisticWishlist = previousWishlist.filter((item: WishlistItem) => {
+          const itemId = item.productId || item.product?.id || item.id;
+          return String(itemId) !== String(productId);
+        });
       } else {
         // Add to wishlist
         const newItem: WishlistItem = {
@@ -61,23 +63,23 @@ export function useToggleWishlist() {
           productId: productId,
         };
         optimisticWishlist = [...previousWishlist, newItem];
-        
-        // Update the individual product check cache
-        queryClient.setQueryData(wishlistQueryKeys.wishlistCheck(productId), { inWishlist: true });
       }
 
+      // Update both caches optimistically
       queryClient.setQueryData(wishlistQueryKeys.wishlist, optimisticWishlist);
+      queryClient.setQueryData(wishlistQueryKeys.wishlistCheck(productId), { inWishlist: newWishlistState });
 
       // Return a context object with the snapshotted values
       return { 
         previousWishlist: previousWishlistData, 
         previousCheckData,
-        newWishlistState: !isCurrentlyWishlisted,
+        newWishlistState,
         productId 
       };
     },
     // If the mutation fails, use the context returned from onMutate to roll back
     onError: (err, variables, context) => {
+      console.error("Wishlist toggle failed:", err);
       if (context?.previousWishlist) {
         queryClient.setQueryData(wishlistQueryKeys.wishlist, context.previousWishlist);
       }

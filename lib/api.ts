@@ -204,6 +204,56 @@ export const wishlistApi = {
   removeFromWishlist: (productId: string): Promise<any> => 
     apiClient.delete(`/wishlist/${productId}`)
       .catch(() => apiClient.delete(`/wishlist/remove/${productId}`)),
+  
+  // New toggle wishlist API method
+  toggleWishlist: (data: { productId: string | number }): Promise<any> => {
+    console.log("API: Trying toggle wishlist endpoints for productId:", data.productId);
+    
+    // Try multiple toggle endpoint patterns
+    const attempts = [
+      () => apiClient.post(`/wishlist/toggle/${data.productId}`, {}),
+      () => apiClient.put(`/wishlist/toggle/${data.productId}`, {}),
+      () => apiClient.post("/wishlist/toggle", { productId: data.productId }),
+      () => apiClient.put("/wishlist/toggle", { productId: data.productId }),
+      () => apiClient.post(`/user/wishlist/toggle/${data.productId}`, {}),
+      () => apiClient.get(`/wishlist/toggle/${data.productId}`)
+    ];
+    
+    let lastError: unknown;
+    
+    const tryToggleEndpoint = async (index = 0): Promise<any> => {
+      if (index >= attempts.length) {
+        // If no toggle endpoint works, fall back to manual check and add/remove
+        console.log("No toggle endpoint found, falling back to manual toggle");
+        try {
+          const checkResult = await wishlistApi.checkWishlist(data.productId);
+          if (checkResult.inWishlist) {
+            console.log("Product in wishlist, removing...");
+            return await wishlistApi.removeFromWishlist(String(data.productId));
+          } else {
+            console.log("Product not in wishlist, adding...");
+            return await wishlistApi.addToWishlist(data);
+          }
+        } catch (fallbackError) {
+          console.error("Fallback toggle failed:", fallbackError);
+          throw new Error(`Toggle wishlist failed. Neither dedicated endpoints nor fallback worked. Last error: ${fallbackError}`);
+        }
+      }
+      
+      try {
+        console.log(`Trying toggle endpoint ${index + 1}/${attempts.length}`);
+        const result = await attempts[index]();
+        console.log(`Toggle endpoint ${index + 1} succeeded:`, result);
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.log(`Toggle endpoint ${index + 1} failed:`, error);
+        return tryToggleEndpoint(index + 1);
+      }
+    };
+    
+    return tryToggleEndpoint();
+  }
 };
 
 export const productsApi = {

@@ -866,7 +866,7 @@ export default function Header() {
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {segregatedSearchResults.categories.map((cat) => (
-                            <button key={cat} onClick={() => { setMobileMenuOpen(false); handleCategorySelect(cat); }} className="text-xs px-3 py-1.5 rounded-full border border-[#5A1E12]/20 text-[#5A1E12] hover:bg-[#5A1E12] hover:text-white transition-all">{cat}</button>
+                            <button key={cat} onClick={() => { setMobileMenuOpen(false); handleCategorySelect(cat); }} className="text-xs px-3 py-1.5 rounded-full border border-[#5A1E12]/20 text-[#5A1E12] hover:bg-[#5A1E12] hover:text-white transition-all cursor-pointer">{cat}</button>
                           ))}
                         </div>
                       </div>

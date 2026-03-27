@@ -177,6 +177,9 @@ export default function ShopSlugPage() {
   // Sync wishlist
   useEffect(() => { setIsWishlisted(wishlistData?.inWishlist || false); }, [wishlistData]);
 
+  // Get server-side wishlist status (for API calls)
+  const serverWishlistStatus = wishlistData?.inWishlist || false;
+
   // Modal scroll lock
   useEffect(() => {
     document.body.style.overflow = isModalOpen ? 'hidden' : 'unset';
@@ -241,13 +244,15 @@ export default function ShopSlugPage() {
   const handleWishlist = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
 
-    // Debug: Log auth state for troubleshooting
-    console.log('Wishlist Auth Check:', { 
+    // Debug: Log auth and wishlist state for troubleshooting
+    console.log('Wishlist Toggle Debug:', { 
       token: !!token, 
       authUser: !!authUser, 
       isAuthenticated,
-      tokenValue: token ? 'exists' : 'missing',
-      userValue: authUser ? 'exists' : 'missing',
+      isWishlisted,
+      serverWishlistStatus,
+      productId: product?.id,
+      wishlistData,
       component: 'ProductDetailPage'
     });
 
@@ -263,33 +268,39 @@ export default function ShopSlugPage() {
       return;
     }
 
-    // Only add to wishlist, don't toggle
-    if (isWishlisted) {
-      return; // Already in wishlist, do nothing
-    }
-
     // Heart animation
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 300);
     
-    // Optimistically update UI
-    setIsWishlisted(true);
+    // Optimistically update UI for toggle behavior
+    setIsWishlisted(!isWishlisted);
 
-    // Call API to add to wishlist
+    // Call API to toggle wishlist using server state (not optimistic state)
     toggleWishlistMutation.debouncedMutate({
       productId: product?.id || "",
-      isCurrentlyWishlisted: false, // Always pass false since we only add
+      isCurrentlyWishlisted: serverWishlistStatus, // Use actual server state
     });
 
-    // Show success toast
-    toast.success("❤️ Added to Wishlist!", {
-      position: "top-right",
-      autoClose: 2000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
+    // Show appropriate success toast based on action being performed
+    if (serverWishlistStatus) {
+      toast.success("Removed from Wishlist!", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } else {
+      toast.success("Added to Wishlist!", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
   };
 
   const productUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -521,8 +532,8 @@ export default function ShopSlugPage() {
                 <div className="absolute top-4 right-4 flex flex-col gap-2">
                   <button
                     onClick={handleWishlist}
-                    disabled={!token || isWishlisted}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
+                    disabled={!token}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${
                       isWishlisted 
                         ? 'bg-[#5A1E12] text-white' 
                         : 'bg-white/90 backdrop-blur-sm text-[#973c00] hover:bg-[#5A1E12] hover:text-white'
@@ -531,7 +542,7 @@ export default function ShopSlugPage() {
                       !token 
                         ? "Please log in to add to wishlist" 
                         : isWishlisted 
-                          ? "Already in wishlist" 
+                          ? "Remove from wishlist" 
                           : "Add to wishlist"
                     }
                   >
@@ -682,7 +693,7 @@ export default function ShopSlugPage() {
                 <button
                   onClick={handleAddToCart}
                   disabled={isOutOfStock || isAddingToCart}
-                  className={`flex-1 inline-flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl text-base font-bold transition-all duration-200 ${
+                  className={`flex-1 inline-flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl text-base font-bold transition-all duration-200 cursor-pointer ${
                     addedToCart
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
                       : isOutOfStock
@@ -701,7 +712,7 @@ export default function ShopSlugPage() {
 
                 <button
                   onClick={handleWishlist}
-                  className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center transition-all duration-200 hover:scale-105 ${
+                  className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer ${
                     isWishlisted
                       ? 'bg-[#5A1E12] border-[#5A1E12] text-white shadow-lg shadow-[#5A1E12]/20'
                       : 'bg-white/60 border-[#973c00]/20 text-[#973c00] hover:border-[#5A1E12] hover:text-[#5A1E12] hover:bg-white'
@@ -714,7 +725,7 @@ export default function ShopSlugPage() {
                 <div className="relative">
                   <button
                     onClick={handleNativeShare}
-                    className="w-14 h-14 rounded-2xl border-2 border-[#973c00]/20 bg-white/60 text-[#973c00] hover:border-[#5A1E12] hover:text-[#5A1E12] hover:bg-white flex items-center justify-center transition-all duration-200 hover:scale-105"
+                    className="w-14 h-14 rounded-2xl border-2 border-[#973c00]/20 bg-white/60 text-[#973c00] hover:border-[#5A1E12] hover:text-[#5A1E12] hover:bg-white flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer"
                     title="Share this product"
                   >
                     <Share2 className="w-6 h-6" />

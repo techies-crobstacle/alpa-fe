@@ -605,7 +605,7 @@ function ShopContent() {
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Categories</p>
                 {selectedCategories.length > 0 && (
-                  <button onClick={() => { setSelectedCategories([]); setShowAllCategories(false); }} className="text-xs text-[#5A1E12] hover:underline">Reset</button>
+                  <button onClick={() => { setSelectedCategories([]); setShowAllCategories(false); }} className="text-xs text-[#5A1E12] hover:underline cursor-pointer">Reset</button>
                 )}
               </div>
               {loading ? (
@@ -631,7 +631,7 @@ function ShopContent() {
                     );
                   })}
                   {categoriesWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                    <button onClick={() => setShowAllCategories(!showAllCategories)} className="text-xs text-[#5A1E12] hover:underline mt-1 text-center py-1">
+                    <button onClick={() => setShowAllCategories(!showAllCategories)} className="text-xs text-[#5A1E12] hover:underline mt-1 text-center py-1 cursor-pointer">
                       {showAllCategories ? "Show Less" : `+${categoriesWithCounts.length - INITIAL_ITEMS_TO_SHOW} more`}
                     </button>
                   )}
@@ -644,7 +644,7 @@ function ShopContent() {
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Artists</p>
                 {selectedArtists.length > 0 && (
-                  <button onClick={() => { setSelectedArtists([]); setShowAllArtists(false); }} className="text-xs text-[#5A1E12] hover:underline">Reset</button>
+                  <button onClick={() => { setSelectedArtists([]); setShowAllArtists(false); }} className="text-xs text-[#5A1E12] hover:underline cursor-pointer">Reset</button>
                 )}
               </div>
               {loading ? (
@@ -672,7 +672,7 @@ function ShopContent() {
                     );
                   })}
                   {artistsWithCounts.length > INITIAL_ITEMS_TO_SHOW && (
-                    <button onClick={() => setShowAllArtists(!showAllArtists)} className="text-xs text-[#5A1E12] hover:underline mt-1 text-center py-1">
+                    <button onClick={() => setShowAllArtists(!showAllArtists)} className="text-xs text-[#5A1E12] hover:underline mt-1 text-center py-1 cursor-pointer">
                       {showAllArtists ? "Show Less" : `+${artistsWithCounts.length - INITIAL_ITEMS_TO_SHOW} more`}
                     </button>
                   )}

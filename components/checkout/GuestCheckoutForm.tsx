@@ -755,7 +755,7 @@ export default function GuestCheckoutForm() {
                   <span className="flex-1 text-sm font-medium text-green-700">
                     {appliedCoupon.code} — -${appliedCoupon.discountAmount.toFixed(2)} discount applied
                   </span>
-                  <button onClick={handleRemoveCoupon} className="text-green-600 hover:text-red-500 transition-colors">
+                  <button onClick={handleRemoveCoupon} className="text-green-600 hover:text-red-500 transition-colors cursor-pointer">
                     <X className="w-4 h-4" />
                   </button>
                 </div>

@@ -37,7 +37,7 @@ const Page = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <button className="px-8 py-3 bg-[#803512] hover:bg-[#a0451a] text-white font-medium transition-all duration-300 rounded-sm tracking-wide uppercase text-xs sm:text-sm">
+              <button className="px-8 py-3 bg-[#803512] hover:bg-[#a0451a] text-white font-medium transition-all duration-300 rounded-sm tracking-wide uppercase text-xs sm:text-sm cursor-pointer">
                 Start Your Journey
               </button>
             </div>

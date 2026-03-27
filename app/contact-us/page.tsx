@@ -623,7 +623,7 @@ export default function Page() {
             </p>
 
             <Link href="/shop">
-              <button className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#d3b994] text-[#3b0f06] font-bold hover:bg-white transition-all duration-300 shadow-lg hover:shadow-orange-500/20">
+              <button className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#d3b994] text-[#3b0f06] font-bold hover:bg-white transition-all duration-300 shadow-lg hover:shadow-orange-500/20 cursor-pointer">
                 Explore Marketplace
                 <ArrowRight className="w-5 h-5" />
               </button>
