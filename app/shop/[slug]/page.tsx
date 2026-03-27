@@ -131,7 +131,7 @@ export default function ShopSlugPage() {
   const { data: wishlistData } = useWishlistCheck(product?.id || "");
   const { token, user: authUser } = useAuth();
   const toggleWishlistMutation = useToggleWishlist();
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [optimisticWishlist, setOptimisticWishlist] = useState<boolean | null>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
 
@@ -174,10 +174,13 @@ export default function ShopSlugPage() {
     fetchRatings();
   }, [product?.id]);
 
-  // Sync wishlist
-  useEffect(() => { setIsWishlisted(wishlistData?.inWishlist || false); }, [wishlistData]);
+  // Check Wishlist Status with Optimistic Updates (like shop page)
+  const isWishlisted = useMemo(() => {
+    if (optimisticWishlist !== null) return optimisticWishlist;
+    return wishlistData?.inWishlist || false;
+  }, [wishlistData, optimisticWishlist]);
 
-  // Get server-side wishlist status (for API calls)
+  // Get server-side wishlist status (for API calls - ignores optimistic state)
   const serverWishlistStatus = wishlistData?.inWishlist || false;
 
   // Modal scroll lock
@@ -251,6 +254,7 @@ export default function ShopSlugPage() {
       isAuthenticated,
       isWishlisted,
       serverWishlistStatus,
+      optimisticWishlist,
       productId: product?.id,
       wishlistData,
       component: 'ProductDetailPage'
@@ -268,13 +272,11 @@ export default function ShopSlugPage() {
       return;
     }
 
-    // Heart animation
+    // Heart animation and optimistic state (like shop page)
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 300);
+    setOptimisticWishlist(!isWishlisted);
     
-    // Optimistically update UI for toggle behavior
-    setIsWishlisted(!isWishlisted);
-
     // Call API to toggle wishlist using server state (not optimistic state)
     toggleWishlistMutation.debouncedMutate({
       productId: product?.id || "",
@@ -718,7 +720,11 @@ export default function ShopSlugPage() {
                       : 'bg-white/60 border-[#973c00]/20 text-[#973c00] hover:border-[#5A1E12] hover:text-[#5A1E12] hover:bg-white'
                   }`}
                 >
-                  <Heart className={`w-6 h-6 transition-transform duration-200 ${isWishlisted ? 'fill-current scale-110' : ''}`} />
+                  <Heart className={`w-6 h-6 transition-all duration-200 ${
+                    isWishlisted 
+                      ? 'fill-white text-white scale-110' 
+                      : 'text-[#973c00]'
+                  } ${isHeartAnimating ? 'scale-125' : ''}`} />
                 </button>
 
                 {/* Share button + dropdown */}
