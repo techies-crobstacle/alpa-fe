@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
-import { Loader2, Tag, X, CheckCircle, ChevronRight, ChevronDown } from "lucide-react";
+import { Loader2, Tag, X, CheckCircle, ChevronRight } from "lucide-react";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { couponsApi, ValidatedCoupon } from "@/lib/api";
 import { guestCartUtils } from "@/lib/guestCartUtils";
 import GuestStripePaymentForm from "@/components/checkout/GuestStripePaymentForm";
 import Link from "next/link";
+import { apiClient } from "@/lib/api";
 import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
 import { isValidPhoneNumber } from "react-phone-number-input";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
@@ -24,42 +25,54 @@ declare global {
   }
 }
 
+// ─── Dynamic location types ───────────────────────────────────────────────
+interface ApiCountry {
+  id: number; name: string; iso2: string; phone_code: string;
+}
+interface ApiState {
+  id: number; name: string; iso2: string;
+}
+interface ApiCity {
+  id: number; name: string;
+}
+
+// Module-level cache shared with addressCart
+let cachedGuestCountries: ApiCountry[] = [];
+
+// Dynamic label terminology
+const addressTerminology: Record<string, { state: string; city: string }> = {
+  AU: { state: "State/Territory", city: "Suburb" },
+  US: { state: "State", city: "City" },
+  CA: { state: "Province", city: "City" },
+  GB: { state: "County", city: "Town/City" },
+  IN: { state: "State", city: "City" },
+  default: { state: "State/Province", city: "City" },
+};
+
 // ─── Country data from react-phone-number-input ───────────────────────────
 const countryCodeList = getCountries();
 
-// Country flags mapping
-const countryFlags: Record<string, string> = {
-  'AU': '🇦🇺', 'US': '🇺🇸', 'GB': '🇬🇧', 'IN': '🇮🇳', 'CA': '🇨🇦', 'NZ': '🇳🇿', 
-  'SG': '🇸🇬', 'AE': '🇦🇪', 'SA': '🇸🇦', 'DE': '🇩🇪', 'FR': '🇫🇷', 'JP': '🇯🇵',
-  'CN': '🇨🇳', 'BR': '🇧🇷', 'PK': '🇵🇰', 'MY': '🇲🇾', 'PH': '🇵🇭', 'ID': '🇮🇩',
-  'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
-  'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'IE': '🇮🇪', 'PT': '🇵🇹',
-  'GR': '🇬🇷', 'PL': '🇵🇱', 'CZ': '🇨🇿', 'HU': '🇭🇺', 'TR': '🇹🇷', 'RU': '🇷🇺',
-  'KR': '🇰🇷', 'TH': '🇹🇭', 'VN': '🇻🇳', 'ZA': '🇿🇦', 'EG': '🇪🇬', 'NG': '🇳🇬',
-  'KE': '🇰🇪', 'MX': '🇲🇽', 'AR': '🇦🇷', 'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪',
-};
+// Generate flag emoji from ISO2 code using Unicode regional indicator symbols.
+// Works for every valid ISO 3166-1 alpha-2 code without a manual map.
+const getFlagEmoji = (iso2: string): string =>
+  iso2.toUpperCase().replace(/./g, ch =>
+    String.fromCodePoint(127397 + ch.charCodeAt(0))
+  );
 
-// Country names mapping
-const countryNames: Record<string, string> = {
-  'AU': 'Australia', 'US': 'United States', 'GB': 'United Kingdom', 'IN': 'India', 
-  'CA': 'Canada', 'NZ': 'New Zealand', 'SG': 'Singapore', 'AE': 'United Arab Emirates',
-  'SA': 'Saudi Arabia', 'DE': 'Germany', 'FR': 'France', 'JP': 'Japan', 'CN': 'China',
-  'BR': 'Brazil', 'PK': 'Pakistan', 'MY': 'Malaysia', 'PH': 'Philippines', 'ID': 'Indonesia',
-  'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands', 'CH': 'Switzerland', 'AT': 'Austria',
-  'BE': 'Belgium', 'SE': 'Sweden', 'NO': 'Norway', 'DK': 'Denmark', 'FI': 'Finland',
-  'IE': 'Ireland', 'PT': 'Portugal', 'GR': 'Greece', 'PL': 'Poland', 'CZ': 'Czech Republic',
-  'HU': 'Hungary', 'TR': 'Turkey', 'RU': 'Russia', 'KR': 'South Korea', 'TH': 'Thailand',
-  'VN': 'Vietnam', 'ZA': 'South Africa', 'EG': 'Egypt', 'NG': 'Nigeria', 'KE': 'Kenya',
-  'MX': 'Mexico', 'AR': 'Argentina', 'CL': 'Chile', 'CO': 'Colombia', 'PE': 'Peru',
-};
+// Use Intl.DisplayNames for localised country names (available in all modern runtimes).
+const _regionNames = typeof Intl !== "undefined" && Intl.DisplayNames
+  ? new Intl.DisplayNames(["en"], { type: "region" })
+  : null;
+const getCountryName = (iso2: string): string =>
+  (_regionNames?.of(iso2)) ?? iso2;
 
-// Build COUNTRIES array from react-phone-number-input data
+// Build COUNTRIES array — all countries supported by react-phone-number-input
 const COUNTRIES_RAW = countryCodeList.map(code => ({
   code,
-  flag: countryFlags[code] || '🏳️',
-  name: countryNames[code] || code,
+  flag: getFlagEmoji(code),
+  name: getCountryName(code),
   dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
-})).filter(country => countryFlags[country.code]); // Only include countries with flags
+}));
 
 // Reorder to put Australia first
 const auIndex = COUNTRIES_RAW.findIndex(country => country.code === 'AU');
@@ -186,10 +199,35 @@ export default function GuestCheckoutForm() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [addressLine,   setAddressLine]   = useState("");
-  const [city,          setCity]          = useState("");
-  const [state,         setState]         = useState("");
   const [zipCode,       setZipCode]       = useState("");
-  const [country,       setCountry]       = useState("Australia");
+
+  // ── Dynamic location state ────────────────────────────────────────────────
+  const [locationCountries,   setLocationCountries]   = useState<ApiCountry[]>([]);
+  const [locationStates,      setLocationStates]      = useState<ApiState[]>([]);
+  const [locationCities,      setLocationCities]      = useState<ApiCity[]>([]);
+  const [selectedCountryIso,  setSelectedCountryIso]  = useState("AU");
+  const [selectedStateIso,    setSelectedStateIso]    = useState("");
+  const [country,             setCountry]             = useState("Australia");
+  const [state,               setState]               = useState("");
+  const [city,                setCity]                = useState("");
+  const locationLabels = addressTerminology[selectedCountryIso] || addressTerminology.default;
+  // ── Location custom dropdowns ─────────────────────────────────────────────
+  const [locCountryOpen,   setLocCountryOpen]   = useState(false);
+  const [locStateOpen,     setLocStateOpen]     = useState(false);
+  const [locCityOpen,      setLocCityOpen]      = useState(false);
+  const [locCountrySearch, setLocCountrySearch] = useState("");
+  const [locStateSearch,   setLocStateSearch]   = useState("");
+  const [locCitySearch,    setLocCitySearch]    = useState("");
+  const [locCountryHL,     setLocCountryHL]     = useState(0);
+  const [locStateHL,       setLocStateHL]       = useState(0);
+  const [locCityHL,        setLocCityHL]        = useState(0);
+  const locCountryRef  = useRef<HTMLDivElement>(null);
+  const locStateRef    = useRef<HTMLDivElement>(null);
+  const locCityRef     = useRef<HTMLDivElement>(null);
+  const locCountryListRef = useRef<HTMLUListElement>(null);
+  const locStateListRef   = useRef<HTMLUListElement>(null);
+  const locCityListRef    = useRef<HTMLUListElement>(null);
+
   // ── Phone number with country code ──────────────────────────────────────────
   const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]); // Default to Australia
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -197,6 +235,8 @@ export default function GuestCheckoutForm() {
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [phoneHighlight, setPhoneHighlight] = useState(0);
+  const phoneListRef = useRef<HTMLUListElement>(null);
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   // ── Google Places Autocomplete ────────────────────────────────────────────
   const addressInputRef = useRef<HTMLInputElement>(null);
@@ -256,6 +296,9 @@ export default function GuestCheckoutForm() {
         setShowCountryDropdown(false);
         setCountrySearch("");
       }
+      if (locCountryRef.current && !locCountryRef.current.contains(e.target as Node)) { setLocCountryOpen(false); setLocCountrySearch(""); }
+      if (locStateRef.current   && !locStateRef.current.contains(e.target as Node))   setLocStateOpen(false);
+      if (locCityRef.current    && !locCityRef.current.contains(e.target as Node))     setLocCityOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -266,6 +309,68 @@ export default function GuestCheckoutForm() {
     country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
     country.code.toLowerCase().includes(countrySearch.toLowerCase())
   );
+
+  // ── Dynamic location: fetch countries once ────────────────────────────────
+  useEffect(() => {
+    const load = async () => {
+      if (cachedGuestCountries.length > 0) {
+        setLocationCountries(cachedGuestCountries);
+        return;
+      }
+      try {
+        const data = await apiClient.get('/location/countries') as { data: ApiCountry[] };
+        cachedGuestCountries = data.data || [];
+        setLocationCountries(cachedGuestCountries);
+      } catch { /* silently skip */ }
+    };
+    load();
+  }, []);
+
+  // ── Dynamic location: auto-select Australia and load its states ───────────
+  useEffect(() => {
+    if (locationCountries.length === 0) return;
+    const au = locationCountries.find(c => c.iso2 === 'AU');
+    if (au && !selectedStateIso) {
+      apiClient.get(`/location/countries/AU/states`)
+        .then((d: any) => setLocationStates(d.data || []))
+        .catch(() => {});
+    }
+  }, [locationCountries]);
+
+  // ── Dynamic location: handlers ────────────────────────────────────────────
+  const handleLocationCountryChange = async (iso2: string) => {
+    const found = locationCountries.find(c => c.iso2 === iso2);
+    const name = found?.name || iso2;
+    setSelectedCountryIso(iso2);
+    setCountry(name);
+    setState("");
+    setCity("");
+    setSelectedStateIso("");
+    setLocationStates([]);
+    setLocationCities([]);
+    // Sync phone country code
+    const phoneC = COUNTRIES.find(c => c.code === iso2);
+    if (phoneC) setSelectedCountry(phoneC);
+    if (!iso2) return;
+    try {
+      const data = await apiClient.get(`/location/countries/${iso2}/states`) as { data: ApiState[] };
+      setLocationStates(data.data || []);
+    } catch { /* silently skip */ }
+  };
+
+  const handleLocationStateChange = async (iso2: string) => {
+    const found = locationStates.find(s => s.iso2 === iso2);
+    const name = found?.name || iso2;
+    setSelectedStateIso(iso2);
+    setState(name);
+    setCity("");
+    setLocationCities([]);
+    if (!iso2 || !selectedCountryIso) return;
+    try {
+      const data = await apiClient.get(`/location/countries/${selectedCountryIso}/states/${iso2}/cities`) as { data: ApiCity[] };
+      setLocationCities(data.data || []);
+    } catch { /* silently skip */ }
+  };
   // ── Google Places Autocomplete Setup ──────────────────────────────────────
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -281,6 +386,7 @@ export default function GuestCheckoutForm() {
       const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
         types: ["address"],
         fields: ["formatted_address", "address_components"],
+        componentRestrictions: selectedCountryIso ? { country: selectedCountryIso.toLowerCase() } : undefined,
       });
 
       autocomplete.addListener("place_changed", () => {
@@ -293,9 +399,32 @@ export default function GuestCheckoutForm() {
         const getShortComponent = (type: string) =>
           place.address_components.find((c: any) => c.types.includes(type))?.short_name || "";
 
-        // Auto-fill fields based on selected address
-        setAddressLine(place.formatted_address || "");
-        setCity(getComponent("locality") || getComponent("administrative_area_level_2"));
+        // Build street address: split by comma, strip only the parts that exactly
+        // match city, state, postcode or country — keep everything else (neighbourhoods,
+        // sublocalities, landmarks, etc.)
+        const cityName     = getComponent("locality") || getComponent("administrative_area_level_2");
+        const stateLong    = getComponent("administrative_area_level_1");
+        const stateShort   = getShortComponent("administrative_area_level_1");
+        const postalCode   = getComponent("postal_code");
+        const countryName  = getComponent("country");
+        const formattedAddr = place.formatted_address || "";
+
+        const stripTerms = new Set(
+          [cityName, stateLong, stateShort, postalCode, countryName]
+            .filter(Boolean)
+            .map((t: string) => t.toLowerCase())
+        );
+        const streetParts = formattedAddr
+          .split(",")
+          .map((p: string) => p.trim())
+          .filter((p: string) => p && !stripTerms.has(p.toLowerCase()));
+        const streetOnly = streetParts.join(", ") || formattedAddr.split(",")[0].trim();
+
+        // Override Google's full-address fill directly on the DOM node
+        // so the controlled input never shows the extra city/state/country
+        if (addressInputRef.current) addressInputRef.current.value = streetOnly;
+        setAddressLine(streetOnly);
+        setCity(cityName);
         setState(getShortComponent("administrative_area_level_1") || getComponent("administrative_area_level_1"));
         setZipCode(getComponent("postal_code"));
         setCountry(getComponent("country"));
@@ -340,6 +469,14 @@ export default function GuestCheckoutForm() {
       }
     };
   }, []);
+
+  // ── Update autocomplete country restriction when country dropdown changes ─
+  useEffect(() => {
+    if (!autocompleteInstanceRef.current || !selectedCountryIso) return;
+    autocompleteInstanceRef.current.setComponentRestrictions({
+      country: selectedCountryIso.toLowerCase(),
+    });
+  }, [selectedCountryIso]);
 
   // Final total after coupon
   const discountAmount = appliedCoupon?.discountAmount ?? 0;
@@ -392,9 +529,10 @@ export default function GuestCheckoutForm() {
       }
     }
     
+    if (!country.trim())       errors.country       = "Country is required.";
     if (!addressLine.trim())   errors.addressLine   = "Address is required.";
-    if (!city.trim())          errors.city          = "Suburb is required.";
-    if (!state.trim())         errors.state         = "State is required.";
+    if (!state.trim())         errors.state         = `${locationLabels.state} is required.`;
+    if (!city.trim())          errors.city          = `${locationLabels.city} is required.`;
     if (!zipCode.trim())       errors.zipCode       = "Postcode is required.";
     if (!selectedShipping)     errors.shippingMethodId = "Please select a shipping method.";
     setFieldErrors(errors);
@@ -583,63 +721,69 @@ export default function GuestCheckoutForm() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#5A1E12] mb-1">Phone Number <span className="text-red-500">*</span></label>
-                  <div className="flex gap-2">
+                  <div className={`flex items-stretch bg-white border rounded-lg overflow-visible transition-all ${
+                    fieldErrors.customerPhone || phoneError ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50 focus-within:border-[#5A1E12] focus-within:ring-1 focus-within:ring-[#5A1E12]"
+                  }`}>
                     {/* Country Code Dropdown */}
-                    <div className="relative" ref={countryDropdownRef}>
+                    <div className="relative shrink-0" ref={countryDropdownRef}>
                       <button
                         type="button"
-                        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                        className="flex items-center gap-2 px-3 py-3 bg-white border border-[#5A1E12]/20 rounded-lg hover:border-[#5A1E12]/40 focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm min-w-30"
+                        onClick={() => { setShowCountryDropdown(v => !v); setCountrySearch(""); setPhoneHighlight(0); }}
+                        className="flex items-center gap-1.5 px-3 h-full text-sm font-medium border-r border-[#5A1E12]/20 hover:bg-black/5 transition rounded-l-lg"
                       >
-                        <span className="text-base">{selectedCountry.flag}</span>
-                        <span className="text-xs text-gray-600">{selectedCountry.dialCode}</span>
-                        <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`} />
+                        <span className="text-lg leading-none">{selectedCountry.flag}</span>
+                        <span className="text-gray-700 text-xs">{selectedCountry.dialCode}</span>
+                        <span className="text-gray-400 text-xs">▾</span>
                       </button>
-                      
-                      {/* Country Dropdown */}
+
                       {showCountryDropdown && (
-                        <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-hidden">
-                          {/* Search Input */}
-                          <div className="p-3 border-b border-gray-100">
+                        <div className="absolute top-full left-0 z-50 mt-1 w-72 bg-white border border-[#d6b896] rounded-xl overflow-hidden shadow-lg">
+                          <div className="p-2 border-b border-[#d6b896]/50">
                             <input
                               type="text"
-                              placeholder="Search countries..."
-                              value={countrySearch}
-                              onChange={(e) => setCountrySearch(e.target.value)}
-                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] focus:border-[#5A1E12]"
                               autoFocus
+                              value={countrySearch}
+                              onChange={e => { setCountrySearch(e.target.value); setPhoneHighlight(0); }}
+                              onKeyDown={e => {
+                                if (e.key === "ArrowDown") { e.preventDefault(); setPhoneHighlight(i => { const next = Math.min(i + 1, filteredCountries.length - 1); phoneListRef.current?.children[next]?.scrollIntoView({ block: "nearest" }); return next; }); }
+                                else if (e.key === "ArrowUp") { e.preventDefault(); setPhoneHighlight(i => { const prev = Math.max(i - 1, 0); phoneListRef.current?.children[prev]?.scrollIntoView({ block: "nearest" }); return prev; }); }
+                                else if (e.key === "Enter" && filteredCountries[phoneHighlight]) { e.preventDefault(); handleCountrySelect(filteredCountries[phoneHighlight]); }
+                                else if (e.key === "Escape") setShowCountryDropdown(false);
+                              }}
+                              placeholder="Search country…"
+                              className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
                             />
                           </div>
-                          
-                          {/* Countries List */}
-                          <div className="max-h-48 overflow-y-auto">
-                            {filteredCountries.length > 0 ? (
-                              filteredCountries.map((country) => (
+                          <ul ref={phoneListRef} className="max-h-52 overflow-y-auto">
+                            {filteredCountries.map((c, idx) => (
+                              <li key={c.code} onMouseEnter={() => setPhoneHighlight(idx)}>
                                 <button
-                                  key={country.code}
                                   type="button"
-                                  onClick={() => handleCountrySelect(country)}
-                                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                                  onMouseDown={() => handleCountrySelect(c)}
+                                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors ${
+                                    idx === phoneHighlight ? "bg-[#f5e6d3] text-[#5A1E12]"
+                                    : c.code === selectedCountry.code ? "bg-[#5A1E12] text-white"
+                                    : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
+                                  }`}
                                 >
-                                  <span className="text-base">{country.flag}</span>
-                                  <span className="flex-1 text-sm text-gray-900">{country.name}</span>
-                                  <span className="text-xs text-gray-500">{country.dialCode}</span>
+                                  <span className="text-base w-6 shrink-0">{c.flag}</span>
+                                  <span className="flex-1 truncate">{c.name}</span>
+                                  <span className={`text-xs shrink-0 ${idx === phoneHighlight || c.code === selectedCountry.code ? "opacity-80" : "text-gray-400"}`}>{c.dialCode}</span>
                                 </button>
-                              ))
-                            ) : (
-                              <div className="px-3 py-4 text-sm text-gray-500 text-center">
-                                No countries found
-                              </div>
+                              </li>
+                            ))}
+                            {filteredCountries.length === 0 && (
+                              <li className="px-4 py-4 text-sm text-gray-400 text-center">No countries found</li>
                             )}
-                          </div>
+                          </ul>
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Phone Number Input */}
-                    <input 
-                      type="tel" 
-                      value={phoneNumber} 
+                    <input
+                      type="tel"
+                      value={phoneNumber}
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       onBlur={() => {
                         setPhoneTouched(true);
@@ -648,9 +792,7 @@ export default function GuestCheckoutForm() {
                         }
                       }}
                       placeholder="400 000 000"
-                      className={`flex-1 px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm transition-all ${
-                        fieldErrors.customerPhone || phoneError ? "border-red-400" : "border-[#5A1E12]/20"
-                      }`} 
+                      className="flex-1 px-4 py-3 text-sm text-gray-900 bg-transparent outline-none placeholder:text-gray-400"
                     />
                   </div>
                   {(fieldErrors.customerPhone || phoneError) && (
@@ -673,54 +815,212 @@ export default function GuestCheckoutForm() {
             <div className="border-t border-[#5A1E12]/10 pt-6">
               <h3 className="text-base font-semibold text-[#5A1E12] mb-4">Shipping Address</h3>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#5A1E12] mb-1">
-                    Address Line <span className="text-red-500">*</span>
-                  </label>
-                  <input 
-                    ref={addressInputRef}
-                    type="text" 
-                    value={addressLine} 
-                    onChange={(e) => setAddressLine(e.target.value)} 
-                    placeholder="Start typing your address..." 
-                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm transition-all ${
-                      fieldErrors.addressLine ? "border-red-400" : "border-[#5A1E12]/20"
-                    }`} 
-                  />
-                  {fieldErrors.addressLine && <p className="mt-1 text-xs text-red-500">{fieldErrors.addressLine}</p>}
-                  <p className="mt-1 text-xs text-[#5A1E12]/60">
-                    💡 Start typing for address suggestions
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#5A1E12] mb-1">Suburb <span className="text-red-500">*</span></label>
-                    <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Sydney"
-                      className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20"}`} />
-                    {fieldErrors.city && <p className="mt-1 text-xs text-red-500">{fieldErrors.city}</p>}
+                {/* Country custom dropdown */}
+                <div ref={locCountryRef}>
+                  <label className="block text-sm font-medium text-[#5A1E12] mb-1">Country <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { setLocCountryOpen(o => !o); setLocCountrySearch(""); }}
+                      className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-lg text-sm text-left transition-all focus:outline-none focus:ring-1 focus:ring-[#5A1E12] ${fieldErrors.country ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50"}`}
+                    >
+                      <span className={country ? "text-gray-900" : "text-gray-400"}>{country || "Select Country"}</span>
+                      <svg className={`w-4 h-4 text-[#a08050] transition-transform ${locCountryOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    {locCountryOpen && (
+                      <div className="absolute z-50 mt-1 w-full bg-white border border-[#d6b896] rounded-xl shadow-lg overflow-hidden">
+                        <div className="p-2 border-b border-[#d6b896]/50">
+                          <input
+                            autoFocus
+                            type="text"
+                            value={locCountrySearch}
+                            onChange={e => { setLocCountrySearch(e.target.value); setLocCountryHL(0); }}
+                            onKeyDown={e => {
+                              const filtered = locationCountries.filter(c => c.name.toLowerCase().includes(locCountrySearch.toLowerCase()));
+                              if (e.key === "ArrowDown") { e.preventDefault(); setLocCountryHL(i => { const next = Math.min(i + 1, filtered.length - 1); locCountryListRef.current?.children[next]?.scrollIntoView({ block: "nearest" }); return next; }); }
+                              else if (e.key === "ArrowUp") { e.preventDefault(); setLocCountryHL(i => { const prev = Math.max(i - 1, 0); locCountryListRef.current?.children[prev]?.scrollIntoView({ block: "nearest" }); return prev; }); }
+                              else if (e.key === "Enter" && filtered[locCountryHL]) { e.preventDefault(); handleLocationCountryChange(filtered[locCountryHL].iso2); setLocCountryOpen(false); }
+                              else if (e.key === "Escape") setLocCountryOpen(false);
+                            }}
+                            placeholder="Search country..."
+                            className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
+                          />
+                        </div>
+                        <ul ref={locCountryListRef} className="max-h-52 overflow-y-auto">
+                          {locationCountries
+                            .filter(c => c.name.toLowerCase().includes(locCountrySearch.toLowerCase()))
+                            .map((c, idx) => (
+                              <li
+                                key={c.iso2}
+                                onMouseEnter={() => setLocCountryHL(idx)}
+                                onMouseDown={() => { handleLocationCountryChange(c.iso2); setLocCountryOpen(false); }}
+                                className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                                  idx === locCountryHL ? "bg-[#f5e6d3] text-[#5A1E12]"
+                                  : selectedCountryIso === c.iso2 ? "bg-[#5A1E12] text-white"
+                                  : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
+                                }`}
+                              >
+                                {c.name}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#5A1E12] mb-1">State <span className="text-red-500">*</span></label>
-                    <input type="text" value={state} onChange={(e) => setState(e.target.value)} placeholder="NSW"
-                      className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.state ? "border-red-400" : "border-[#5A1E12]/20"}`} />
+                  {fieldErrors.country && <p className="mt-1 text-xs text-red-500">{fieldErrors.country}</p>}
+                </div>
+
+                {/* State custom dropdown (shown when states are available) */}
+                {locationStates.length > 0 && (
+                  <div ref={locStateRef}>
+                    <label className="block text-sm font-medium text-[#5A1E12] mb-1">{locationLabels.state} <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => { setLocStateOpen(o => !o); setLocStateSearch(""); }}
+                        className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-lg text-sm text-left transition-all focus:outline-none focus:ring-1 focus:ring-[#5A1E12] ${fieldErrors.state ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50"}`}
+                      >
+                        <span className={state ? "text-gray-900" : "text-gray-400"}>{state || `Select ${locationLabels.state}`}</span>
+                        <svg className={`w-4 h-4 text-[#a08050] transition-transform ${locStateOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      {locStateOpen && (
+                        <div className="absolute z-50 mt-1 w-full bg-white border border-[#d6b896] rounded-xl shadow-lg overflow-hidden">
+                          <div className="p-2 border-b border-[#d6b896]/50">
+                            <input
+                              autoFocus
+                              type="text"
+                              value={locStateSearch}
+                              onChange={e => { setLocStateSearch(e.target.value); setLocStateHL(0); }}
+                              onKeyDown={e => {
+                                const filtered = locationStates.filter(s => s.name.toLowerCase().includes(locStateSearch.toLowerCase()));
+                                if (e.key === "ArrowDown") { e.preventDefault(); setLocStateHL(i => { const next = Math.min(i + 1, filtered.length - 1); locStateListRef.current?.children[next]?.scrollIntoView({ block: "nearest" }); return next; }); }
+                                else if (e.key === "ArrowUp") { e.preventDefault(); setLocStateHL(i => { const prev = Math.max(i - 1, 0); locStateListRef.current?.children[prev]?.scrollIntoView({ block: "nearest" }); return prev; }); }
+                                else if (e.key === "Enter" && filtered[locStateHL]) { e.preventDefault(); handleLocationStateChange(filtered[locStateHL].iso2); setLocStateOpen(false); }
+                                else if (e.key === "Escape") setLocStateOpen(false);
+                              }}
+                              placeholder={`Search ${locationLabels.state}...`}
+                              className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
+                            />
+                          </div>
+                          <ul ref={locStateListRef} className="max-h-52 overflow-y-auto">
+                            {locationStates
+                              .filter(s => s.name.toLowerCase().includes(locStateSearch.toLowerCase()))
+                              .map((s, idx) => (
+                                <li
+                                  key={s.iso2}
+                                  onMouseEnter={() => setLocStateHL(idx)}
+                                  onMouseDown={() => { handleLocationStateChange(s.iso2); setLocStateOpen(false); }}
+                                  className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                                    idx === locStateHL ? "bg-[#f5e6d3] text-[#5A1E12]"
+                                    : selectedStateIso === s.iso2 ? "bg-[#5A1E12] text-white"
+                                    : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
+                                  }`}
+                                >
+                                  {s.name}
+                                </li>
+                              ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                     {fieldErrors.state && <p className="mt-1 text-xs text-red-500">{fieldErrors.state}</p>}
                   </div>
-                </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* City — custom dropdown if available, otherwise text input */}
+                  <div>
+                    <label className="block text-sm font-medium text-[#5A1E12] mb-1">{locationLabels.city} <span className="text-red-500">*</span></label>
+                    {locationCities.length > 0 ? (
+                      <div ref={locCityRef} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => { setLocCityOpen(o => !o); setLocCitySearch(""); }}
+                          className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-lg text-sm text-left transition-all focus:outline-none focus:ring-1 focus:ring-[#5A1E12] ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50"}`}
+                        >
+                          <span className={city ? "text-gray-900" : "text-gray-400"}>{city || `Select ${locationLabels.city}`}</span>
+                          <svg className={`w-4 h-4 text-[#a08050] transition-transform ${locCityOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        {locCityOpen && (
+                          <div className="absolute z-50 mt-1 w-full bg-white border border-[#d6b896] rounded-xl shadow-lg overflow-hidden">
+                            <div className="p-2 border-b border-[#d6b896]/50">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={locCitySearch}
+                                onChange={e => { setLocCitySearch(e.target.value); setLocCityHL(0); }}
+                                onKeyDown={e => {
+                                  const filtered = locationCities.filter(c => c.name.toLowerCase().includes(locCitySearch.toLowerCase()));
+                                  if (e.key === "ArrowDown") { e.preventDefault(); setLocCityHL(i => { const next = Math.min(i + 1, filtered.length - 1); locCityListRef.current?.children[next]?.scrollIntoView({ block: "nearest" }); return next; }); }
+                                  else if (e.key === "ArrowUp") { e.preventDefault(); setLocCityHL(i => { const prev = Math.max(i - 1, 0); locCityListRef.current?.children[prev]?.scrollIntoView({ block: "nearest" }); return prev; }); }
+                                  else if (e.key === "Enter" && filtered[locCityHL]) { e.preventDefault(); setCity(filtered[locCityHL].name); setLocCityOpen(false); }
+                                  else if (e.key === "Escape") setLocCityOpen(false);
+                                }}
+                                placeholder={`Search ${locationLabels.city}...`}
+                                className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
+                              />
+                            </div>
+                            <ul ref={locCityListRef} className="max-h-52 overflow-y-auto">
+                              {locationCities
+                                .filter(c => c.name.toLowerCase().includes(locCitySearch.toLowerCase()))
+                                .map((c, idx) => (
+                                  <li
+                                    key={c.name}
+                                    onMouseEnter={() => setLocCityHL(idx)}
+                                    onMouseDown={() => { setCity(c.name); setLocCityOpen(false); }}
+                                    className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                                      idx === locCityHL ? "bg-[#f5e6d3] text-[#5A1E12]"
+                                      : city === c.name ? "bg-[#5A1E12] text-white"
+                                      : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
+                                    }`}
+                                  >
+                                    {c.name}
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder={locationLabels.city}
+                        className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20"}`}
+                      />
+                    )}
+                    {fieldErrors.city && <p className="mt-1 text-xs text-red-500">{fieldErrors.city}</p>}
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-[#5A1E12] mb-1">Postcode <span className="text-red-500">*</span></label>
                     <input type="text" value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="2000"
                       className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.zipCode ? "border-red-400" : "border-[#5A1E12]/20"}`} />
                     {fieldErrors.zipCode && <p className="mt-1 text-xs text-red-500">{fieldErrors.zipCode}</p>}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#5A1E12] mb-1">Country</label>
-                    <input type="text" value={country} onChange={(e) => setCountry(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm" />
-                  </div>
                 </div>
               </div>
             </div>
+
+<div>
+                  <label className="block text-sm font-medium text-[#5A1E12] mb-1">
+                    Street Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={addressInputRef}
+                    type="text"
+                    value={addressLine}
+                    onChange={(e) => setAddressLine(e.target.value)}
+                    placeholder="Start typing your address..."
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm transition-all ${
+                      fieldErrors.addressLine ? "border-red-400" : "border-[#5A1E12]/20"
+                    }`}
+                  />
+                  {fieldErrors.addressLine && <p className="mt-1 text-xs text-red-500">{fieldErrors.addressLine}</p>}
+                  <p className="mt-1 text-xs text-[#5A1E12]/60">💡 Start typing for address suggestions</p>
+                </div>
+
+
 
             {/* Shipping Method */}
             <div className="border-t border-[#5A1E12]/10 pt-6">

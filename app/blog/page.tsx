@@ -5,7 +5,7 @@ import Link from "next/link";
 
 // Skeleton Components
 const SkeletonBox = ({ className }: { className: string }) => (
-  <div className={`animate-pulse bg-gradient-to-r from-[#F4E9DC] via-[#e8d5c0] to-[#F4E9DC] bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite] ${className}`} />
+  <div className={`animate-pulse bg-linear-to-r from-[#F4E9DC] via-[#e8d5c0] to-[#F4E9DC] bg-size-[200%_100%] ${className}`} />
 );
 
 const FeaturedSkeleton = () => (

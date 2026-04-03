@@ -11,12 +11,6 @@ import { isValidPhoneNumber } from "react-phone-number-input";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import type { CountryCode } from "libphonenumber-js";
 
-declare global {
-  interface Window {
-    google: any;
-  }
-}
-
 // Address interface matching API structure
 interface SavedAddress {
   id?: string;
@@ -30,6 +24,54 @@ interface SavedAddress {
   isDefault: boolean;
 }
 
+// Dynamic location interfaces
+interface ApiCountry {
+  id: number;
+  name: string;
+  iso2: string;
+  iso3: string;
+  numeric_code: string;
+  phone_code: string;
+  capital: string;
+  currency: string;
+  currency_name: string;
+  currency_symbol: string;
+  tld: string;
+  native: string;
+  region: string;
+  subregion: string;
+  timezones: any[];
+  translations: any;
+  latitude: string;
+  longitude: string;
+  emoji: string;
+  emojiU: string;
+}
+
+interface State {
+  id: number;
+  name: string;
+  iso2: string;
+  country_code: string;
+  country_id: number;
+  country_name: string;
+  latitude: string;
+  longitude: string;
+}
+
+interface City {
+  id: number;
+  name: string;
+  state_id: number;
+  state_code: string;
+  state_name: string;
+  country_id: number;
+  country_code: string;
+  country_name: string;
+  latitude: string;
+  longitude: string;
+}
+
 interface AddressCartProps {
   onAddressChange: (data: {
     address: string;
@@ -39,44 +81,46 @@ interface AddressCartProps {
     country: string;
     phoneNumber: string;
   }) => void;
+  onValidationChange?: (isValid: boolean) => void;
 }
+
+// Module-level cache so countries are only fetched once per page session
+let cachedCountries: ApiCountry[] = [];
+
+// Dynamic Label Mapping for localized experience
+const addressTerminology: Record<string, { state: string; city: string }> = {
+  AU: { state: "State/Territory", city: "Suburb" },
+  US: { state: "State", city: "City" },
+  CA: { state: "Province", city: "City" },
+  GB: { state: "County", city: "Town/City" },
+  IN: { state: "State", city: "City" },
+  default: { state: "State/Province", city: "City" }
+};
 
 // ── Country data from react-phone-number-input ────────────────────────
 const countryCodeList = getCountries();
 
-// Country flags mapping
-const countryFlags: Record<string, string> = {
-  'AU': '🇦🇺', 'US': '🇺🇸', 'GB': '🇬🇧', 'IN': '🇮🇳', 'CA': '🇨🇦', 'NZ': '🇳🇿', 
-  'SG': '🇸🇬', 'AE': '🇦🇪', 'SA': '🇸🇦', 'DE': '🇩🇪', 'FR': '🇫🇷', 'JP': '🇯🇵',
-  'CN': '🇨🇳', 'BR': '🇧🇷', 'PK': '🇵🇰', 'MY': '🇲🇾', 'PH': '🇵🇭', 'ID': '🇮🇩',
-  'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
-  'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'IE': '🇮🇪', 'PT': '🇵🇹',
-  'GR': '🇬🇷', 'PL': '🇵🇱', 'CZ': '🇨🇿', 'HU': '🇭🇺', 'TR': '🇹🇷', 'RU': '🇷🇺',
-  'KR': '🇰🇷', 'TH': '🇹🇭', 'VN': '🇻🇳', 'ZA': '🇿🇦', 'EG': '🇪🇬', 'NG': '🇳🇬',
-  'KE': '🇰🇪', 'MX': '🇲🇽', 'AR': '🇦🇷', 'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪',
-};
+// Generate flag emoji from ISO2 code using Unicode regional indicator symbols.
+// Works for every valid ISO 3166-1 alpha-2 code without a manual map.
+const getFlagEmoji = (iso2: string): string =>
+  iso2.toUpperCase().replace(/./g, ch =>
+    String.fromCodePoint(127397 + ch.charCodeAt(0))
+  );
 
-// Country names mapping
-const countryNames: Record<string, string> = {
-  'AU': 'Australia', 'US': 'United States', 'GB': 'United Kingdom', 'IN': 'India', 
-  'CA': 'Canada', 'NZ': 'New Zealand', 'SG': 'Singapore', 'AE': 'United Arab Emirates',
-  'SA': 'Saudi Arabia', 'DE': 'Germany', 'FR': 'France', 'JP': 'Japan', 'CN': 'China',
-  'BR': 'Brazil', 'PK': 'Pakistan', 'MY': 'Malaysia', 'PH': 'Philippines', 'ID': 'Indonesia',
-  'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands', 'CH': 'Switzerland', 'AT': 'Austria',
-  'BE': 'Belgium', 'SE': 'Sweden', 'NO': 'Norway', 'DK': 'Denmark', 'FI': 'Finland',
-  'IE': 'Ireland', 'PT': 'Portugal', 'GR': 'Greece', 'PL': 'Poland', 'CZ': 'Czech Republic',
-  'HU': 'Hungary', 'TR': 'Turkey', 'RU': 'Russia', 'KR': 'South Korea', 'TH': 'Thailand',
-  'VN': 'Vietnam', 'ZA': 'South Africa', 'EG': 'Egypt', 'NG': 'Nigeria', 'KE': 'Kenya',
-  'MX': 'Mexico', 'AR': 'Argentina', 'CL': 'Chile', 'CO': 'Colombia', 'PE': 'Peru',
-};
+// Use Intl.DisplayNames for localised country names (available in all modern runtimes).
+const _regionNames = typeof Intl !== "undefined" && Intl.DisplayNames
+  ? new Intl.DisplayNames(["en"], { type: "region" })
+  : null;
+const getCountryName = (iso2: string): string =>
+  (_regionNames?.of(iso2)) ?? iso2;
 
-// Build COUNTRIES array from react-phone-number-input data
+// Build COUNTRIES array — all countries supported by react-phone-number-input
 const COUNTRIES_RAW = countryCodeList.map(code => ({
   code,
-  flag: countryFlags[code] || '🏳️',
-  name: countryNames[code] || code,
+  flag: getFlagEmoji(code),
+  name: getCountryName(code),
   dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
-})).filter(country => countryFlags[country.code]); // Only include countries with flags
+}));
 
 // Reorder to put Australia first
 const auIndex = COUNTRIES_RAW.findIndex(country => country.code === 'AU');
@@ -111,6 +155,19 @@ const inputNormal = `${inputBase} hover:border-[#a08050] focus:border-[#5A1E12] 
 const inputError  = `${inputBase} border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-2 focus:ring-red-300/30`;
 const inputValid  = `${inputBase} border-emerald-500/70 bg-emerald-50/20 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-300/30`;
 
+// Select-specific base — appearance-none removes OS chrome, pr-10 keeps room for chevron
+const selectBase = `${inputBase} appearance-none cursor-pointer pr-10`;
+const selectNormal = `${selectBase} hover:border-[#a08050] focus:border-[#5A1E12] focus:ring-2 focus:ring-[#5A1E12]/10 focus:bg-white/90`;
+const selectError  = `${selectBase} border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-2 focus:ring-red-300/30`;
+const selectValid  = `${selectBase} border-emerald-500/70 bg-emerald-50/20 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-300/30`;
+
+function selectClass(touched: boolean, error: string | null, value: string) {
+  if (!touched) return selectNormal;
+  if (error)    return selectError;
+  if (value)    return selectValid;
+  return selectNormal;
+}
+
 function fieldClass(touched: boolean, error: string | null, value: string) {
   if (!touched) return inputNormal;
   if (error)    return inputError;
@@ -119,29 +176,140 @@ function fieldClass(touched: boolean, error: string | null, value: string) {
 }
 
 
-export default function AddressCart({ onAddressChange }: AddressCartProps) {
+export default function AddressCart({ onAddressChange, onValidationChange }: AddressCartProps) {
   const authContext = useContext(AuthContext) as { user?: any } | null;
   const user = authContext?.user;
+  
+  // ── Dynamic Location State ────────────────────────────────────────────────
+  const [countries, setCountries] = useState<ApiCountry[]>([]);
+  const [states, setStates] = useState<State[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+
+  // Selected ISO Codes (For API calls)
+  const [selectedCountryCode, setSelectedCountryCode] = useState("");
+  const [selectedStateCode, setSelectedStateCode] = useState("");
+
+  // Custom dropdown open/search state
+  const [countryOpen, setCountryOpen]                       = useState(false);
+  const [locationCountrySearch, setLocationCountrySearch]   = useState("");
+  const [countryHighlight, setCountryHighlight]             = useState(0);
+  const [stateOpen, setStateOpen]                           = useState(false);
+  const [stateSearch, setStateSearch]                       = useState("");
+  const [stateHighlight, setStateHighlight]                 = useState(0);
+  const [cityOpen, setCityOpen]                             = useState(false);
+  const [citySearch, setCitySearch]                         = useState("");
+  const [cityHighlight, setCityHighlight]                   = useState(0);
+  const countryDropRef  = useRef<HTMLDivElement>(null);
+  const stateDropRef    = useRef<HTMLDivElement>(null);
+  const cityDropRef     = useRef<HTMLDivElement>(null);
+  const countryListRef  = useRef<HTMLUListElement>(null);
+  const stateListRef    = useRef<HTMLUListElement>(null);
+  const cityListRef     = useRef<HTMLUListElement>(null);
+
+  // Form Data (To be sent to database)
   const [formData, setFormData] = useState({
-    country: "",
+    country: "",  // Store Name, e.g., "Australia"
     address: "",
-    city: "",
+    city: "",     // Store Name, e.g., "Sydney"
     zip: "",
-    state: "",
+    state: "",    // Store Name, e.g., "New South Wales"
   });
+
+  // Get dynamic labels based on selected country
+  const labels = addressTerminology[selectedCountryCode] || addressTerminology.default;
 
   // Field touched state for validation
   const [fieldTouched, setFieldTouched] = useState({ country: false, city: false, zip: false, state: false });
 
   const fieldErrors = {
     country: formData.country.trim().length < 2 ? "Country is required" : null,
-    city:    formData.city.trim().length < 2    ? "Suburb is required"    : null,
+    city:    formData.city.trim().length < 2    ? `${labels.city} is required`    : null,
     zip:     !formData.zip.trim()               ? "Postal code is required" : !/^[\w\s-]{3,10}$/.test(formData.zip.trim()) ? "Invalid postal code" : null,
-    state:   formData.state.trim().length < 2  ? "State is required"   : null,
+    state:   formData.state.trim().length < 2  ? `${labels.state} is required`   : null,
   };
 
   const touchField = (f: keyof typeof fieldTouched) =>
     setFieldTouched(prev => ({ ...prev, [f]: true }));
+
+  // ── Dynamic Location API Functions ────────────────────────────────────────
+  const fetchCountries = async () => {
+    // Use module-level cache to avoid re-fetching on every remount
+    if (cachedCountries.length > 0) {
+      setCountries(cachedCountries);
+      return;
+    }
+    try {
+      const data = await apiClient.get('/location/countries') as { data: ApiCountry[] };
+      cachedCountries = data.data || [];
+      setCountries(cachedCountries);
+    } catch (error) {
+      console.error("Failed to fetch countries", error);
+      toast.error("Failed to load countries. Please refresh the page.");
+    }
+  };
+
+  const handleCountryChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const iso2 = e.target.value;
+    const countryObj = countries.find(c => c.iso2 === iso2);
+    const countryName = countryObj?.name || e.target.options?.[e.target.selectedIndex]?.text || "";
+
+    // Set the selected country code and update form data
+    setSelectedCountryCode(iso2);
+    setFormData(prev => ({ ...prev, country: countryName, state: "", city: "" }));
+
+    // Reset dependent dropdowns and state
+    setStates([]);
+    setCities([]);
+    setSelectedStateCode("");
+    setFieldTouched(prev => ({ ...prev, state: false, city: false }));
+
+    // Sync phone country selector
+    const phoneCountry = COUNTRIES.find(c => c.code === iso2);
+    if (phoneCountry) {
+      setSelectedCountry(phoneCountry);
+    }
+
+    // Fetch states for the newly selected country
+    if (iso2) {
+      try {
+        const data = await apiClient.get(`/location/countries/${iso2}/states`) as { data: State[] };
+        setStates(data.data || []);
+      } catch (error) {
+        console.error("Failed to fetch states", error);
+        toast.error("Failed to load states/provinces. Please try again.");
+      }
+    }
+  };
+
+  const handleStateChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const iso2 = e.target.value;
+    const stateObj = states.find(s => s.iso2 === iso2);
+    const stateName = stateObj?.name || e.target.options?.[e.target.selectedIndex]?.text || "";
+    
+    setSelectedStateCode(iso2);
+    
+    // Update DB model with Name, reset city
+    setFormData(prev => ({ ...prev, state: stateName, city: "" }));
+    setCities([]);
+    
+    // Reset touched state for city field
+    setFieldTouched(prev => ({ ...prev, city: false }));
+
+    if (!iso2 || !selectedCountryCode) return;
+
+    try {
+      const data = await apiClient.get(`/location/countries/${selectedCountryCode}/states/${iso2}/cities`) as { data: City[] };
+      setCities(data.data || []);
+    } catch (error) {
+      console.error("Failed to fetch cities", error);
+      toast.error("Failed to load cities. Please try again.");
+    }
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+    const cityName = e.target.value;
+    setFormData(prev => ({ ...prev, city: cityName }));
+  };
 
   const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -150,7 +318,99 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const [phoneHighlight, setPhoneHighlight] = useState(0);
+  const phoneListRef = useRef<HTMLUListElement>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Touch all fields at once — called when user tries to move to next step
+  const touchAllFields = () => {
+    setFieldTouched({ country: true, city: true, zip: true, state: true });
+    setPhoneTouched(true);
+    setPhoneError(validatePhone(phoneNumber, selectedCountry));
+  };
+
+  // Derived validity — all required fields must be filled
+  const isFormValid = (
+    !fieldErrors.country &&
+    !fieldErrors.state &&
+    !fieldErrors.city &&
+    !fieldErrors.zip &&
+    formData.address.trim().length > 0 &&
+    phoneNumber.trim().length > 0 &&
+    !validatePhone(phoneNumber, selectedCountry)
+  );
+
+  // ── Initial Countries Load ──────────────────────────────────────────────────
+  useEffect(() => {
+    fetchCountries();
+  }, []);
+
+  // ── Auto-select Australia and load states on initial load only ──────────
+  useEffect(() => {
+    if (isInitialLoad && countries.length > 0 && !formData.country) {
+      const australia = countries.find(c => c.iso2.toLowerCase() === 'au');
+      if (australia) {
+        setSelectedCountryCode(australia.iso2);
+        setFormData(prev => ({ ...prev, country: australia.name }));
+        
+        const loadStates = async () => {
+          try {
+            const data = await apiClient.get(`/location/countries/${australia.iso2}/states`) as { data: State[] };
+            setStates(data.data || []);
+          } catch (error) {
+            console.error("Failed to fetch Australia states", error);
+          }
+        };
+        loadStates();
+        setIsInitialLoad(false); // Mark initial load as complete
+      }
+    }
+  }, [countries, formData.country, isInitialLoad]);
+
+  // ── Auto-load states when country is restored from localStorage ──────────────
+  useEffect(() => {
+    if (dataLoaded && selectedCountryCode && countries.length > 0 && states.length === 0) {
+      const loadStates = async () => {
+        try {
+          const data = await apiClient.get(`/location/countries/${selectedCountryCode}/states`) as { data: State[] };
+          setStates(data.data || []);
+        } catch (error) {
+          console.error("Failed to fetch states for restored country", error);
+        }
+      };
+      loadStates();
+    }
+  }, [dataLoaded, selectedCountryCode, countries, states.length]);
+
+  // ── Auto-load cities when state is restored from localStorage ───────────────
+  useEffect(() => {
+    if (dataLoaded && selectedStateCode && selectedCountryCode && states.length > 0 && cities.length === 0) {
+      const loadCities = async () => {
+        try {
+          const data = await apiClient.get(`/location/countries/${selectedCountryCode}/states/${selectedStateCode}/cities`) as { data: City[] };
+          setCities(data.data || []);
+        } catch (error) {
+          console.error("Failed to fetch cities for restored state", error);
+        }
+      };
+      loadCities();
+    }
+  }, [dataLoaded, selectedStateCode, selectedCountryCode, states.length, cities.length]);
+
+  // ── Sync phone country with address country selection ─────────────────────────
+  useEffect(() => {
+    if (selectedCountryCode && countries.length > 0) {
+      const selectedAddressCountry = countries.find(c => c.iso2 === selectedCountryCode);
+      if (selectedAddressCountry) {
+        // Find matching phone country by ISO2 code
+        const matchingPhoneCountry = COUNTRIES.find(c => c.code === selectedCountryCode);
+        if (matchingPhoneCountry) {
+          setSelectedCountry(matchingPhoneCountry);
+        }
+      }
+    }
+  }, [selectedCountryCode, countries]);
 
   // Saved addresses state
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -162,6 +422,13 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
   // Refs for the address input and the Google Autocomplete instance
   const addressInputRef = useRef<HTMLInputElement>(null);
   const autocompleteInstanceRef = useRef<any>(null);
+  // Always-current refs so the place_changed closure never goes stale
+  const statesRef = useRef(states);
+  useEffect(() => { statesRef.current = states; }, [states]);
+  const selectedCountryCodeRef = useRef(selectedCountryCode);
+  useEffect(() => { selectedCountryCodeRef.current = selectedCountryCode; }, [selectedCountryCode]);
+  // Holds the suburb/city from Google Autocomplete until city list loads
+  const pendingCityRef = useRef<string>("");
 
   // API functions for addresses
   const fetchSavedAddresses = async () => {
@@ -191,6 +458,24 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
       });
     } finally {
       setLoadingSavedAddresses(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    try {
+      await apiClient.delete(`/users/addresses/${id}`);
+      setSavedAddresses(prev => prev.filter(a => (a._id || a.id) !== id));
+      toast.success("Address deleted", {
+        position: "top-right",
+        autoClose: 2500,
+        style: { background: "linear-gradient(135deg, #10B981, #059669)", color: "white", borderRadius: "12px" }
+      });
+    } catch {
+      toast.error("Failed to delete address", {
+        position: "top-right",
+        autoClose: 3000,
+        style: { background: "#FEF2F2", color: "#991B1B", borderLeft: "4px solid #EF4444" }
+      });
     }
   };
 
@@ -325,7 +610,7 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
     }
   };
 
-  const selectSavedAddress = (address: SavedAddress) => {
+  const selectSavedAddress = async (address: SavedAddress) => {
     // Auto-fill the form with selected address
     setFormData({
       address: address.shippingAddress,
@@ -335,12 +620,47 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
       zip: address.zipCode
     });
     
+    // Find and set the country based on the saved address
+    const matchingCountry = countries.find(c => 
+      c.name.toLowerCase() === address.country.toLowerCase()
+    );
+    
+    if (matchingCountry) {
+      setSelectedCountryCode(matchingCountry.iso2);
+      
+      // Fetch states for the country
+      try {
+        const statesResponse = await apiClient.get(`/location/countries/${matchingCountry.iso2}/states`) as { data: State[] };
+        const countryStates = statesResponse.data || [];
+        setStates(countryStates);
+        
+        // Find and set the state
+        const matchingState = countryStates.find((s: State) => 
+          s.name.toLowerCase() === address.state.toLowerCase()
+        );
+        
+        if (matchingState) {
+          setSelectedStateCode(matchingState.iso2);
+          
+          // Fetch cities for the state
+          try {
+            const citiesResponse = await apiClient.get(`/location/countries/${matchingCountry.iso2}/states/${matchingState.iso2}/cities`) as { data: City[] };
+            setCities(citiesResponse.data || []);
+          } catch (error) {
+            console.error("Failed to fetch cities for saved address", error);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch states for saved address", error);
+      }
+    }
+    
     // Parse and set phone number with country selection
     const phoneWithCountry = address.mobileNumber;
-    const matchingCountry = COUNTRIES.find(c => phoneWithCountry.startsWith(c.dialCode));
-    if (matchingCountry) {
-      setSelectedCountry(matchingCountry);
-      const phoneWithoutCode = phoneWithCountry.replace(matchingCountry.dialCode, '').trim();
+    const matchingPhoneCountry = COUNTRIES.find(c => phoneWithCountry.startsWith(c.dialCode));
+    if (matchingPhoneCountry) {
+      setSelectedCountry(matchingPhoneCountry);
+      const phoneWithoutCode = phoneWithCountry.replace(matchingPhoneCountry.dialCode, '').trim();
       setPhoneNumber(phoneWithoutCode);
       // Reset phone validation state
       setPhoneTouched(false);
@@ -371,20 +691,17 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
           zip:     data.zip     || "",
           state:   data.state   || "",
         });
+        
+        // Restore ISO codes — use the address-specific keys (not phone country)
+        if (data.selectedCountryIso2) setSelectedCountryCode(data.selectedCountryIso2);
+        if (data.selectedStateIso2) setSelectedStateCode(data.selectedStateIso2);
+        
         if (data.phoneNumber) setPhoneNumber(data.phoneNumber);
         if (data.selectedCountryCode) {
           const found = COUNTRIES.find(c => c.code === data.selectedCountryCode);
           if (found) setSelectedCountry(found);
-        } else {
-          // If no saved country, default to Australia
-          const auCountry = COUNTRIES.find(c => c.code === 'AU');
-          if (auCountry) setSelectedCountry(auCountry);
         }
       } catch {}
-    } else {
-      // If no localStorage data at all, default to Australia
-      const auCountry = COUNTRIES.find(c => c.code === 'AU');
-      if (auCountry) setSelectedCountry(auCountry);
     }
     setDataLoaded(true);
   }, []);
@@ -415,38 +732,105 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
       ...formData,
       phoneNumber,
       selectedCountryCode: selectedCountry.code,
+      selectedCountryIso2: selectedCountryCode,
+      selectedStateIso2: selectedStateCode,
     }));
-  }, [formData, phoneNumber, selectedCountry, dataLoaded]);
+  }, [formData, phoneNumber, selectedCountry, selectedCountryCode, selectedStateCode, dataLoaded]);
 
-  // Load Google Maps script once, then attach Autocomplete to input
+  // Load Google Maps script and setup location-aware autocomplete
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) return;
+    if (!apiKey) {
+      console.warn('Google Maps API key not found. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env.local');
+      return;
+    }
 
     const attachAutocomplete = () => {
       if (!addressInputRef.current || autocompleteInstanceRef.current) return;
       if (!window.google?.maps?.places?.Autocomplete) return;
 
-      const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+      // Setup autocomplete options based on selected location
+      const autocompleteOptions: any = {
         types: ["address"],
-        fields: ["formatted_address", "address_components"],
-      });
+        fields: ["formatted_address", "address_components", "geometry"],
+      };
+
+      // Add country restriction if country is selected
+      if (selectedCountryCode) {
+        autocompleteOptions.componentRestrictions = {
+          country: selectedCountryCode.toLowerCase()
+        };
+      }
+
+      const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, autocompleteOptions);
 
       ac.addListener("place_changed", () => {
         const place = ac.getPlace();
         if (!place?.address_components) return;
 
-        const get = (type: string) =>
-          place.address_components.find((c: any) => c.types.includes(type))?.long_name || "";
+        // Parse address components
+        const components: Record<string, string> = {};
+        place.address_components.forEach((component: any) => {
+          const types = component.types;
+          if (types.includes('street_number')) {
+            components.street_number = component.long_name;
+          }
+          if (types.includes('route')) {
+            components.route = component.long_name;
+          }
+          if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+            components.city = component.long_name;
+          }
+          if (types.includes('administrative_area_level_1')) {
+            components.state     = component.long_name;
+            components.stateCode = component.short_name;
+          }
+          if (types.includes('postal_code')) {
+            components.postal_code = component.long_name;
+          }
+          if (types.includes('country')) {
+            components.country = component.long_name;
+          }
+        });
 
+        // Use the full formatted address as-is from Google
+        const formattedAddr = place.formatted_address || "";
+        const streetAddress = formattedAddr;
+
+        // Update form data with parsed components
         setFormData(prev => ({
           ...prev,
-          address: place.formatted_address || prev.address,
-          city:    get("locality") || get("administrative_area_level_2") || prev.city,
-          state:   get("administrative_area_level_1") || prev.state,
-          zip:     get("postal_code") || prev.zip,
-          country: get("country") || prev.country,
+          // Street-level detail only (no city / state / country)
+          address: streetAddress || prev.address,
+          // Auto-fill city/suburb if found
+          city: components.city || prev.city,
+          // Auto-fill postal code if found
+          zip: components.postal_code || prev.zip,
+          // Auto-fill state if found
+          state: components.state || prev.state,
         }));
+
+        // If state was auto-filled, try to find and set the state code for dropdowns
+        if (components.state && statesRef.current.length > 0) {
+          const matchingState = statesRef.current.find(s =>
+            s.name.toLowerCase() === components.state.toLowerCase() ||
+            s.iso2.toLowerCase() === (components.stateCode || '').toLowerCase()
+          );
+          if (matchingState) {
+            setSelectedStateCode(matchingState.iso2);
+            
+            // Auto-load cities for this state
+            const loadCities = async () => {
+              try {
+                const data = await apiClient.get(`/location/countries/${selectedCountryCodeRef.current}/states/${matchingState.iso2}/cities`) as { data: City[] };
+                setCities(data.data || []);
+              } catch (error) {
+                console.error("Failed to fetch cities for autocompleted state", error);
+              }
+            };
+            loadCities();
+          }
+        }
       });
 
       autocompleteInstanceRef.current = ac;
@@ -476,33 +860,7 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
     script.defer = true;
     script.onload = attachAutocomplete;
     document.head.appendChild(script);
-  }, []);
-
-  // Re-attach autocomplete after the input mounts (after localStorage restore)
-  useEffect(() => {
-    if (!dataLoaded) return;
-    if (!autocompleteInstanceRef.current && window.google?.maps?.places?.Autocomplete && addressInputRef.current) {
-      const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-        types: ["address"],
-        fields: ["formatted_address", "address_components"],
-      });
-      ac.addListener("place_changed", () => {
-        const place = ac.getPlace();
-        if (!place?.address_components) return;
-        const get = (type: string) =>
-          place.address_components.find((c: any) => c.types.includes(type))?.long_name || "";
-        setFormData(prev => ({
-          ...prev,
-          address: place.formatted_address || prev.address,
-          city:    get("locality") || get("administrative_area_level_2") || prev.city,
-          state:   get("administrative_area_level_1") || prev.state,
-          zip:     get("postal_code") || prev.zip,
-          country: get("country") || prev.country,
-        }));
-      });
-      autocompleteInstanceRef.current = ac;
-    }
-  }, [dataLoaded]);
+  }, [selectedCountryCode, states, dataLoaded]);
 
   // Close country dropdown on outside click
   useEffect(() => {
@@ -511,10 +869,145 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
         setShowCountryDropdown(false);
         setCountrySearch("");
       }
+      if (countryDropRef.current && !countryDropRef.current.contains(e.target as Node)) { setCountryOpen(false); setLocationCountrySearch(""); }
+      if (stateDropRef.current   && !stateDropRef.current.contains(e.target as Node))   setStateOpen(false);
+      if (cityDropRef.current    && !cityDropRef.current.contains(e.target as Node))     setCityOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Re-setup autocomplete when location changes or data loads
+  useEffect(() => {
+    if (!dataLoaded || !window.google?.maps?.places?.Autocomplete || !addressInputRef.current) return;
+    
+    // Clear previous instance if it exists
+    if (autocompleteInstanceRef.current) {
+      window.google.maps.event.clearInstanceListeners(autocompleteInstanceRef.current);
+    }
+
+    const autocompleteOptions: google.maps.places.AutocompleteOptions = {
+      types: ["address"],
+      fields: ["address_components", "formatted_address"],
+    };
+
+    if (selectedCountryCode) {
+      autocompleteOptions.componentRestrictions = {
+        country: selectedCountryCode.toLowerCase()
+      };
+    }
+
+    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, autocompleteOptions);
+    autocompleteInstanceRef.current = ac;
+
+    ac.addListener("place_changed", () => {
+      const place = ac.getPlace();
+      if (!place?.address_components) {
+        console.warn("Autocomplete place has no address components:", place);
+        return;
+      }
+
+      const getComponent = (type: string) =>
+        place.address_components.find((c: any) => c.types.includes(type))?.long_name || "";
+      const getShortComponent = (type: string) =>
+        place.address_components.find((c: any) => c.types.includes(type))?.short_name || "";
+
+      // Extract components for auto-filling other fields
+      // Try multiple types — Australian suburbs can be locality OR sublocality
+      const city       = getComponent("locality") ||
+                         getComponent("sublocality_level_1") ||
+                         getComponent("sublocality") ||
+                         getComponent("administrative_area_level_2");
+      const stateLong  = getComponent("administrative_area_level_1");
+      const stateShort = getShortComponent("administrative_area_level_1");
+      const postalCode = getComponent("postal_code");
+      const countryName = getComponent("country");
+      const countryISO = getShortComponent("country");
+      const formattedAddr = place.formatted_address || "";
+
+      // Build street address: split by comma, strip only parts that exactly match
+      // city, state (long/short), postcode or country — keep everything else.
+      const stripTerms = new Set(
+        [city, stateLong, stateShort, postalCode, countryName]
+          .filter(Boolean)
+          .map((t: string) => t.toLowerCase())
+      );
+      const streetParts = formattedAddr
+        .split(",")
+        .map((p: string) => p.trim())
+        .filter((p: string) => p && !stripTerms.has(p.toLowerCase()));
+      const streetAddress = streetParts.join(", ") || formattedAddr.split(",")[0].trim();
+
+      // Force DOM value so Google's full-address write doesn't leak through
+      if (addressInputRef.current) addressInputRef.current.value = streetAddress;
+
+      // Store suburb in ref so the async city-fetch can reapply it reliably
+      pendingCityRef.current = city;
+
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        address: streetAddress,
+        city,
+        state: stateShort || stateLong,
+        zip: postalCode,
+        country: countries.find(c => c.iso2 === countryISO)?.name || prev.country,
+      }));
+
+      // Sync country dropdown if it changed
+      if (countryISO && countryISO !== selectedCountryCode) {
+        const newCountry = countries.find(c => c.iso2 === countryISO);
+        if (newCountry) {
+          const countryIndex = countries.findIndex(c => c.iso2 === countryISO);
+          const mockEvent = { 
+            target: { 
+              value: newCountry.iso2, 
+              options: { selectedIndex: countryIndex + 1, item: (index: number) => ({ text: countries[index-1]?.name }) } 
+            } 
+          } as unknown as React.ChangeEvent<HTMLSelectElement>;
+          handleCountryChange(mockEvent);
+        }
+      }
+      
+      // Sync state + city dropdowns inline (avoid handleStateChange which resets city)
+      setTimeout(async () => {
+        const stateObj = statesRef.current.find(s =>
+          s.iso2.toLowerCase() === stateShort.toLowerCase() ||
+          s.name.toLowerCase() === stateLong.toLowerCase()
+        );
+        if (!stateObj) return;
+
+        setSelectedStateCode(stateObj.iso2);
+        // Set state name without clearing city
+        setFormData(prev => ({ ...prev, state: stateObj.name }));
+
+        try {
+          const data = await apiClient.get(`/location/countries/${selectedCountryCodeRef.current}/states/${stateObj.iso2}/cities`) as { data: City[] };
+          const newCities = data.data || [];
+          setCities(newCities);
+
+          // Apply the suburb from Google — try exact match first, then case-insensitive
+          const pendingCity = pendingCityRef.current;
+          if (pendingCity) {
+            const matchingCity = newCities.find(c =>
+              c.name.toLowerCase() === pendingCity.toLowerCase()
+            );
+            // Always reapply city after fetch: use matched name from API or Google's value directly
+            setFormData(prev => ({ ...prev, city: matchingCity?.name || pendingCity }));
+            pendingCityRef.current = "";
+          }
+        } catch (error) {
+          console.error("Failed to fetch cities for autocompleted state", error);
+        }
+      }, 200);
+    });
+
+    return () => {
+      if (autocompleteInstanceRef.current) {
+        window.google.maps.event.clearInstanceListeners(autocompleteInstanceRef.current);
+      }
+    };
+  }, [dataLoaded, selectedCountryCode, countries, states]);
 
   const handlePhoneChange = (value: string) => {
     // Only allow digits, spaces, hyphens
@@ -548,6 +1041,11 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
     });
   }, [formData, phoneNumber, selectedCountry, onAddressChange]);
 
+  // Notify parent whenever validity changes
+  useEffect(() => {
+    onValidationChange?.(isFormValid);
+  }, [isFormValid, onValidationChange]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -559,64 +1057,237 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
         <p className="text-sm text-gray-500 mt-1">Fields marked <span className="text-red-500">*</span> are required.</p>
       </div>
 
-      {/* Country */}
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="country" className="text-sm font-medium text-gray-600">
-          Country <span className="text-red-500">*</span>
+      {/* Country Dropdown */}
+      <div className="flex flex-col gap-1.5" ref={countryDropRef}>
+        <label className="text-sm font-medium text-gray-600">
+          Country/Region <span className="text-red-500">*</span>
         </label>
-        <input
-          id="country"
-          name="country"
-          type="text"
-          value={formData.country}
-          onChange={(e) => handleInputChange("country", e.target.value)}
-          onBlur={() => touchField("country")}
-          placeholder="Australia"
-          className={fieldClass(fieldTouched.country, fieldErrors.country, formData.country)}
-        />
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => { setCountryOpen(o => !o); setCountrySearch(""); }}
+            onBlur={() => touchField("country")}
+            className={`${selectClass(fieldTouched.country, fieldErrors.country, formData.country)} flex items-center justify-between text-left`}
+          >
+            <span className={formData.country ? "text-gray-900" : "text-gray-400"}>
+              {formData.country || "Select Country"}
+            </span>
+            <svg className={`w-4 h-4 text-[#a08050] transition-transform ${countryOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          {countryOpen && (
+            <div className="absolute z-50 mt-1 w-full bg-white border border-[#d6b896] rounded-xl shadow-lg overflow-hidden">
+              <div className="p-2 border-b border-[#d6b896]/50">
+                <input
+                  autoFocus
+                  type="text"
+                  value={locationCountrySearch}
+                  onChange={e => { setLocationCountrySearch(e.target.value); setCountryHighlight(0); }}
+                  onKeyDown={e => {
+                    const filtered = countries.filter(c => c.name.toLowerCase().includes(locationCountrySearch.toLowerCase()));
+                    if (e.key === "ArrowDown") { e.preventDefault(); setCountryHighlight(i => { const next = Math.min(i + 1, filtered.length - 1); countryListRef.current?.children[next]?.scrollIntoView({ block: "nearest" }); return next; }); }
+                    else if (e.key === "ArrowUp") { e.preventDefault(); setCountryHighlight(i => { const prev = Math.max(i - 1, 0); countryListRef.current?.children[prev]?.scrollIntoView({ block: "nearest" }); return prev; }); }
+                    else if (e.key === "Enter" && filtered[countryHighlight]) { e.preventDefault(); handleCountryChange({ target: { value: filtered[countryHighlight].iso2 } } as React.ChangeEvent<HTMLSelectElement>); setCountryOpen(false); touchField("country"); }
+                    else if (e.key === "Escape") setCountryOpen(false);
+                  }}
+                  placeholder="Search country..."
+                  className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
+                />
+              </div>
+              <ul ref={countryListRef} className="max-h-52 overflow-y-auto">
+                {countries
+                  .filter(c => c.name.toLowerCase().includes(locationCountrySearch.toLowerCase()))
+                  .map((c, idx) => (
+                    <li
+                      key={c.iso2}
+                      onMouseEnter={() => setCountryHighlight(idx)}
+                      onMouseDown={() => {
+                        handleCountryChange({ target: { value: c.iso2 } } as React.ChangeEvent<HTMLSelectElement>);
+                        setCountryOpen(false);
+                        touchField("country");
+                      }}
+                      className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                        idx === countryHighlight
+                          ? "bg-[#f5e6d3] text-[#5A1E12]"
+                          : selectedCountryCode === c.iso2
+                          ? "bg-[#5A1E12] text-white"
+                          : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
+                      }`}
+                    >
+                      {c.name}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+        </div>
         {fieldTouched.country && fieldErrors.country && (
           <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.country}</p>
         )}
       </div>
 
-      {/* Address autocomplete */}
-      <div className="flex flex-col gap-1.5 relative">
-        <label htmlFor="address" className="text-sm font-medium text-gray-600">
-          Address <span className="text-red-500">*</span>
-        </label>
-        <input
-          ref={addressInputRef}
-          id="address"
-          name="address"
-          type="text"
-          value={formData.address}
-          onChange={(e) => handleInputChange("address", e.target.value)}
-          placeholder="Start typing your street address…"
-          className={inputNormal}
-          required
-        />
-      </div>
+      
 
-      {/* City & Zip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="city" className="text-sm font-medium text-gray-600">
-            Suburb <span className="text-red-500">*</span>
+      {/* State Dropdown - Only show if states exist */}
+      {states.length > 0 && (
+        <div className="flex flex-col gap-1.5" ref={stateDropRef}>
+          <label className="text-sm font-medium text-gray-600">
+            {labels.state} <span className="text-red-500">*</span>
           </label>
-          <input
-            id="city"
-            name="city"
-            type="text"
-            value={formData.city}
-            onChange={(e) => handleInputChange("city", e.target.value)}
-            onBlur={() => touchField("city")}
-            placeholder="Sydney"
-            className={fieldClass(fieldTouched.city, fieldErrors.city, formData.city)}
-          />
-          {fieldTouched.city && fieldErrors.city && (
-            <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.city}</p>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => { setStateOpen(o => !o); setStateSearch(""); }}
+              onBlur={() => touchField("state")}
+              className={`${selectClass(fieldTouched.state, fieldErrors.state, formData.state)} flex items-center justify-between text-left`}
+            >
+              <span className={formData.state ? "text-gray-900" : "text-gray-400"}>
+                {formData.state || `Select ${labels.state}`}
+              </span>
+              <svg className={`w-4 h-4 text-[#a08050] transition-transform ${stateOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            {stateOpen && (
+              <div className="absolute z-50 mt-1 w-full bg-white border border-[#d6b896] rounded-xl shadow-lg overflow-hidden">
+                <div className="p-2 border-b border-[#d6b896]/50">
+                <input
+                    autoFocus
+                    type="text"
+                    value={stateSearch}
+                    onChange={e => { setStateSearch(e.target.value); setStateHighlight(0); }}
+                    onKeyDown={e => {
+                      const filtered = states.filter(s => s.name.toLowerCase().includes(stateSearch.toLowerCase()));
+                      if (e.key === "ArrowDown") { e.preventDefault(); setStateHighlight(i => Math.min(i + 1, filtered.length - 1)); stateListRef.current?.children[Math.min(stateHighlight + 1, filtered.length - 1)]?.scrollIntoView({ block: "nearest" }); }
+                      else if (e.key === "ArrowUp") { e.preventDefault(); setStateHighlight(i => Math.max(i - 1, 0)); stateListRef.current?.children[Math.max(stateHighlight - 1, 0)]?.scrollIntoView({ block: "nearest" }); }
+                      else if (e.key === "Enter" && filtered[stateHighlight]) { e.preventDefault(); handleStateChange({ target: { value: filtered[stateHighlight].iso2 } } as React.ChangeEvent<HTMLSelectElement>); setStateOpen(false); touchField("state"); }
+                      else if (e.key === "Escape") setStateOpen(false);
+                    }}
+                    placeholder={`Search ${labels.state}...`}
+                    className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
+                  />
+                </div>
+                <ul ref={stateListRef} className="max-h-52 overflow-y-auto">
+                  {states
+                    .filter(s => s.name.toLowerCase().includes(stateSearch.toLowerCase()))
+                    .map((s, idx) => (
+                      <li
+                        key={s.iso2}
+                        onMouseEnter={() => setStateHighlight(idx)}
+                        onMouseDown={() => {
+                          handleStateChange({ target: { value: s.iso2 } } as React.ChangeEvent<HTMLSelectElement>);
+                          setStateOpen(false);
+                          touchField("state");
+                        }}
+                        className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                          idx === stateHighlight
+                            ? "bg-[#f5e6d3] text-[#5A1E12]"
+                            : selectedStateCode === s.iso2
+                            ? "bg-[#5A1E12] text-white"
+                            : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
+                        }`}
+                      >
+                        {s.name}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          {fieldTouched.state && fieldErrors.state && (
+            <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.state}</p>
           )}
         </div>
+      )}
+
+      {/* City/Suburb - Dynamic dropdown or fallback text input */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {cities.length > 0 ? (
+          <div className="flex flex-col gap-1.5" ref={cityDropRef}>
+            <label className="text-sm font-medium text-gray-600">
+              {labels.city} <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setCityOpen(o => !o); setCitySearch(""); }}
+                onBlur={() => touchField("city")}
+                className={`${selectClass(fieldTouched.city, fieldErrors.city, formData.city)} flex items-center justify-between text-left`}
+              >
+                <span className={formData.city ? "text-gray-900" : "text-gray-400"}>
+                  {formData.city || `Select ${labels.city}`}
+                </span>
+                <svg className={`w-4 h-4 text-[#a08050] transition-transform ${cityOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {cityOpen && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-[#d6b896] rounded-xl shadow-lg overflow-hidden">
+                  <div className="p-2 border-b border-[#d6b896]/50">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={citySearch}
+                      onChange={e => { setCitySearch(e.target.value); setCityHighlight(0); }}
+                      onKeyDown={e => {
+                        const filtered = cities.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase()));
+                        if (e.key === "ArrowDown") { e.preventDefault(); setCityHighlight(i => Math.min(i + 1, filtered.length - 1)); cityListRef.current?.children[Math.min(cityHighlight + 1, filtered.length - 1)]?.scrollIntoView({ block: "nearest" }); }
+                        else if (e.key === "ArrowUp") { e.preventDefault(); setCityHighlight(i => Math.max(i - 1, 0)); cityListRef.current?.children[Math.max(cityHighlight - 1, 0)]?.scrollIntoView({ block: "nearest" }); }
+                        else if (e.key === "Enter" && filtered[cityHighlight]) { e.preventDefault(); handleCityChange({ target: { value: filtered[cityHighlight].name } } as React.ChangeEvent<HTMLSelectElement>); setCityOpen(false); touchField("city"); }
+                        else if (e.key === "Escape") setCityOpen(false);
+                      }}
+                      placeholder={`Search ${labels.city}...`}
+                      className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
+                    />
+                  </div>
+                  <ul ref={cityListRef} className="max-h-52 overflow-y-auto">
+                    {cities
+                      .filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase()))
+                      .map((c, idx) => (
+                        <li
+                          key={c.name}
+                          onMouseEnter={() => setCityHighlight(idx)}
+                          onMouseDown={() => {
+                            handleCityChange({ target: { value: c.name } } as React.ChangeEvent<HTMLSelectElement>);
+                            setCityOpen(false);
+                            touchField("city");
+                          }}
+                          className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                            idx === cityHighlight
+                              ? "bg-[#f5e6d3] text-[#5A1E12]"
+                              : formData.city === c.name
+                              ? "bg-[#5A1E12] text-white"
+                              : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
+                          }`}
+                        >
+                          {c.name}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            {fieldTouched.city && fieldErrors.city && (
+              <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.city}</p>
+            )}
+          </div>
+        ) : (
+          selectedStateCode && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="city" className="text-sm font-medium text-gray-600">
+                {labels.city} <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="city"
+                name="city"
+                type="text"
+                value={formData.city}
+                onChange={handleCityChange}
+                onBlur={() => touchField("city")}
+                placeholder={`Enter your ${labels.city}`}
+                className={fieldClass(fieldTouched.city, fieldErrors.city, formData.city)}
+              />
+              {fieldTouched.city && fieldErrors.city && (
+                <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.city}</p>
+              )}
+            </div>
+          )
+        )}
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="zip" className="text-sm font-medium text-gray-600">
@@ -627,7 +1298,7 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
             name="zip"
             type="text"
             value={formData.zip}
-            onChange={(e) => handleInputChange("zip", e.target.value)}
+            onChange={(e) => setFormData(prev => ({ ...prev, zip: e.target.value }))}
             onBlur={() => touchField("zip")}
             placeholder="2000"
             className={fieldClass(fieldTouched.zip, fieldErrors.zip, formData.zip)}
@@ -638,24 +1309,31 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
         </div>
       </div>
 
-      {/* State */}
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="state" className="text-sm font-medium text-gray-600">
-          State / Province <span className="text-red-500">*</span>
+      {/* Street address autocomplete */}
+      <div className="flex flex-col gap-1.5 relative">
+        <label htmlFor="address" className="text-sm font-medium text-gray-600">
+          Street Address <span className="text-red-500">*</span>
         </label>
         <input
-          id="state"
-          name="state"
+          ref={addressInputRef}
+          id="address"
+          name="address"
           type="text"
-          value={formData.state}
-          onChange={(e) => handleInputChange("state", e.target.value)}
-          onBlur={() => touchField("state")}
-          placeholder="New South Wales"
-          className={fieldClass(fieldTouched.state, fieldErrors.state, formData.state)}
+          value={formData.address}
+          onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+          placeholder={
+            formData.city && formData.state 
+              ? `Start typing street address in ${formData.city}...` 
+              : "e.g., 123 Collins Street, Unit 5A"
+          }
+          className={inputNormal}
+          required
         />
-        {fieldTouched.state && fieldErrors.state && (
-          <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.state}</p>
-        )}
+        <p className="text-xs text-gray-500">
+          {selectedCountryCode 
+            ? "💡 Start typing for address suggestions" 
+            : "Include street number, name, unit/apartment number"}
+        </p>
       </div>
 
       {/* Phone — single cohesive input row */}
@@ -683,40 +1361,50 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
             </button>
 
             {showCountryDropdown && (
-              <div className="absolute top-full left-0 z-50 mt-1 w-64 bg-white border border-[#d6b896] rounded-xl shadow-xl overflow-hidden">
-                <div className="p-2 border-b border-[#e8d5bc]">
+              <div className="absolute top-full left-0 z-50 mt-1 w-72 bg-white border border-[#d6b896] rounded-xl overflow-hidden">
+                <div className="p-2 border-b border-[#d6b896]/50">
                   <input
                     type="text"
                     autoFocus
                     value={countrySearch}
-                    onChange={(e) => setCountrySearch(e.target.value)}
+                    onChange={e => { setCountrySearch(e.target.value); setPhoneHighlight(0); }}
+                    onKeyDown={e => {
+                      if (e.key === "ArrowDown") { e.preventDefault(); setPhoneHighlight(i => { const next = Math.min(i + 1, filteredCountries.length - 1); phoneListRef.current?.children[next]?.scrollIntoView({ block: "nearest" }); return next; }); }
+                      else if (e.key === "ArrowUp") { e.preventDefault(); setPhoneHighlight(i => { const prev = Math.max(i - 1, 0); phoneListRef.current?.children[prev]?.scrollIntoView({ block: "nearest" }); return prev; }); }
+                      else if (e.key === "Enter" && filteredCountries[phoneHighlight]) { e.preventDefault(); setSelectedCountry(filteredCountries[phoneHighlight]); setShowCountryDropdown(false); setCountrySearch(""); setPhoneError(validatePhone(phoneNumber, filteredCountries[phoneHighlight])); }
+                      else if (e.key === "Escape") setShowCountryDropdown(false);
+                    }}
                     placeholder="Search country…"
-                    className="w-full px-3 py-2 text-sm border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] bg-white"
+                    className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
                   />
                 </div>
-                <ul className="max-h-52 overflow-y-auto">
-                  {filteredCountries.map((c) => (
-                    <li key={c.code}>
+                <ul ref={phoneListRef} className="max-h-52 overflow-y-auto">
+                  {filteredCountries.map((c, idx) => (
+                    <li key={c.code} onMouseEnter={() => setPhoneHighlight(idx)}>
                       <button
                         type="button"
-                        onClick={() => {
+                        onMouseDown={() => {
                           setSelectedCountry(c);
                           setShowCountryDropdown(false);
                           setCountrySearch("");
                           setPhoneError(validatePhone(phoneNumber, c));
                         }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[#5A1E12]/5 text-left transition ${
-                          c.code === selectedCountry.code ? "bg-[#5A1E12]/10 font-medium text-[#5A1E12]" : "text-gray-700"
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors ${
+                          idx === phoneHighlight
+                            ? "bg-[#f5e6d3] text-[#5A1E12]"
+                            : c.code === selectedCountry.code
+                            ? "bg-[#5A1E12] text-white"
+                            : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
                         }`}
                       >
                         <span className="text-base w-6 shrink-0">{c.flag}</span>
                         <span className="flex-1 truncate">{c.name}</span>
-                        <span className="text-gray-400 text-xs shrink-0">{c.dialCode}</span>
+                        <span className={`text-xs shrink-0 ${idx === phoneHighlight || c.code === selectedCountry.code ? "opacity-80" : "text-gray-400"}`}>{c.dialCode}</span>
                       </button>
                     </li>
                   ))}
                   {filteredCountries.length === 0 && (
-                    <li className="px-3 py-4 text-sm text-gray-400 text-center">No countries found</li>
+                    <li className="px-4 py-4 text-sm text-gray-400 text-center">No countries found</li>
                   )}
                 </ul>
               </div>
@@ -887,6 +1575,21 @@ export default function AddressCart({ onAddressChange }: AddressCartProps) {
                             className="bg-linear-to-r from-[#5A1E12] to-[#4a1810] hover:from-[#4a1810] hover:to-[#5A1E12] text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg"
                           >
                             Use This
+                          </motion.button>
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const id = address._id || address.id;
+                              if (id) handleDeleteAddress(id);
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Delete address"
+                            className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </motion.button>
                         </div>
                       </div>

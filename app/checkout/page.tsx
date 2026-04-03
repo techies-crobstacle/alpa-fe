@@ -46,6 +46,7 @@ export default function CheckOutPage() {
   const [mobileNumber, setMobileNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("stripe");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [isAddressValid, setIsAddressValid] = useState(false);
 
   // ── Coupon state ────────────────────────────────────────────────────────────
   const [couponError, setCouponError] = useState("");
@@ -131,6 +132,25 @@ export default function CheckOutPage() {
   // Save checkout data to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("checkoutStep", step.toString());
+  }, [step]);
+
+  useEffect(() => {
+    if (step === 2) { // Only read when on the address step
+      const addressData = localStorage.getItem("addressCartData");
+      if (addressData) {
+        try {
+          const parsed = JSON.parse(addressData);
+          handleAddressChange({
+            address: parsed.address || "",
+            city: parsed.city || "",
+            zip: parsed.zip || "",
+            state: parsed.state || "",
+            country: parsed.country || "",
+            phoneNumber: parsed.phoneNumber || "",
+          });
+        } catch {}
+      }
+    }
   }, [step]);
 
   useEffect(() => {
@@ -287,7 +307,7 @@ export default function CheckOutPage() {
           body: JSON.stringify({
             shippingAddress: { addressLine: addrLine },
             shippingMethodId: selectedShipping.id,
-            country: "Australia",
+            country: shippingCountry,
             city: addrCity || "Sydney",
             state: addrState || "NSW",
             zipCode: addrZip,
@@ -726,9 +746,10 @@ export default function CheckOutPage() {
                         </h2>
                         <p className="text-[#5A1E12]/70 mb-6 text-sm">Please provide your address details so we can deliver to you.</p>
                         <div>
-                          <AddressCart
+                        <AddressCart
                             key="address-cart-step2"
                             onAddressChange={handleAddressChange}
+                            onValidationChange={setIsAddressValid}
                           />
                         </div>
                       </motion.div>
@@ -872,7 +893,7 @@ export default function CheckOutPage() {
                         onClick={handleNext}
                         disabled={
                           cartItems.length === 0 ||
-                          (step === 2 && !shippingAddress.trim())
+                          (step === 2 && !isAddressValid)
                         }
                         className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
                       >
