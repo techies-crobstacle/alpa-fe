@@ -469,21 +469,11 @@ export default function CheckOutPage() {
           "";
         const displayId = responseData.displayId || "";
 
-        if (showGuestForm) {
-          guestCartUtils.clearGuestCart();
-          // Trigger update to refresh cart display components
-          triggerUpdate();
-        } else {
-          // Clear both cart systems for authenticated users
-          clearSharedCart(); // Clear enhanced cart data
-          clearCart(); // Clear regular CartContext data
-        }
-
         setAppliedCoupon(null);
         setPromoCode("");
         setCouponError("");
         localStorage.removeItem("cartAppliedCoupon");
-        localStorage.removeItem("alpa_cart_count"); // Clear cart count for header
+        localStorage.removeItem("alpa_cart_count");
         localStorage.removeItem("checkoutStep");
         localStorage.removeItem("showGuestForm");
         localStorage.removeItem("guestCheckoutData");
@@ -499,6 +489,14 @@ export default function CheckOutPage() {
               ? `/order-confirmation?orderId=${orderId}${displayId ? `&displayId=${encodeURIComponent(displayId)}` : ""}&paymentMethod=${paymentMethod}`
               : "/"
           );
+          // Clear cart AFTER navigation so the order summary stays visible until we leave
+          if (showGuestForm) {
+            guestCartUtils.clearGuestCart();
+            triggerUpdate();
+          } else {
+            clearSharedCart();
+            clearCart();
+          }
         }, 2500);
       } else {
         if (response.status === 401 || response.status === 403) {
@@ -792,12 +790,8 @@ export default function CheckOutPage() {
                                 amount={stripeAmount}
                                 currency={stripeCurrency}
                                 onSuccess={(orderId, displayId) => {
-                                  // Clear both cart systems immediately after successful Stripe payment
-                                  clearSharedCart(); // Clear enhanced cart data
-                                  clearCart(); // Clear regular CartContext data
-                                  
                                   localStorage.removeItem("checkoutStep");
-                                  localStorage.removeItem("alpa_cart_count"); // Clear cart count for header
+                                  localStorage.removeItem("alpa_cart_count");
                                   localStorage.removeItem("showGuestForm");
                                   localStorage.removeItem("guestCheckoutData");
                                   localStorage.removeItem("promoCode");
@@ -808,6 +802,9 @@ export default function CheckOutPage() {
                                   const params = new URLSearchParams({ orderId });
                                   if (displayId) params.set("displayId", displayId);
                                   router.push(`/order-confirmation?${params.toString()}`);
+                                  // Clear cart AFTER navigation so the order summary stays visible until we leave
+                                  clearSharedCart();
+                                  clearCart();
                                 }}
                                 onError={(msg) => toast.error(msg)}
                               />

@@ -737,8 +737,9 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
     }));
   }, [formData, phoneNumber, selectedCountry, selectedCountryCode, selectedStateCode, dataLoaded]);
 
-  // Load Google Maps script and setup location-aware autocomplete
+  // Load Google Maps script and init autocomplete ONCE after data loads
   useEffect(() => {
+    if (!dataLoaded) return;
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       console.warn('Google Maps API key not found. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env.local');
@@ -749,100 +750,104 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
       if (!addressInputRef.current || autocompleteInstanceRef.current) return;
       if (!window.google?.maps?.places?.Autocomplete) return;
 
-      // Setup autocomplete options based on selected location
-      const autocompleteOptions: any = {
+      const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
         types: ["address"],
-        fields: ["formatted_address", "address_components", "geometry"],
-      };
-
-      // Add country restriction if country is selected
-      if (selectedCountryCode) {
-        autocompleteOptions.componentRestrictions = {
-          country: selectedCountryCode.toLowerCase()
-        };
-      }
-
-      const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, autocompleteOptions);
+        fields: ["address_components", "formatted_address"],
+        ...(selectedCountryCodeRef.current && {
+          componentRestrictions: { country: selectedCountryCodeRef.current.toLowerCase() }
+        }),
+      });
 
       ac.addListener("place_changed", () => {
         const place = ac.getPlace();
         if (!place?.address_components) return;
 
-        // Parse address components
-        const components: Record<string, string> = {};
-        place.address_components.forEach((component: any) => {
-          const types = component.types;
-          if (types.includes('street_number')) {
-            components.street_number = component.long_name;
-          }
-          if (types.includes('route')) {
-            components.route = component.long_name;
-          }
-          if (types.includes('locality') || types.includes('administrative_area_level_2')) {
-            components.city = component.long_name;
-          }
-          if (types.includes('administrative_area_level_1')) {
-            components.state     = component.long_name;
-            components.stateCode = component.short_name;
-          }
-          if (types.includes('postal_code')) {
-            components.postal_code = component.long_name;
-          }
-          if (types.includes('country')) {
-            components.country = component.long_name;
-          }
-        });
+        const getComponent = (type: string) =>
+          place.address_components.find((c: any) => c.types.includes(type))?.long_name || "";
+        const getShortComponent = (type: string) =>
+          place.address_components.find((c: any) => c.types.includes(type))?.short_name || "";
 
-        // Use the full formatted address as-is from Google
+        // Try multiple types — Australian suburbs can be locality OR sublocality
+        const city       = getComponent("locality") ||
+                           getComponent("sublocality_level_1") ||
+                           getComponent("sublocality") ||
+                           getComponent("administrative_area_level_2");
+        const stateLong  = getComponent("administrative_area_level_1");
+        const stateShort = getShortComponent("administrative_area_level_1");
+        const postalCode = getComponent("postal_code");
+        const countryName = getComponent("country");
+        const countryISO = getShortComponent("country");
         const formattedAddr = place.formatted_address || "";
-        const streetAddress = formattedAddr;
 
-        // Update form data with parsed components
+        const stripTerms = new Set(
+          [city, stateLong, stateShort, postalCode, countryName]
+            .filter(Boolean)
+            .map((t: string) => t.toLowerCase())
+        );
+        const streetParts = formattedAddr
+          .split(",")
+          .map((p: string) => p.trim())
+          .filter((p: string) => p && !stripTerms.has(p.toLowerCase()));
+        const streetAddress = streetParts.join(", ") || formattedAddr.split(",")[0].trim();
+
+        if (addressInputRef.current) addressInputRef.current.value = streetAddress;
+        pendingCityRef.current = city;
+
         setFormData(prev => ({
           ...prev,
-          // Street-level detail only (no city / state / country)
-          address: streetAddress || prev.address,
-          // Auto-fill city/suburb if found
-          city: components.city || prev.city,
-          // Auto-fill postal code if found
-          zip: components.postal_code || prev.zip,
-          // Auto-fill state if found
-          state: components.state || prev.state,
+          address: streetAddress,
+          city,
+          state: stateShort || stateLong,
+          zip: postalCode,
+          country: countries.find(c => c.iso2 === countryISO)?.name || prev.country,
         }));
 
-        // If state was auto-filled, try to find and set the state code for dropdowns
-        if (components.state && statesRef.current.length > 0) {
-          const matchingState = statesRef.current.find(s =>
-            s.name.toLowerCase() === components.state.toLowerCase() ||
-            s.iso2.toLowerCase() === (components.stateCode || '').toLowerCase()
-          );
-          if (matchingState) {
-            setSelectedStateCode(matchingState.iso2);
-            
-            // Auto-load cities for this state
-            const loadCities = async () => {
-              try {
-                const data = await apiClient.get(`/location/countries/${selectedCountryCodeRef.current}/states/${matchingState.iso2}/cities`) as { data: City[] };
-                setCities(data.data || []);
-              } catch (error) {
-                console.error("Failed to fetch cities for autocompleted state", error);
-              }
-            };
-            loadCities();
+        // Sync country dropdown if it changed
+        if (countryISO && countryISO !== selectedCountryCodeRef.current) {
+          const newCountry = countries.find(c => c.iso2 === countryISO);
+          if (newCountry) {
+            handleCountryChange({ target: { value: newCountry.iso2 } } as React.ChangeEvent<HTMLSelectElement>);
           }
         }
+
+        // Sync state + city dropdowns inline (avoid handleStateChange which resets city)
+        setTimeout(async () => {
+          const stateObj = statesRef.current.find(s =>
+            s.iso2.toLowerCase() === stateShort.toLowerCase() ||
+            s.name.toLowerCase() === stateLong.toLowerCase()
+          );
+          if (!stateObj) return;
+
+          setSelectedStateCode(stateObj.iso2);
+          setFormData(prev => ({ ...prev, state: stateObj.name }));
+
+          try {
+            const data = await apiClient.get(`/location/countries/${selectedCountryCodeRef.current}/states/${stateObj.iso2}/cities`) as { data: City[] };
+            const newCities = data.data || [];
+            setCities(newCities);
+
+            const pendingCity = pendingCityRef.current;
+            if (pendingCity) {
+              const matchingCity = newCities.find(c =>
+                c.name.toLowerCase() === pendingCity.toLowerCase()
+              );
+              setFormData(prev => ({ ...prev, city: matchingCity?.name || pendingCity }));
+              pendingCityRef.current = "";
+            }
+          } catch (error) {
+            console.error("Failed to fetch cities for autocompleted state", error);
+          }
+        }, 200);
       });
 
       autocompleteInstanceRef.current = ac;
     };
 
-    // Already loaded
     if (window.google?.maps?.places?.Autocomplete) {
       attachAutocomplete();
       return;
     }
 
-    // Script already injected — wait for it
     if (document.querySelector(`script[src*="maps.googleapis.com/maps/api/js"]`)) {
       const poll = setInterval(() => {
         if (window.google?.maps?.places?.Autocomplete) {
@@ -853,16 +858,26 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
       return () => clearInterval(poll);
     }
 
-    // Inject script
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
     script.defer = true;
     script.onload = attachAutocomplete;
     document.head.appendChild(script);
-  }, [selectedCountryCode, states, dataLoaded]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataLoaded]);
 
-  // Close country dropdown on outside click
+  // Update country restriction on the existing instance when country dropdown changes
+  useEffect(() => {
+    if (!autocompleteInstanceRef.current) return;
+    autocompleteInstanceRef.current.setComponentRestrictions(
+      selectedCountryCode
+        ? { country: selectedCountryCode.toLowerCase() }
+        : null
+    );
+  }, [selectedCountryCode]);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
@@ -876,138 +891,6 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Re-setup autocomplete when location changes or data loads
-  useEffect(() => {
-    if (!dataLoaded || !window.google?.maps?.places?.Autocomplete || !addressInputRef.current) return;
-    
-    // Clear previous instance if it exists
-    if (autocompleteInstanceRef.current) {
-      window.google.maps.event.clearInstanceListeners(autocompleteInstanceRef.current);
-    }
-
-    const autocompleteOptions: google.maps.places.AutocompleteOptions = {
-      types: ["address"],
-      fields: ["address_components", "formatted_address"],
-    };
-
-    if (selectedCountryCode) {
-      autocompleteOptions.componentRestrictions = {
-        country: selectedCountryCode.toLowerCase()
-      };
-    }
-
-    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, autocompleteOptions);
-    autocompleteInstanceRef.current = ac;
-
-    ac.addListener("place_changed", () => {
-      const place = ac.getPlace();
-      if (!place?.address_components) {
-        console.warn("Autocomplete place has no address components:", place);
-        return;
-      }
-
-      const getComponent = (type: string) =>
-        place.address_components.find((c: any) => c.types.includes(type))?.long_name || "";
-      const getShortComponent = (type: string) =>
-        place.address_components.find((c: any) => c.types.includes(type))?.short_name || "";
-
-      // Extract components for auto-filling other fields
-      // Try multiple types — Australian suburbs can be locality OR sublocality
-      const city       = getComponent("locality") ||
-                         getComponent("sublocality_level_1") ||
-                         getComponent("sublocality") ||
-                         getComponent("administrative_area_level_2");
-      const stateLong  = getComponent("administrative_area_level_1");
-      const stateShort = getShortComponent("administrative_area_level_1");
-      const postalCode = getComponent("postal_code");
-      const countryName = getComponent("country");
-      const countryISO = getShortComponent("country");
-      const formattedAddr = place.formatted_address || "";
-
-      // Build street address: split by comma, strip only parts that exactly match
-      // city, state (long/short), postcode or country — keep everything else.
-      const stripTerms = new Set(
-        [city, stateLong, stateShort, postalCode, countryName]
-          .filter(Boolean)
-          .map((t: string) => t.toLowerCase())
-      );
-      const streetParts = formattedAddr
-        .split(",")
-        .map((p: string) => p.trim())
-        .filter((p: string) => p && !stripTerms.has(p.toLowerCase()));
-      const streetAddress = streetParts.join(", ") || formattedAddr.split(",")[0].trim();
-
-      // Force DOM value so Google's full-address write doesn't leak through
-      if (addressInputRef.current) addressInputRef.current.value = streetAddress;
-
-      // Store suburb in ref so the async city-fetch can reapply it reliably
-      pendingCityRef.current = city;
-
-      // Update form data
-      setFormData(prev => ({
-        ...prev,
-        address: streetAddress,
-        city,
-        state: stateShort || stateLong,
-        zip: postalCode,
-        country: countries.find(c => c.iso2 === countryISO)?.name || prev.country,
-      }));
-
-      // Sync country dropdown if it changed
-      if (countryISO && countryISO !== selectedCountryCode) {
-        const newCountry = countries.find(c => c.iso2 === countryISO);
-        if (newCountry) {
-          const countryIndex = countries.findIndex(c => c.iso2 === countryISO);
-          const mockEvent = { 
-            target: { 
-              value: newCountry.iso2, 
-              options: { selectedIndex: countryIndex + 1, item: (index: number) => ({ text: countries[index-1]?.name }) } 
-            } 
-          } as unknown as React.ChangeEvent<HTMLSelectElement>;
-          handleCountryChange(mockEvent);
-        }
-      }
-      
-      // Sync state + city dropdowns inline (avoid handleStateChange which resets city)
-      setTimeout(async () => {
-        const stateObj = statesRef.current.find(s =>
-          s.iso2.toLowerCase() === stateShort.toLowerCase() ||
-          s.name.toLowerCase() === stateLong.toLowerCase()
-        );
-        if (!stateObj) return;
-
-        setSelectedStateCode(stateObj.iso2);
-        // Set state name without clearing city
-        setFormData(prev => ({ ...prev, state: stateObj.name }));
-
-        try {
-          const data = await apiClient.get(`/location/countries/${selectedCountryCodeRef.current}/states/${stateObj.iso2}/cities`) as { data: City[] };
-          const newCities = data.data || [];
-          setCities(newCities);
-
-          // Apply the suburb from Google — try exact match first, then case-insensitive
-          const pendingCity = pendingCityRef.current;
-          if (pendingCity) {
-            const matchingCity = newCities.find(c =>
-              c.name.toLowerCase() === pendingCity.toLowerCase()
-            );
-            // Always reapply city after fetch: use matched name from API or Google's value directly
-            setFormData(prev => ({ ...prev, city: matchingCity?.name || pendingCity }));
-            pendingCityRef.current = "";
-          }
-        } catch (error) {
-          console.error("Failed to fetch cities for autocompleted state", error);
-        }
-      }, 200);
-    });
-
-    return () => {
-      if (autocompleteInstanceRef.current) {
-        window.google.maps.event.clearInstanceListeners(autocompleteInstanceRef.current);
-      }
-    };
-  }, [dataLoaded, selectedCountryCode, countries, states]);
 
   const handlePhoneChange = (value: string) => {
     // Only allow digits, spaces, hyphens
