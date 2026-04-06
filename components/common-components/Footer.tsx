@@ -79,7 +79,7 @@ export default function Footer() {
             <Link href="/guest/track-order" className="mb-2 hover:text-[#A48068] transition-colors">
               Track Order / Track Status
             </Link>
-            <Link href="/shipping" className="mb-2 hover:text-[#A48068] transition-colors">
+            <Link href="/shipping-policy" className="mb-2 hover:text-[#A48068] transition-colors">
               Shipping & Returns
             </Link>
             <Link href="/guest/refund" className="mb-2 hover:text-[#A48068] transition-colors">

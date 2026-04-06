@@ -2195,7 +2195,7 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-9 brightness-0 invert" />
+                  <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-9" />
                   <p className="font-bold text-white text-lg">Alpa</p>
                 </div>
               )}
