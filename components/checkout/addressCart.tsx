@@ -220,6 +220,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
 
   // Field touched state for validation
   const [fieldTouched, setFieldTouched] = useState({ country: false, city: false, zip: false, state: false });
+  const [zipCodeStateError, setZipCodeStateError] = useState<string | null>(null);
 
   const fieldErrors = {
     country: formData.country.trim().length < 2 ? "Country is required" : null,
@@ -262,6 +263,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
     setCities([]);
     setSelectedStateCode("");
     setFieldTouched(prev => ({ ...prev, state: false, city: false }));
+    setZipCodeStateError(null);
 
     // Sync phone country selector
     const phoneCountry = COUNTRIES.find(c => c.code === iso2);
@@ -294,6 +296,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
     
     // Reset touched state for city field
     setFieldTouched(prev => ({ ...prev, city: false }));
+    setZipCodeStateError(null);
 
     if (!iso2 || !selectedCountryCode) return;
 
@@ -330,12 +333,103 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
     setPhoneError(validatePhone(phoneNumber, selectedCountry));
   };
 
+  // ── Postcode ↔ State validation (fully dynamic, no hardcoding) ─────────────
+  // Strategy (ordered by reliability):
+  //   1. Google Geocoder   — primary: already loaded, most accurate, current data.
+  //                          Crucially, it can return multiple results for shared postcodes.
+  //   2. api.zippopotam.us — fallback: free, no key, 60+ countries
+  //   3. Silent pass       — if both unavailable (network error / timeout)
+  const validateZipForState = async (zip: string, stateVal: string, countryIso: string): Promise<string | null> => {
+    if (!zip.trim() || !stateVal.trim() || !countryIso) return null;
+    const entered = stateVal.toLowerCase().trim();
+
+    const isMatch = (a: string, b: string) =>
+      a === b || a.includes(b) || b.includes(a);
+
+    // ── 1. Google Geocoder (primary) ───────────────────────────────────────
+    if (typeof window !== "undefined") {
+      const geocoder = await new Promise<any | null>((resolve) => {
+        if (window.google?.maps?.Geocoder) { resolve(new window.google.maps.Geocoder()); return; }
+        let elapsed = 0;
+        const poll = setInterval(() => {
+          elapsed += 200;
+          if (window.google?.maps?.Geocoder) { clearInterval(poll); resolve(new window.google.maps.Geocoder()); }
+          else if (elapsed >= 5000) { clearInterval(poll); resolve(null); }
+        }, 200);
+      });
+
+      if (geocoder) {
+        const googleStates: string[] = await new Promise((resolve) => {
+          geocoder.geocode(
+            { componentRestrictions: { country: countryIso.toLowerCase(), postalCode: zip.trim() } },
+            (results: any[], status: any) => {
+              if (status !== "OK" || !results?.length) { resolve([]); return; }
+              // For shared postcodes, Google returns multiple results. Collect all unique state names.
+              const states = new Set<string>();
+              for (const result of results) {
+                const adminArea = result.address_components?.find(
+                  (c: any) => c.types.includes("administrative_area_level_1")
+                );
+                if (adminArea?.long_name) {
+                  states.add(adminArea.long_name.toLowerCase().trim());
+                }
+              }
+              resolve(Array.from(states));
+            }
+          );
+        });
+
+        if (googleStates.length > 0) {
+          const isValid = googleStates.some(gState => isMatch(gState, entered));
+          if (isValid) return null; // ✓ Google confirms valid
+          return `Please enter a valid postcode for ${stateVal}.`;
+        }
+        // Google returned no result for this postcode — fall through to zippopotam
+      }
+    }
+
+    // ── 2. Zippopotam (fallback when Google is unavailable) ────────────────
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(
+        `https://api.zippopotam.us/${countryIso.toLowerCase()}/${zip.trim()}`,
+        { signal: controller.signal }
+      );
+      clearTimeout(timer);
+
+      if (res.ok) {
+        const data = await res.json();
+        const places: Array<{ state: string; "state abbreviation": string }> = data.places || [];
+        if (places.length > 0) {
+          const matched = places.some((p) => {
+            const full = (p.state || "").toLowerCase().trim();
+            const abbr = (p["state abbreviation"] || "").toLowerCase().trim();
+            return isMatch(full, entered) || isMatch(abbr, entered);
+          });
+          if (!matched) {
+            return `Please enter a valid postcode for ${stateVal}.`;
+          }
+          return null; // ✓ zippopotam confirms valid
+        }
+      } else if (res.status === 404) {
+        return `The entered postcode was not found for the selected country.`;
+      }
+    } catch {
+      // Network / timeout — fall through to silent pass
+    }
+
+    // Both sources unavailable — don't block the user
+    return null;
+  };
+
   // Derived validity — all required fields must be filled
   const isFormValid = (
     !fieldErrors.country &&
     !fieldErrors.state &&
     !fieldErrors.city &&
     !fieldErrors.zip &&
+    !zipCodeStateError &&
     formData.address.trim().length > 0 &&
     phoneNumber.trim().length > 0 &&
     !validatePhone(phoneNumber, selectedCountry)
@@ -674,6 +768,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
       zip: false,
       state: false
     });
+    setZipCodeStateError(null);
     
     setShowSavedAddresses(false);
   };
@@ -1080,97 +1175,26 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
         </div>
       )}
 
-      {/* City/Suburb - Dynamic dropdown or fallback text input */}
+      {/* City/Suburb - manual text input (auto-filled by street address autocomplete) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {cities.length > 0 ? (
-          <div className="flex flex-col gap-1.5" ref={cityDropRef}>
-            <label className="text-sm font-medium text-gray-600">
-              {labels.city} <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => { setCityOpen(o => !o); setCitySearch(""); }}
-                onBlur={() => touchField("city")}
-                className={`${selectClass(fieldTouched.city, fieldErrors.city, formData.city)} flex items-center justify-between text-left`}
-              >
-                <span className={formData.city ? "text-gray-900" : "text-gray-400"}>
-                  {formData.city || `Select ${labels.city}`}
-                </span>
-                <svg className={`w-4 h-4 text-[#a08050] transition-transform ${cityOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-              </button>
-              {cityOpen && (
-                <div className="absolute z-50 mt-1 w-full bg-white border border-[#d6b896] rounded-xl shadow-lg overflow-hidden">
-                  <div className="p-2 border-b border-[#d6b896]/50">
-                    <input
-                      autoFocus
-                      type="text"
-                      value={citySearch}
-                      onChange={e => { setCitySearch(e.target.value); setCityHighlight(0); }}
-                      onKeyDown={e => {
-                        const filtered = cities.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase()));
-                        if (e.key === "ArrowDown") { e.preventDefault(); setCityHighlight(i => Math.min(i + 1, filtered.length - 1)); cityListRef.current?.children[Math.min(cityHighlight + 1, filtered.length - 1)]?.scrollIntoView({ block: "nearest" }); }
-                        else if (e.key === "ArrowUp") { e.preventDefault(); setCityHighlight(i => Math.max(i - 1, 0)); cityListRef.current?.children[Math.max(cityHighlight - 1, 0)]?.scrollIntoView({ block: "nearest" }); }
-                        else if (e.key === "Enter" && filtered[cityHighlight]) { e.preventDefault(); handleCityChange({ target: { value: filtered[cityHighlight].name } } as React.ChangeEvent<HTMLSelectElement>); setCityOpen(false); touchField("city"); }
-                        else if (e.key === "Escape") setCityOpen(false);
-                      }}
-                      placeholder={`Search ${labels.city}...`}
-                      className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
-                    />
-                  </div>
-                  <ul ref={cityListRef} className="max-h-52 overflow-y-auto">
-                    {cities
-                      .filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase()))
-                      .map((c, idx) => (
-                        <li
-                          key={c.name}
-                          onMouseEnter={() => setCityHighlight(idx)}
-                          onMouseDown={() => {
-                            handleCityChange({ target: { value: c.name } } as React.ChangeEvent<HTMLSelectElement>);
-                            setCityOpen(false);
-                            touchField("city");
-                          }}
-                          className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
-                            idx === cityHighlight
-                              ? "bg-[#f5e6d3] text-[#5A1E12]"
-                              : formData.city === c.name
-                              ? "bg-[#5A1E12] text-white"
-                              : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
-                          }`}
-                        >
-                          {c.name}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-            {fieldTouched.city && fieldErrors.city && (
-              <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.city}</p>
-            )}
-          </div>
-        ) : (
-          selectedStateCode && (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="city" className="text-sm font-medium text-gray-600">
-                {labels.city} <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="city"
-                name="city"
-                type="text"
-                value={formData.city}
-                onChange={handleCityChange}
-                onBlur={() => touchField("city")}
-                placeholder={`Enter your ${labels.city}`}
-                className={fieldClass(fieldTouched.city, fieldErrors.city, formData.city)}
-              />
-              {fieldTouched.city && fieldErrors.city && (
-                <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.city}</p>
-              )}
-            </div>
-          )
-        )}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="city" className="text-sm font-medium text-gray-600">
+            {labels.city} <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="city"
+            name="city"
+            type="text"
+            value={formData.city}
+            onChange={handleCityChange}
+            onBlur={() => touchField("city")}
+            placeholder={`Enter your ${labels.city}`}
+            className={fieldClass(fieldTouched.city, fieldErrors.city, formData.city)}
+          />
+          {fieldTouched.city && fieldErrors.city && (
+            <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.city}</p>
+          )}
+        </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="zip" className="text-sm font-medium text-gray-600">
@@ -1181,13 +1205,19 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
             name="zip"
             type="text"
             value={formData.zip}
-            onChange={(e) => setFormData(prev => ({ ...prev, zip: e.target.value }))}
-            onBlur={() => touchField("zip")}
+            onChange={(e) => { setFormData(prev => ({ ...prev, zip: e.target.value })); setZipCodeStateError(null); }}
+            onBlur={async () => {
+              touchField("zip");
+              if (formData.zip.trim() && formData.state.trim() && selectedCountryCode) {
+                const err = await validateZipForState(formData.zip, formData.state, selectedCountryCode);
+                setZipCodeStateError(err);
+              }
+            }}
             placeholder="2000"
-            className={fieldClass(fieldTouched.zip, fieldErrors.zip, formData.zip)}
+            className={fieldClass(fieldTouched.zip, fieldErrors.zip || zipCodeStateError, formData.zip)}
           />
-          {fieldTouched.zip && fieldErrors.zip && (
-            <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.zip}</p>
+          {((fieldTouched.zip && fieldErrors.zip) || zipCodeStateError) && (
+            <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.zip || zipCodeStateError}</p>
           )}
         </div>
       </div>
@@ -1206,7 +1236,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
           onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
           placeholder={
             formData.city && formData.state 
-              ? `Start typing street address in ${formData.city}...` 
+              ? `Start typing street address in ${formData.country}...` 
               : "e.g., 123 Collins Street, Unit 5A"
           }
           className={inputNormal}

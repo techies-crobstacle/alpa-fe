@@ -190,7 +190,14 @@ export default function CheckOutPage() {
   const shipping = shippingCost;
   const tax = gstAmount;
   const total = grandTotal;
-  const discountAmount = appliedCoupon?.discountAmount ?? 0;
+  // Recompute discount dynamically so it stays in sync when cart quantities change
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.discountType === "percentage"
+      ? (appliedCoupon.maxDiscount > 0
+          ? Math.min((total * appliedCoupon.discountValue) / 100, appliedCoupon.maxDiscount)
+          : (total * appliedCoupon.discountValue) / 100)
+      : Math.min(appliedCoupon.discountValue, total)
+    : 0;
   const discountedTotal = Math.max(0, total - discountAmount);
 
   // Auto-invalidate coupon when subtotal drops below the coupon's minimum
@@ -642,7 +649,7 @@ export default function CheckOutPage() {
                     <h4 className="text-lg font-semibold text-[#5A1E12] mb-4">Shipping Address</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-[#5A1E12]">Street Address</label>
+                        <label className="block text-sm font-medium rounded-full text-[#5A1E12]">Street Address</label>
                         <input
                           type="text"
                           value={shippingStreet}

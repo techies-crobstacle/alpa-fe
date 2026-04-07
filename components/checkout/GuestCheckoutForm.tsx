@@ -248,13 +248,30 @@ export default function GuestCheckoutForm() {
   const [couponError, setCouponError] = useState("");
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  // Pre-populate coupon applied on the cart page
+  // Pre-populate coupon applied on the cart page (only if cart still meets minimum)
   useEffect(() => {
     try {
       const saved = localStorage.getItem("cartAppliedCoupon");
-      if (saved) setAppliedCoupon(JSON.parse(saved));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setAppliedCoupon(parsed);
+      }
     } catch {}
   }, []);
+
+  // Auto-invalidate coupon if cart subtotal drops below the coupon's minimum
+  useEffect(() => {
+    if (appliedCoupon && subtotal < appliedCoupon.minCartValue) {
+      const removedCode = appliedCoupon.code;
+      const minVal = appliedCoupon.minCartValue;
+      setAppliedCoupon(null);
+      setCouponCode(removedCode);
+      setCouponError(
+        `Coupon "${removedCode}" requires a minimum cart value of $${minVal.toFixed(2)}. It has been removed.`
+      );
+      localStorage.removeItem("cartAppliedCoupon");
+    }
+  }, [subtotal, appliedCoupon]);
 
   // ── Steps ─────────────────────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState<"form" | "payment">("form");
@@ -270,6 +287,7 @@ export default function GuestCheckoutForm() {
 
   // ── Field errors ──────────────────────────────────────────────────────────
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [zipCodeStateError, setZipCodeStateError] = useState<string | null>(null);
   // ── Phone number handlers ───────────────────────────────────────────────────
   const handlePhoneChange = (value: string) => {
     // Only allow digits, spaces, hyphens, parentheses
@@ -348,6 +366,7 @@ export default function GuestCheckoutForm() {
     setSelectedStateIso("");
     setLocationStates([]);
     setLocationCities([]);
+    setZipCodeStateError(null);
     // Sync phone country code
     const phoneC = COUNTRIES.find(c => c.code === iso2);
     if (phoneC) setSelectedCountry(phoneC);
@@ -365,6 +384,7 @@ export default function GuestCheckoutForm() {
     setState(name);
     setCity("");
     setLocationCities([]);
+    setZipCodeStateError(null);
     if (!iso2 || !selectedCountryIso) return;
     try {
       const data = await apiClient.get(`/location/countries/${selectedCountryIso}/states/${iso2}/cities`) as { data: ApiCity[] };
@@ -425,7 +445,7 @@ export default function GuestCheckoutForm() {
         if (addressInputRef.current) addressInputRef.current.value = streetOnly;
         setAddressLine(streetOnly);
         setCity(cityName);
-        setState(getShortComponent("administrative_area_level_1") || getComponent("administrative_area_level_1"));
+        setState(getComponent("administrative_area_level_1"));
         setZipCode(getComponent("postal_code"));
         setCountry(getComponent("country"));
 
@@ -478,8 +498,14 @@ export default function GuestCheckoutForm() {
     });
   }, [selectedCountryIso]);
 
-  // Final total after coupon
-  const discountAmount = appliedCoupon?.discountAmount ?? 0;
+  // Final total after coupon — recomputed dynamically whenever grandTotal changes
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.discountType === "percentage"
+      ? (appliedCoupon.maxDiscount > 0
+          ? Math.min((grandTotal * appliedCoupon.discountValue) / 100, appliedCoupon.maxDiscount)
+          : (grandTotal * appliedCoupon.discountValue) / 100)
+      : Math.min(appliedCoupon.discountValue, grandTotal)
+    : 0;
   const finalTotal     = Math.max(0, grandTotal - discountAmount);
 
   // ── Coupon handlers ───────────────────────────────────────────────────────
@@ -511,8 +537,101 @@ export default function GuestCheckoutForm() {
     localStorage.removeItem("cartAppliedCoupon");
   };
 
+  // ── Postcode ↔ State validation (fully dynamic, no hardcoding) ─────────────
+  // Strategy (ordered by reliability):
+  //   1. Google Geocoder   — primary: already loaded, most accurate, current data.
+  //                          Crucially, it can return multiple results for shared postcodes.
+  //   2. api.zippopotam.us — fallback: free, no key, 60+ countries
+  //   3. Silent pass       — if both unavailable (network error / timeout)
+  const validateZipForState = async (zip: string, stateVal: string, countryIso: string): Promise<string | null> => {
+    if (!zip.trim() || !stateVal.trim() || !countryIso) return null;
+    const entered = stateVal.toLowerCase().trim();
+
+    // ── Helper: normalised string match ───────────────────────────────────
+    const isMatch = (a: string, b: string) =>
+      a === b || a.includes(b) || b.includes(a);
+
+    // ── 1. Google Geocoder (primary) ───────────────────────────────────────
+    if (typeof window !== "undefined") {
+      const geocoder = await new Promise<any | null>((resolve) => {
+        if (window.google?.maps?.Geocoder) { resolve(new window.google.maps.Geocoder()); return; }
+        let elapsed = 0;
+        const poll = setInterval(() => {
+          elapsed += 200;
+          if (window.google?.maps?.Geocoder) { clearInterval(poll); resolve(new window.google.maps.Geocoder()); }
+          else if (elapsed >= 5000) { clearInterval(poll); resolve(null); }
+        }, 200);
+      });
+
+      if (geocoder) {
+        const googleStates: string[] = await new Promise((resolve) => {
+          geocoder.geocode(
+            { componentRestrictions: { country: countryIso.toLowerCase(), postalCode: zip.trim() } },
+            (results: any[], status: any) => {
+              if (status !== "OK" || !results?.length) { resolve([]); return; }
+              // For shared postcodes, Google returns multiple results. Collect all unique state names.
+              const states = new Set<string>();
+              for (const result of results) {
+                const adminArea = result.address_components?.find(
+                  (c: any) => c.types.includes("administrative_area_level_1")
+                );
+                if (adminArea?.long_name) {
+                  states.add(adminArea.long_name.toLowerCase().trim());
+                }
+              }
+              resolve(Array.from(states));
+            }
+          );
+        });
+
+        if (googleStates.length > 0) {
+          const isValid = googleStates.some(gState => isMatch(gState, entered));
+          if (isValid) return null; // ✓ Google confirms valid
+
+          // Invalid: show a generic error message
+          return `Please enter a valid postcode for the selected state.`;
+        }
+        // Google returned no result for this postcode — fall through to zippopotam
+      }
+    }
+
+    // ── 2. Zippopotam (fallback when Google is unavailable) ────────────────
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(
+        `https://api.zippopotam.us/${countryIso.toLowerCase()}/${zip.trim()}`,
+        { signal: controller.signal }
+      );
+      clearTimeout(timer);
+
+      if (res.ok) {
+        const data = await res.json();
+        const places: Array<{ state: string; "state abbreviation": string }> = data.places || [];
+        if (places.length > 0) {
+          const matched = places.some((p) => {
+            const full = (p.state || "").toLowerCase().trim();
+            const abbr = (p["state abbreviation"] || "").toLowerCase().trim();
+            return isMatch(full, entered) || isMatch(abbr, entered);
+          });
+          if (!matched) {
+            return `Please enter a valid postcode for ${stateVal}.`;
+          }
+          return null; // ✓ zippopotam confirms valid
+        }
+      } else if (res.status === 404) {
+        return `The entered postcode was not found for the selected country.`;
+      }
+    } catch {
+      // Network / timeout — fall through to silent pass
+    }
+
+    // Both sources unavailable — don't block the user
+    return null;
+  };
+
   // ── Form validation ───────────────────────────────────────────────────────
-  const validateForm = (): boolean | string => {
+  const validateForm = (overrideZipError?: string | null): boolean | string => {
     const errors: Record<string, string> = {};
     if (!customerName.trim())  errors.customerName  = "Full name is required.";
     if (!customerEmail.trim()) errors.customerEmail = "Email is required.";
@@ -534,6 +653,9 @@ export default function GuestCheckoutForm() {
     if (!state.trim())         errors.state         = `${locationLabels.state} is required.`;
     if (!city.trim())          errors.city          = `${locationLabels.city} is required.`;
     if (!zipCode.trim())       errors.zipCode       = "Postcode is required.";
+    // Postcode ↔ state cross-field validation
+    const zipErr = overrideZipError !== undefined ? overrideZipError : zipCodeStateError;
+    if (!errors.zipCode && zipErr) errors.zipCode = zipErr;
     if (!selectedShipping)     errors.shippingMethodId = "Please select a shipping method.";
     setFieldErrors(errors);
     
@@ -547,7 +669,13 @@ export default function GuestCheckoutForm() {
 
   // ── Step A: Create PaymentIntent ──────────────────────────────────────────
   const handleContinueToPayment = async () => {
-    const validationResult = validateForm();
+    // Run async postcode ↔ state validation before the synchronous form check
+    let asyncZipError: string | null = null;
+    if (zipCode.trim() && state.trim() && selectedCountryIso) {
+      asyncZipError = await validateZipForState(zipCode, state, selectedCountryIso);
+      setZipCodeStateError(asyncZipError);
+    }
+    const validationResult = validateForm(asyncZipError);
     if (validationResult !== true) { 
       toast.error(typeof validationResult === 'string' ? validationResult : "Please fill in all required fields."); 
       return; 
@@ -928,75 +1056,37 @@ export default function GuestCheckoutForm() {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* City — custom dropdown if available, otherwise text input */}
+                  {/* City/Suburb — manual or auto-filled by street address */}
                   <div>
                     <label className="block text-sm font-medium text-[#5A1E12] mb-1">{locationLabels.city} <span className="text-red-500">*</span></label>
-                    {locationCities.length > 0 ? (
-                      <div ref={locCityRef} className="relative">
-                        <button
-                          type="button"
-                          onClick={() => { setLocCityOpen(o => !o); setLocCitySearch(""); }}
-                          className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-lg text-sm text-left transition-all focus:outline-none focus:ring-1 focus:ring-[#5A1E12] ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50"}`}
-                        >
-                          <span className={city ? "text-gray-900" : "text-gray-400"}>{city || `Select ${locationLabels.city}`}</span>
-                          <svg className={`w-4 h-4 text-[#a08050] transition-transform ${locCityOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        {locCityOpen && (
-                          <div className="absolute z-50 mt-1 w-full bg-white border border-[#d6b896] rounded-xl shadow-lg overflow-hidden">
-                            <div className="p-2 border-b border-[#d6b896]/50">
-                              <input
-                                autoFocus
-                                type="text"
-                                value={locCitySearch}
-                                onChange={e => { setLocCitySearch(e.target.value); setLocCityHL(0); }}
-                                onKeyDown={e => {
-                                  const filtered = locationCities.filter(c => c.name.toLowerCase().includes(locCitySearch.toLowerCase()));
-                                  if (e.key === "ArrowDown") { e.preventDefault(); setLocCityHL(i => { const next = Math.min(i + 1, filtered.length - 1); locCityListRef.current?.children[next]?.scrollIntoView({ block: "nearest" }); return next; }); }
-                                  else if (e.key === "ArrowUp") { e.preventDefault(); setLocCityHL(i => { const prev = Math.max(i - 1, 0); locCityListRef.current?.children[prev]?.scrollIntoView({ block: "nearest" }); return prev; }); }
-                                  else if (e.key === "Enter" && filtered[locCityHL]) { e.preventDefault(); setCity(filtered[locCityHL].name); setLocCityOpen(false); }
-                                  else if (e.key === "Escape") setLocCityOpen(false);
-                                }}
-                                placeholder={`Search ${locationLabels.city}...`}
-                                className="w-full px-3 py-2 text-sm bg-[#fdf6ee] border border-[#d6b896] rounded-lg outline-none focus:border-[#5A1E12] placeholder:text-gray-400"
-                              />
-                            </div>
-                            <ul ref={locCityListRef} className="max-h-52 overflow-y-auto">
-                              {locationCities
-                                .filter(c => c.name.toLowerCase().includes(locCitySearch.toLowerCase()))
-                                .map((c, idx) => (
-                                  <li
-                                    key={c.name}
-                                    onMouseEnter={() => setLocCityHL(idx)}
-                                    onMouseDown={() => { setCity(c.name); setLocCityOpen(false); }}
-                                    className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
-                                      idx === locCityHL ? "bg-[#f5e6d3] text-[#5A1E12]"
-                                      : city === c.name ? "bg-[#5A1E12] text-white"
-                                      : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
-                                    }`}
-                                  >
-                                    {c.name}
-                                  </li>
-                                ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        placeholder={locationLabels.city}
-                        className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20"}`}
-                      />
-                    )}
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder={locationLabels.city}
+                      className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20"}`}
+                    />
                     {fieldErrors.city && <p className="mt-1 text-xs text-red-500">{fieldErrors.city}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#5A1E12] mb-1">Postcode <span className="text-red-500">*</span></label>
-                    <input type="text" value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="2000"
-                      className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.zipCode ? "border-red-400" : "border-[#5A1E12]/20"}`} />
-                    {fieldErrors.zipCode && <p className="mt-1 text-xs text-red-500">{fieldErrors.zipCode}</p>}
+                    <input
+                      type="text"
+                      value={zipCode}
+                      onChange={(e) => { setZipCode(e.target.value); setZipCodeStateError(null); setFieldErrors(prev => ({ ...prev, zipCode: "" })); }}
+                      onBlur={async () => {
+                        if (zipCode.trim() && state.trim() && selectedCountryIso) {
+                          const err = await validateZipForState(zipCode, state, selectedCountryIso);
+                          setZipCodeStateError(err);
+                          if (err) setFieldErrors(prev => ({ ...prev, zipCode: err }));
+                        }
+                      }}
+                      placeholder="2000"
+                      className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.zipCode || zipCodeStateError ? "border-red-400" : "border-[#5A1E12]/20"}`}
+                    />
+                    {(fieldErrors.zipCode || zipCodeStateError) && (
+                      <p className="mt-1 text-xs text-red-500">{fieldErrors.zipCode || zipCodeStateError}</p>
+                    )}
                   </div>
                 </div>
               </div>

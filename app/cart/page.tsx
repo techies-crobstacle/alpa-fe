@@ -98,6 +98,15 @@ export default function Page() {
   const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } = calculateTotals;
   const [syncTrigger, setSyncTrigger] = useState(0);
 
+  // Recompute discount dynamically so display stays in sync when quantities change
+  const couponDiscount = appliedCoupon
+    ? appliedCoupon.discountType === "percentage"
+      ? (appliedCoupon.maxDiscount > 0
+          ? Math.min((grandTotal * appliedCoupon.discountValue) / 100, appliedCoupon.maxDiscount)
+          : (grandTotal * appliedCoupon.discountValue) / 100)
+      : Math.min(appliedCoupon.discountValue, grandTotal)
+    : 0;
+
   // Auto-invalidate coupon when cart subtotal drops below the coupon's minimum
   useEffect(() => {
     if (appliedCoupon && subtotal < appliedCoupon.minCartValue) {
@@ -375,7 +384,7 @@ export default function Page() {
                   <div className="flex items-center gap-3 px-5 py-3 bg-green-50 border border-green-300 rounded-xl">
                     <Tag className="h-4 w-4 text-green-600 shrink-0" />
                     <span className="flex-1 font-medium text-green-700">{appliedCoupon.code}</span>
-                    <span className="text-sm font-semibold text-green-700 mr-2">-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                    <span className="text-sm font-semibold text-green-700 mr-2">-${couponDiscount.toFixed(2)}</span>
                     <button
                       onClick={handleRemoveCoupon}
                       className="text-green-600 hover:text-red-500 transition-colors"
@@ -485,7 +494,7 @@ export default function Page() {
                         <span className="flex items-center gap-1 text-sm font-medium">
                           <Tag className="h-3.5 w-3.5" /> Coupon {appliedCoupon.code}
                         </span>
-                        <span className="font-bold">-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                        <span className="font-bold">-${couponDiscount.toFixed(2)}</span>
                     </div>
                     )}
                 </div>
@@ -495,7 +504,7 @@ export default function Page() {
                         <span className="text-lg font-bold text-[#4A3728]">Grand Total</span>
                         <span className="text-2xl font-serif font-bold text-[#2C1810]">
                             ${appliedCoupon
-                            ? Math.max(0, grandTotal - appliedCoupon.discountAmount).toFixed(2)
+                            ? Math.max(0, grandTotal - couponDiscount).toFixed(2)
                             : grandTotal.toFixed(2)}
                         </span>
                     </div>

@@ -78,9 +78,6 @@ export function useCartStock(
             entry.stock >= 0
           ) {
             setTimeout(() => {
-              toast.warn(
-                `Only ${entry.stock} unit${entry.stock !== 1 ? "s" : ""} of a cart item are now available. Your quantity has been adjusted.`
-              );
               onOverstockRef.current?.(id, entry.stock);
             }, 0);
           }
@@ -138,9 +135,6 @@ export function useCartStock(
         ) {
           // Schedule outside of the setState callback to avoid nested state updates
           setTimeout(() => {
-            toast.warn(
-              `Only ${data.stock} unit${data.stock !== 1 ? "s" : ""} of a cart item are now available. Your quantity has been adjusted.`
-            );
             onOverstockRef.current?.(data.productId, data.stock);
           }, 0);
         }
