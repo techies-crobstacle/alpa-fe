@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { FaFileSignature } from "react-icons/fa";
 import {
   Loader2,
   Search,
@@ -26,7 +27,7 @@ import { toast } from "react-toastify";
 
 const BASE_URL = "https://alpa-be.onrender.com";
 
-const STATUS_STEPS = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const;
+const STATUS_STEPS = ["OPEN", "APPROVED", "COMPLETED", "REJECTED"] as const;
 
 type RefundStatus = (typeof STATUS_STEPS)[number];
 
@@ -35,17 +36,18 @@ type RefundStatus = (typeof STATUS_STEPS)[number];
 interface RefundTicket {
   id: string;
   orderId: string;
-  requestType: "refund" | "partial_refund";
+  orderDisplayId?: string;
+  requestType: "REFUND" | "PARTIAL_REFUND";
   reason: string;
   status: RefundStatus;
-  priority: string;
-  adminResponse: string | null;
+  adminMessage: string | null;
   createdAt: string;
   updatedAt: string;
-  guestEmail: string;
+  guestEmail?: string;
 }
 
 interface EligibleRefundItem {
+  orderItemId?: string;
   productId: string;
   title: string;
   image: string;
@@ -73,10 +75,13 @@ interface FetchedOrder {
 }
 
 interface SelectedItem {
+  orderItemId: string;
   productId: string;
   title: string;
   quantity: number;
   maxQuantity: number;
+  reason: string;
+  images: UploadedImage[];
 }
 
 interface UploadedImage {
@@ -102,39 +107,52 @@ function statusBadge(status: string): { bg: string; text: string; label: string 
   switch (status) {
     case "OPEN":
       return { bg: "bg-blue-100", text: "text-blue-700", label: "Open" };
-    case "IN_PROGRESS":
-      return { bg: "bg-amber-100", text: "text-amber-700", label: "In Progress" };
-    case "RESOLVED":
-      return { bg: "bg-green-100", text: "text-green-700", label: "Resolved" };
-    case "CLOSED":
-      return { bg: "bg-gray-100", text: "text-gray-500", label: "Closed" };
+    case "APPROVED":
+      return { bg: "bg-green-100", text: "text-green-700", label: "Approved" };
+    case "COMPLETED":
+      return { bg: "bg-emerald-100", text: "text-emerald-700", label: "Completed" };
+    case "REJECTED":
+      return { bg: "bg-red-100", text: "text-red-700", label: "Rejected" };
     default:
       return { bg: "bg-gray-100", text: "text-gray-500", label: status };
   }
 }
 
 function requestTypeLabel(type: string): string {
-  return type === "refund" ? "Full Refund" : "Partial Refund";
+  return type === "REFUND" ? "Full Refund" : "Partial Refund";
 }
 
 // ─── Status Stepper ──────────────────────────────────────────────────────────
 
 function StatusStepper({ status }: { status: string }) {
-  const currentIndex = STATUS_STEPS.indexOf(status as RefundStatus);
+  // REJECTED is a terminal alternative state — show it separately, not in the linear flow
+  if (status === "REJECTED") {
+    return (
+      <div className="mt-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+          <XCircle className="w-4 h-4 text-red-600" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-red-700">Request Rejected</p>
+          <p className="text-xs text-red-500 mt-0.5">See admin message below for details.</p>
+        </div>
+      </div>
+    );
+  }
 
+  const linearSteps = ["OPEN", "APPROVED", "COMPLETED"] as const;
   const icons = [
     <Clock key="OPEN" className="w-4 h-4" />,
-    <Loader2 key="IN_PROGRESS" className="w-4 h-4" />,
-    <CircleCheck key="RESOLVED" className="w-4 h-4" />,
-    <XCircle key="CLOSED" className="w-4 h-4" />,
+    <CircleCheck key="APPROVED" className="w-4 h-4" />,
+    <CheckCircle2 key="COMPLETED" className="w-4 h-4" />,
   ];
-
-  const labels = ["Open", "In Progress", "Resolved", "Closed"];
+  const labels = ["Open", "Approved", "Completed"];
+  const currentIndex = linearSteps.indexOf(status as (typeof linearSteps)[number]);
 
   return (
     <div className="mt-4">
       <div className="flex items-center">
-        {STATUS_STEPS.map((step, i) => {
+        {linearSteps.map((step, i) => {
           const isDone = i < currentIndex;
           const isActive = i === currentIndex;
           const isFuture = i > currentIndex;
@@ -151,11 +169,7 @@ function StatusStepper({ status }: { status: string }) {
                       : "bg-gray-100 text-gray-400"
                   }`}
                 >
-                  {isDone ? (
-                    <CheckCircle2 className="w-4 h-4" />
-                  ) : (
-                    icons[i]
-                  )}
+                  {isDone ? <CheckCircle2 className="w-4 h-4" /> : icons[i]}
                 </div>
                 <span
                   className={`mt-1 text-[10px] font-semibold whitespace-nowrap ${
@@ -166,7 +180,7 @@ function StatusStepper({ status }: { status: string }) {
                 </span>
               </div>
               {/* Connector */}
-              {i < STATUS_STEPS.length - 1 && (
+              {i < linearSteps.length - 1 && (
                 <div
                   className={`flex-1 h-0.5 mx-1 mb-4 rounded-full transition-all ${
                     i < currentIndex ? "bg-[#5A1E12]" : "bg-gray-200"
@@ -207,7 +221,7 @@ function RequestCard({ ticket, orderId, email }: RequestCardProps) {
       );
       const data = await res.json();
       if (!res.ok) { toast.error(data.message || "Failed to load details."); return; }
-      setDetail(data);
+      setDetail(data.request);
     } catch {
       toast.error("Failed to load details. Please try again.");
     } finally {
@@ -257,7 +271,7 @@ function RequestCard({ ticket, orderId, email }: RequestCardProps) {
               {/* Details grid */}
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Ticket ID</p>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Request ID</p>
                   <p className="text-sm font-mono text-gray-700 break-all">{displayed.id}</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
@@ -270,7 +284,7 @@ function RequestCard({ ticket, orderId, email }: RequestCardProps) {
               <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Admin Response</p>
                 <p className="text-sm text-gray-700">
-                  {displayed.adminResponse ?? (
+                  {displayed.adminMessage ?? (
                     <span className="text-gray-400 italic">Awaiting review</span>
                   )}
                 </p>
@@ -302,13 +316,8 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
   // Item selection — keyed by productId
   const [selectedItems, setSelectedItems] = useState<Record<string, SelectedItem>>({});
 
-  // Form fields
-  const [requestType, setRequestType] = useState<"refund" | "partial_refund">("refund");
-  const [reason, setReason] = useState("");
-
-  // Image upload
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [images, setImages] = useState<UploadedImage[]>([]);
+  // Per-product file input refs
+  const fileInputsRef = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Submit state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -332,7 +341,7 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
       const init: Record<string, SelectedItem> = {};
       (data.order.eligibleRefundOrders ?? []).forEach((subOrder: EligibleRefundOrder) => {
         subOrder.items.forEach((item: EligibleRefundItem) => {
-          init[item.productId] = { productId: item.productId, title: item.title, quantity: item.quantity, maxQuantity: item.quantity };
+          init[item.productId] = { orderItemId: item.orderItemId ?? item.productId, productId: item.productId, title: item.title, quantity: item.quantity, maxQuantity: item.quantity, reason: "", images: [] };
         });
       });
       setSelectedItems(init);
@@ -344,60 +353,88 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
     }
   };
 
-  // ── Image selection ──────────────────────────────────────────────────────────
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ── Per-product image handlers ────────────────────────────────────────────────
+  const handleProductFileChange = (pid: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (images.length + files.length > 5) {
-      toast.error("You can attach a maximum of 5 images.");
+    if (!files.length) return;
+    const cur = selectedItems[pid];
+    if (!cur) return;
+    if (cur.images.length + files.length > 5) {
+      toast.error("You can attach a maximum of 5 images per item.");
       return;
     }
-    const newImages: UploadedImage[] = files.map((file) => ({
-      previewUrl: URL.createObjectURL(file),
-      file,
-    }));
-    setImages((prev) => [...prev, ...newImages]);
+    setSelectedItems((prev) => {
+      const existing = prev[pid]?.images ?? [];
+      // Deduplicate: skip files already present (guards against double-invocation in Strict Mode)
+      const existingKeys = new Set(existing.map((img) => img.file.name + img.file.size + img.file.lastModified));
+      const toAdd = files.filter((f) => !existingKeys.has(f.name + f.size + f.lastModified));
+      if (!toAdd.length) return prev;
+      const newImages: UploadedImage[] = toAdd.map((file) => ({
+        previewUrl: URL.createObjectURL(file),
+        file,
+      }));
+      return {
+        ...prev,
+        [pid]: { ...prev[pid], images: [...existing, ...newImages] },
+      };
+    });
   };
 
-  const removeImage = (idx: number) => {
-    setImages((prev) => {
-      const next = [...prev];
+  const removeProductImage = (pid: string, idx: number) => {
+    setSelectedItems((prev) => {
+      const item = prev[pid];
+      if (!item) return prev;
+      const next = [...item.images];
       URL.revokeObjectURL(next[idx].previewUrl);
       next.splice(idx, 1);
-      return next;
+      return { ...prev, [pid]: { ...item, images: next } };
     });
   };
 
   const resetForm = () => {
+    Object.values(selectedItems).forEach((item) =>
+      item.images.forEach((img) => URL.revokeObjectURL(img.previewUrl))
+    );
     setStep("lookup");
     setOrderId("");
     setEmail("");
     setFetchedOrder(null);
     setSelectedItems({});
-    setReason("");
-    setRequestType("refund");
-    setImages((prev) => { prev.forEach((img) => URL.revokeObjectURL(img.previewUrl)); return []; });
   };
 
   // ── Submit ────────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (Object.keys(selectedItems).length === 0) { toast.error("Please select at least one item to return."); return; }
-    if (!reason.trim()) { toast.error("Please provide a reason for the refund."); return; }
+    const selected = Object.values(selectedItems);
+    if (selected.length === 0) { toast.error("Please select at least one item to return."); return; }
+
+    const missingReason = selected.find((s) => !s.reason.trim());
+    if (missingReason) { toast.error(`Please provide a reason for "${missingReason.title}".`); return; }
+
+    // Auto-compute: full refund if every eligible item selected at max qty, else partial
+    const totalEligible = (fetchedOrder?.eligibleRefundOrders ?? []).flatMap((o) => o.items).length;
+    const allSelectedAtMax = selected.length === totalEligible && selected.every((s) => s.quantity === s.maxQuantity);
+    const requestType: "refund" | "partial_refund" = allSelectedAtMax ? "refund" : "partial_refund";
 
     // Use values returned by the find-order API — never rely on raw user input
     const payloadOrderId = fetchedOrder?.displayId ?? orderId.trim();
     const payloadEmail = fetchedOrder?.customerEmail ?? email.trim();
 
-    const itemsPayload = Object.values(selectedItems).map(({ productId, title, quantity }) => ({ productId, title, quantity }));
+    // Build per-item payload using orderItemId as required by the API
+    const itemsPayload = selected.map(({ orderItemId, quantity, reason }) => ({ orderItemId, quantity, reason }));
+    // Top-level reason required by API as a fallback
+    const topLevelReason = selected[0]?.reason ?? "Refund request";
 
     const formData = new FormData();
     formData.append("orderId", payloadOrderId);
     formData.append("customerEmail", payloadEmail);
-    formData.append("requestType", requestType);
-    formData.append("reason", reason.trim());
+    formData.append("reason", topLevelReason);
     formData.append("items", JSON.stringify(itemsPayload));
-    images.forEach((img) => formData.append("images", img.file));
+    // Flatten all per-item images into "file" fields (API merges them into ticket attachments)
+    selected.forEach(({ images }) =>
+      images.forEach((img) => formData.append("file", img.file))
+    );
 
     setIsSubmitting(true);
     try {
@@ -407,7 +444,7 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.message || "Failed to submit request."); return; }
-      setSuccessInfo({ ticketId: data.ticketId, orderId: payloadOrderId });
+      setSuccessInfo({ ticketId: data.request?.id ?? "", orderId: payloadOrderId });
       resetForm();
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -514,9 +551,7 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
         <Package className="w-5 h-5 text-[#5A1E12] shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-800">Order #{fetchedOrder?.displayId ?? orderId}</p>
-          {fetchedOrder?.customerName && (
-            <p className="text-xs text-gray-500 mt-0.5">{fetchedOrder.customerName}</p>
-          )}
+          <p className="text-xs text-gray-500 mt-0.5">{fetchedOrder?.customerName || "Guest User"}</p>
           <p className="text-xs text-gray-400 mt-0.5">{allEligibleItems.length} eligible item(s)</p>
         </div>
         <span className="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-green-100 text-green-700">
@@ -558,86 +593,159 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
                         return (
                           <div
                             key={pid}
-                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                            className={`rounded-xl border transition-all ${
                               isChecked
                                 ? "border-[#5A1E12]/30 bg-[#5A1E12]/5"
-                                : "border-gray-200 bg-white hover:bg-gray-50"
+                                : "border-gray-200 bg-white"
                             }`}
-                            onClick={() => {
-                              setSelectedItems((prev) => {
-                                const next = { ...prev };
-                                if (next[pid]) {
-                                  delete next[pid];
-                                } else {
-                                  next[pid] = { productId: pid, title: item.title, quantity: item.quantity, maxQuantity: item.quantity };
-                                }
-                                return next;
-                              });
-                            }}
                           >
-                            {/* Custom checkbox */}
+                            {/* Clickable header row */}
                             <div
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
-                                isChecked ? "bg-[#5A1E12] border-[#5A1E12]" : "border-gray-300 bg-white"
-                              }`}
+                              className="flex items-center gap-3 p-3 cursor-pointer select-none hover:bg-black/3 rounded-xl"
+                              onClick={() => {
+                                setSelectedItems((prev) => {
+                                  const next = { ...prev };
+                                  if (next[pid]) {
+                                    next[pid].images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+                                    delete next[pid];
+                                  } else {
+                                    next[pid] = { orderItemId: item.orderItemId ?? pid, productId: pid, title: item.title, quantity: item.quantity, maxQuantity: item.quantity, reason: "", images: [] };
+                                  }
+                                  return next;
+                                });
+                              }}
                             >
-                              {isChecked && <CheckCircle2 className="w-3 h-3 text-white" />}
-                            </div>
-
-                            {/* Product image */}
-                            {item.image && (
-                              <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                                <Image
-                                  src={item.image}
-                                  alt={item.title}
-                                  width={48}
-                                  height={48}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            )}
-
-                            {/* Name + price */}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-800 truncate">{item.title}</p>
-                              <p className="text-xs text-gray-400">{item.quantity}× @ ₹{item.price}</p>
-                            </div>
-
-                            {/* Quantity stepper (only when checked) */}
-                            {isChecked && (
+                              {/* Custom checkbox */}
                               <div
-                                className="flex items-center gap-1.5 shrink-0"
-                                onClick={(e) => e.stopPropagation()}
+                                className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+                                  isChecked ? "bg-[#5A1E12] border-[#5A1E12]" : "border-gray-300 bg-white"
+                                }`}
                               >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setSelectedItems((prev) => {
-                                      const cur = prev[pid];
-                                      if (!cur || cur.quantity <= 1) return prev;
-                                      return { ...prev, [pid]: { ...cur, quantity: cur.quantity - 1 } };
-                                    })
-                                  }
-                                  className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-300 flex items-center justify-center transition-colors"
+                                {isChecked && <CheckCircle2 className="w-3 h-3 text-white" />}
+                              </div>
+
+                              {/* Product image */}
+                              {item.image && (
+                                <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                                  <Image
+                                    src={item.image}
+                                    alt={item.title}
+                                    width={48}
+                                    height={48}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+
+                              {/* Name + price */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-800 truncate">{item.title}</p>
+                                <p className="text-xs text-gray-400">{item.quantity}× @ ₹{item.price}</p>
+                              </div>
+
+                              {/* Quantity stepper (only when checked) */}
+                              {isChecked && (
+                                <div
+                                  className="flex items-center gap-1.5 shrink-0"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  −
-                                </button>
-                                <span className="w-5 text-center text-sm font-semibold text-gray-800">
-                                  {selectedItems[pid].quantity}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setSelectedItems((prev) => {
-                                      const cur = prev[pid];
-                                      if (!cur || cur.quantity >= cur.maxQuantity) return prev;
-                                      return { ...prev, [pid]: { ...cur, quantity: cur.quantity + 1 } };
-                                    })
-                                  }
-                                  className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-300 flex items-center justify-center transition-colors"
-                                >
-                                  +
-                                </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSelectedItems((prev) => {
+                                        const cur = prev[pid];
+                                        if (!cur || cur.quantity <= 1) return prev;
+                                        return { ...prev, [pid]: { ...cur, quantity: cur.quantity - 1 } };
+                                      })
+                                    }
+                                    className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-300 flex items-center justify-center transition-colors"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="w-5 text-center text-sm font-semibold text-gray-800">
+                                    {selectedItems[pid].quantity}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSelectedItems((prev) => {
+                                        const cur = prev[pid];
+                                        if (!cur || cur.quantity >= cur.maxQuantity) return prev;
+                                        return { ...prev, [pid]: { ...cur, quantity: cur.quantity + 1 } };
+                                      })
+                                    }
+                                    className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-300 flex items-center justify-center transition-colors"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Expanded: per-product reason + images */}
+                            {isChecked && (
+                              <div className="px-3 pb-3 pt-2 border-t border-[#5A1E12]/10 space-y-3">
+                                {/* Reason */}
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-500 mb-1">
+                                    Reason <span className="text-red-400">*</span>
+                                  </label>
+                                  <textarea
+                                    value={selectedItems[pid].reason}
+                                    onChange={(e) =>
+                                      setSelectedItems((prev) => ({
+                                        ...prev,
+                                        [pid]: { ...prev[pid], reason: e.target.value },
+                                      }))
+                                    }
+                                    rows={2}
+                                    placeholder="Why are you returning this item?"
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#5A1E12]/40 focus:ring-2 focus:ring-[#5A1E12]/10 transition-all resize-none"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+
+                                {/* Evidence photos */}
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                                    Photos <span className="font-normal text-gray-400">(optional, max 5)</span>
+                                  </label>
+                                  <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    className="hidden"
+                                    ref={(el) => { fileInputsRef.current[pid] = el; }}
+                                    onChange={(e) => handleProductFileChange(pid, e)}
+                                  />
+                                  <div className="flex flex-wrap gap-2">
+                                    {selectedItems[pid].images.map((img, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0"
+                                      >
+                                        <Image src={img.previewUrl} alt="evidence" fill className="object-cover" />
+                                        <button
+                                          type="button"
+                                          onClick={() => removeProductImage(pid, idx)}
+                                          className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
+                                        >
+                                          <X className="w-2.5 h-2.5 text-white" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                    {selectedItems[pid].images.length < 5 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => fileInputsRef.current[pid]?.click()}
+                                        className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:border-[#5A1E12]/40 hover:text-[#5A1E12]/60 transition-all shrink-0"
+                                      >
+                                        <ImagePlus className="w-4 h-4" />
+                                        <span className="text-[9px] font-semibold">Add</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -648,79 +756,6 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* ── Request Type ── */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
-              Request Type <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={requestType}
-              onChange={(e) => setRequestType(e.target.value as "refund" | "partial_refund")}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#5A1E12]/40 focus:ring-2 focus:ring-[#5A1E12]/10 transition-all appearance-none cursor-pointer"
-            >
-              <option value="refund">Full Refund</option>
-              <option value="partial_refund">Partial Refund</option>
-            </select>
-          </div>
-
-          {/* ── Reason ── */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
-              Reason <span className="text-red-400">*</span>
-            </label>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={4}
-              placeholder="Describe why you are requesting a refund…"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#5A1E12]/40 focus:ring-2 focus:ring-[#5A1E12]/10 transition-all resize-none"
-            />
-          </div>
-
-          {/* ── Evidence Images ── */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
-              Evidence Images{" "}
-              <span className="normal-case font-normal text-gray-400">(optional, max 5)</span>
-            </label>
-            <p className="text-xs text-gray-400 mb-3">Attach photos of damaged/incorrect items to speed up your request.</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-              {images.map((img, idx) => (
-                <div
-                  key={idx}
-                  className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200"
-                >
-                  <Image src={img.previewUrl} alt="evidence" fill className="object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
-                  >
-                    <X className="w-3 h-3 text-white" />
-                  </button>
-                </div>
-              ))}
-              {images.length < 5 && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-[#5A1E12]/40 hover:text-[#5A1E12]/60 transition-all"
-                >
-                  <ImagePlus className="w-5 h-5" />
-                  <span className="text-[10px] font-semibold">Add photo</span>
-                </button>
-              )}
-            </div>
           </div>
 
           {/* ── Submit ── */}
@@ -771,7 +806,7 @@ function TrackTab({ prefillOrderId = "" }: TrackTabProps) {
         setTickets(null);
         return;
       }
-      setTickets(Array.isArray(data) ? data : []);
+      setTickets(Array.isArray(data.requests) ? data.requests : []);
       setSearched(true);
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -864,10 +899,24 @@ function TrackTab({ prefillOrderId = "" }: TrackTabProps) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+// ─── Policy sections (sidebar ToC) ───────────────────────────────────────────
+
+const POLICY_SECTIONS = [
+  { id: "consumer-guarantees",  label: "Consumer Guarantees" },
+  { id: "major-minor",          label: "Major vs Minor Failures" },
+  { id: "change-of-mind",       label: "Change-of-Mind Returns" },
+  { id: "how-to-request",       label: "How to Request a Refund" },
+  { id: "timeframes",           label: "Timeframes" },
+  { id: "return-shipping",      label: "Return Shipping" },
+  { id: "refund-method",        label: "Refund Method" },
+  { id: "exclusions",           label: "Exclusions" },
+  { id: "disputes",             label: "Disputes" },
+  { id: "governing-law",        label: "Governing Law" },
+];
+
 export default function GuestRefundPage() {
   const [activeTab, setActiveTab] = useState<"submit" | "track">("submit");
   const [trackPrefillId, setTrackPrefillId] = useState("");
-  // Bump key to force TrackTab to re-mount with fresh prefill
   const [trackKey, setTrackKey] = useState(0);
 
   const handleSubmitSuccess = (ticketId: string, submittedOrderId: string) => {
@@ -877,53 +926,206 @@ export default function GuestRefundPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] flex flex-col">
+    <div className="bg-[#f3e9dd]">
 
-      {/* ─── Top bar ─────────────────────────────────────────────────── */}
-      <header className="bg-[#5A1E12] px-5 py-4 flex items-center gap-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-[#ead7b7]/70 hover:text-[#ead7b7] text-sm transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Home
-        </Link>
-        <div className="flex-1" />
-        {/* <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#ead7b7]/15 flex items-center justify-center">
-            <ReceiptText className="w-4 h-4 text-[#ead7b7]" />
-          </div>
-          <span className="text-[#ead7b7]/80 text-sm font-semibold hidden sm:block">
-            Guest Refund Portal
-          </span>
-        </div> */}
-      </header>
+      {/* ─── Hero ──────────────────────────────────────────────────────── */}
+      <div className="relative min-h-[40vh] overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center">
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-4 py-20 md:py-40 gap-6">
+          <h1 className="text-5xl font-bold">Refund Policy</h1>
+          <p className="text-lg max-w-2xl">
+            Understand your rights and how refunds, returns, and exchanges are handled on the Made in Arnhem Land marketplace.
+          </p>
+          <a
+            href="#refund-form"
+            className="mt-2 inline-flex items-center gap-2 bg-[#ead7b7] text-[#5A1E12] font-bold px-8 py-3.5 rounded-full hover:bg-white transition-colors text-sm"
+          >
+            <ReceiptText className="w-4 h-4" /> Request a Refund
+          </a>
+        </div>
+      </div>
 
-      {/* ─── Content ─────────────────────────────────────────────────── */}
-      <main className="flex-1 flex items-start justify-center px-4 py-10">
-        <div className="w-full max-w-2xl">
+      {/* ─── Policy content ────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row gap-10 md:gap-20 pt-20 pb-20 px-6 md:px-16">
 
-          {/* Page title */}
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#5A1E12] leading-tight">
-              Refund Requests
-            </h1>
-            <p className="text-sm text-gray-500 mt-1.5">
-              Submit a new refund request or track an existing one using your Order ID and email.
+        {/* Sidebar — Table of Contents */}
+        <aside className="w-full md:w-64 lg:w-72 md:sticky md:top-32 h-fit">
+          <h2 className="font-bold mb-4 text-2xl">Table of Contents</h2>
+          <ul className="space-y-3 text-gray-800">
+            {POLICY_SECTIONS.map((item) => (
+              <li
+                key={item.id}
+                className="bg-[#D0BFB3] rounded-2xl hover:bg-[#440C03] hover:text-white transition"
+              >
+                <a
+                  href={`#${item.id}`}
+                  className="flex items-center gap-3 px-4 py-2"
+                >
+                  <FaFileSignature size={18} />
+                  <span>{item.label}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        {/* Main policy text */}
+        <main className="flex-1 max-w-screen-2xl mx-auto">
+          <h1 className="text-3xl font-bold mb-4">Refund Policy</h1>
+          <p className="leading-relaxed mb-2">
+            <span className="font-semibold">Effective Date:</span> 24/03/2026
+          </p>
+          <p className="leading-relaxed mb-4">
+            This policy outlines how refunds, returns, and exchanges are handled on the Made in Arnhem Land marketplace.
+          </p>
+          <p className="leading-relaxed mb-4">
+            This policy should be read together with our{" "}
+            <Link href="/term-and-conditions" className="text-[#5A1E12] font-semibold hover:underline">Terms &amp; Conditions</Link>.
+          </p>
+          <p className="leading-relaxed mb-12">
+            Nothing in this policy excludes rights under the Australian Consumer Law (ACL).
+          </p>
+
+          <section id="consumer-guarantees" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">1. Consumer Guarantees</h2>
+            <p className="leading-relaxed mb-4">
+              Under the Australian Consumer Law (ACL), buyers have automatic consumer guarantees when purchasing goods.
             </p>
-            
-            {/* Important Information */}
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                Important Information
-              </h3>
-              <div className="text-xs text-blue-800 space-y-1.5">
-                <p><strong>What you'll need:</strong> Your Order ID and the email address used at checkout.</p>
-                <p><strong>Processing time:</strong> Refund requests are typically reviewed within 2-3 business days.</p>
-                <p><strong>Refund timeline:</strong> Once approved, refunds are processed back to your original payment method within 5-10 business days.</p>
-                <p><strong>Eligible items:</strong> Items must be in original condition and returned within 30 days of purchase (excluding personalized or custom items).</p>
-              </div>
-            </div>
+            <p className="leading-relaxed mb-4">
+              Where goods fail to meet these guarantees, the seller is responsible for providing an appropriate remedy, which may include a refund, replacement, or repair, depending on the circumstances.
+            </p>
+            <p className="leading-relaxed">
+              Consumer guarantees apply in addition to any seller warranties and cannot be excluded.
+            </p>
+          </section>
+
+          <section id="major-minor" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">2. Major vs Minor Failures</h2>
+            <ul className="list-disc pl-5 space-y-3">
+              <li>
+                <span className="font-semibold">Major failure:</span> If a product has a major failure under the ACL, the buyer may choose a refund or replacement.
+              </li>
+              <li>
+                <span className="font-semibold">Minor failure:</span> If a product has a minor failure, the seller is entitled to offer a repair, replacement, or refund. If a repair is offered, it must be carried out within a reasonable time. If the seller does not remedy the issue within a reasonable time, the buyer may be entitled to a refund or replacement.
+              </li>
+            </ul>
+          </section>
+
+          <section id="change-of-mind" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">3. Change-of-Mind Returns</h2>
+            <p className="leading-relaxed mb-4">
+              Change-of-mind returns are not required under Australian Consumer Law and are only available where:
+            </p>
+            <ul className="list-disc pl-5 space-y-2 mb-4">
+              <li>the individual seller offers change-of-mind returns, and</li>
+              <li>the product listing or seller terms allow it.</li>
+            </ul>
+            <p className="leading-relaxed mb-4">Where accepted by the seller, change-of-mind items must be returned:</p>
+            <ul className="list-disc pl-5 space-y-2 mb-4">
+              <li>unused,</li>
+              <li>in original condition, and</li>
+              <li>within the timeframe specified by the seller (if any).</li>
+            </ul>
+            <p className="leading-relaxed">
+              Change-of-mind returns do not apply to faulty items and do not affect rights under the Australian Consumer Law.
+            </p>
+          </section>
+
+          <section id="how-to-request" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">4. How to Request a Refund</h2>
+            <p className="leading-relaxed mb-4">
+              To request a return or refund, buyers may be asked to provide:
+            </p>
+            <ul className="list-disc pl-5 space-y-2 mb-4">
+              <li>Order number,</li>
+              <li>Description of the issue, and</li>
+              <li>Reasonable supporting information (such as images), where applicable.</li>
+            </ul>
+            <p className="leading-relaxed">
+              Requests will be assessed in accordance with Australian Consumer Law.
+            </p>
+          </section>
+
+          <section id="timeframes" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">5. Timeframes</h2>
+            <p className="leading-relaxed mb-4">We aim to:</p>
+            <ul className="list-disc pl-5 space-y-2 mb-4">
+              <li>Acknowledge refund or return requests within 3 business days,</li>
+              <li>Resolve issues within a reasonable timeframe, and</li>
+              <li>Process approved refunds as soon as reasonably practicable once the outcome is determined.</li>
+            </ul>
+            <p className="leading-relaxed">
+              Actual timeframes may vary depending on the nature of the issue, the seller involved, and payment provider processing times.
+            </p>
+          </section>
+
+          <section id="return-shipping" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">6. Return Shipping</h2>
+            <p className="leading-relaxed mb-4">
+              Where goods are faulty, unsafe, incorrectly supplied, or otherwise fail to meet consumer guarantees, the seller is responsible for return shipping costs.
+            </p>
+            <p className="leading-relaxed">
+              For approved change-of-mind returns, return shipping costs are generally the responsibility of the buyer, unless the seller states otherwise.
+            </p>
+          </section>
+
+          <section id="refund-method" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">7. Refund Method</h2>
+            <p className="leading-relaxed">
+              Approved refunds are issued using the original payment method where possible, or by another method agreed with the buyer.
+            </p>
+          </section>
+
+          <section id="exclusions" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">8. Exclusions</h2>
+            <p className="leading-relaxed mb-4">
+              Refunds may not apply where damage or issues arise due to misuse, neglect, or abnormal use of the product after delivery.
+            </p>
+            <p className="leading-relaxed">
+              Nothing in this section limits or excludes consumer guarantees or any rights available under the Australian Consumer Law.
+            </p>
+          </section>
+
+          <section id="disputes" className="scroll-mt-32 mb-10">
+            <h2 className="text-2xl font-bold mb-2">9. Disputes</h2>
+            <p className="leading-relaxed mb-4">
+              If a refund or return issue cannot be resolved directly with the seller, the Marketplace support team may assist by facilitating communication and mediation.
+            </p>
+            <p className="leading-relaxed">
+              The Marketplace does not determine legal liability or override statutory consumer rights.
+            </p>
+          </section>
+
+          <section id="governing-law" className="scroll-mt-32 mb-12">
+            <h2 className="text-2xl font-bold mb-2">10. Governing Law</h2>
+            <p className="leading-relaxed">
+              This policy is governed by the laws of the Northern Territory, Australia and applicable Commonwealth laws.
+            </p>
+          </section>
+
+          {/* Bottom CTA */}
+          <div className="flex justify-start">
+            <a
+              href="#refund-form"
+              className="inline-flex items-center gap-2 bg-[#5A1E12] text-[#ead7b7] font-bold px-8 py-3.5 rounded-full hover:bg-[#4a1810] transition-colors text-sm"
+            >
+              <ReceiptText className="w-4 h-4" /> Request a Refund
+            </a>
+          </div>
+        </main>
+      </div>
+
+      {/* ─── Refund Form ───────────────────────────────────────────────── */}
+      <div id="refund-form" className="scroll-mt-10 bg-[#FAF7F2] px-4 py-16">
+        <div className="w-full max-w-2xl mx-auto">
+
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#5A1E12] leading-tight">
+              Submit or Track a Refund Request
+            </h2>
+            <p className="text-sm text-gray-500 mt-1.5">
+              Use your Order ID and the email used at checkout.
+            </p>
           </div>
 
           {/* Tab switcher */}
@@ -950,27 +1152,26 @@ export default function GuestRefundPage() {
             </button>
           </div>
 
-          {/* Tab content */}
+          {/* Tab content — both always mounted to preserve state on tab switch */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-            {activeTab === "submit" ? (
+            <div className={activeTab === "submit" ? undefined : "hidden"}>
               <SubmitTab onSuccess={handleSubmitSuccess} />
-            ) : (
+            </div>
+            <div className={activeTab === "track" ? undefined : "hidden"}>
               <TrackTab key={trackKey} prefillOrderId={trackPrefillId} />
-            )}
+            </div>
           </div>
 
-        </div>
-      </main>
+          <p className="text-center text-sm text-gray-400 mt-8">
+            Have an account?{" "}
+            <Link href="/login" className="text-[#5A1E12] font-semibold hover:underline">
+              Log in
+            </Link>
+          </p>
 
-      {/* ─── Footer ──────────────────────────────────────────────────── */}
-      <footer className="py-6 text-center">
-        <p className="text-sm text-gray-400">
-          Have an account?{" "}
-          <Link href="/login" className="text-[#5A1E12] font-semibold hover:underline">
-            Log in
-          </Link>
-        </p>
-      </footer>
+        </div>
+      </div>
+
     </div>
   );
 }

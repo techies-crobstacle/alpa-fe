@@ -2088,15 +2088,16 @@ export default function Header() {
             aria-hidden="true"
             className="absolute inset-0 bg-[#EAD7B7]/98 backdrop-blur-lg border pointer-events-none"
             style={{
-              borderRadius: isSticky ? '0px' : '9999px',
+              clipPath: isSticky ? 'inset(0 0 0 0 round 0px)' : 'inset(0 0 0 0 round 9999px)',
               borderColor: isSticky ? 'transparent' : 'rgba(90, 30, 18, 0.10)',
               boxShadow: isSticky
                 ? '0 4px 24px rgba(90,30,18,0.13), inset 0 -1px 0 rgba(90,30,18,0.10)'
                 : '0 8px 32px rgba(90,30,18,0.10)',
-              transition: 'border-radius 250ms cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 250ms cubic-bezier(0.25,0.46,0.45,0.94), border-color 250ms cubic-bezier(0.25,0.46,0.45,0.94)',
-              willChange: 'border-radius, box-shadow',
+              transition: 'clip-path 350ms cubic-bezier(0.4,0,0.2,1), box-shadow 350ms cubic-bezier(0.4,0,0.2,1), border-color 350ms cubic-bezier(0.4,0,0.2,1)',
+              willChange: 'clip-path',
+              transform: 'translateZ(0)',
             }}
-          />
+           />
         {/* Logo */}
         <Link href="/" className="relative z-10 font-bold transition-transform hover:scale-105 active:scale-95 shrink-0">
           <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-10 md:w-14" priority />

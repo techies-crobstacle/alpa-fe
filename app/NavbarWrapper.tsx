@@ -18,7 +18,6 @@ export default function NavbarWrapper() {
     pathname === "/order-confirmation" ||
     pathname === "/logout-callback" ||
     pathname === "/signup-otp" ||
-    pathname === "/guest/refund" ||
     pathname === "/guest/order-success" ||
     pathname === "/guest/track-order";
 
