@@ -645,7 +645,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
       await apiClient.post('/users/addresses', addressData);
       await fetchSavedAddresses(); // Refresh the saved addresses list
       setSaveAsDefault(false);
-      toast.success("✅ Address saved successfully!", {
+      toast.success("Address saved successfully!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,

@@ -65,12 +65,25 @@ export interface CartCalculations {
   };
 }
 
+/** Pre-computed totals the backend returns per shipping method */
+export interface ShippingCalculation {
+  shippingMethodId: string;
+  baseShippingCost: number;
+  sellerCount: number;
+  totalShippingCost: number;
+  subtotal: number;
+  gstAmount: number;
+  grandTotal: number;
+}
+
 export interface EnhancedCartData {
   success: boolean;
   cart: CartItem[];
   availableShipping: ShippingOption[];
   gst: GST;
   calculations: CartCalculations;
+  /** Keyed by shipping method id — backend pre-computes totals per option */
+  shippingCalculations?: Record<string, ShippingCalculation>;
 }
 
 export function useEnhancedCart() {
@@ -117,12 +130,46 @@ export function useEnhancedCart() {
         
         // Fetch real shipping methods from backend
         const availableShipping = await getShippingMethods();
-        
+
+        // ── Build shippingCalculations for guest (parallel calls per method) ──
+        const guestItemsPayload = cartItems.map(i => ({ productId: i.productId, quantity: i.quantity }));
+        const shippingCalcEntries = await Promise.all(
+          availableShipping.map(async (method) => {
+            try {
+              const res = await fetch('https://alpa-be.onrender.com/api/cart/calculate-guest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: guestItemsPayload, shippingMethodId: method.id }),
+              });
+              if (!res.ok) return null;
+              const data = await res.json();
+              // Backend may nest under data.calculations or data.shippingCalculations[id]
+              const c = data.calculations || {};
+              const sc = data.shippingCalculations?.[method.id] || {};
+              return [method.id, {
+                shippingMethodId: method.id,
+                baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? 0),
+                sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
+                totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? 0),
+                subtotal: Number(sc.subtotal ?? c.subtotal ?? subtotal),
+                gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
+                grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? subtotal),
+              }] as [string, ShippingCalculation];
+            } catch {
+              return null;
+            }
+          })
+        );
+        const shippingCalculations: Record<string, ShippingCalculation> = Object.fromEntries(
+          shippingCalcEntries.filter((e): e is [string, ShippingCalculation] => e !== null)
+        );
+
         // Create guest cart data structure
         const guestCartData: EnhancedCartData = {
           success: true,
           cart: cartItems,
           availableShipping: availableShipping,
+          shippingCalculations: Object.keys(shippingCalculations).length > 0 ? shippingCalculations : undefined,
           gst: {
             id: 'default_gst',
             name: 'GST',
@@ -216,9 +263,8 @@ export function useEnhancedCart() {
     }
   }, []);
 
-  // Calculate real-time totals based on selected shipping
+  // Calculate real-time totals — prefer backend shippingCalculations when available
   const calculateTotals = () => {
-    // If we have cartData but no selectedShipping yet, use the one from cartData if available
     let currentShipping = selectedShipping;
     if (!currentShipping && cartData?.calculations?.selectedShipping) {
       currentShipping = cartData.calculations.selectedShipping;
@@ -234,18 +280,32 @@ export function useEnhancedCart() {
       };
     }
 
-    // Compute subtotal directly from cart items so optimistic add/remove/qty
-    // changes are reflected instantly — no need to wait for a server re-fetch
-    // to return updated calculations.subtotal.
-    const subtotal = cartData.cart.reduce(
+    // ── Always compute local subtotal as a safe fallback ──
+    const localSubtotal = cartData.cart.reduce(
       (sum, item) => sum + parseFloat(item.product.price || '0') * item.quantity,
       0
     );
-    const shippingCost = currentShipping ? parseFloat(currentShipping.cost || '0') : 0;
-    const gstPercentage = 10; // GST rate for display — prices are already GST-inclusive
 
-    // Prices are GST-inclusive. Extract the GST component (Price ÷ 11).
-    // Grand total = subtotal + shipping (no additional GST added on top).
+    // ── Use backend pre-computed values when shippingCalculations is present ──
+    if (currentShipping && cartData.shippingCalculations) {
+      const calc = cartData.shippingCalculations[currentShipping.id];
+      if (calc) {
+        // Always recompute subtotal from live cart items (handles optimistic qty updates).
+        // Only trust the backend for shippingCost — it correctly multiplies by seller count.
+        const subtotal = localSubtotal;
+        const shippingCost = !isNaN(Number(calc.totalShippingCost)) ? Number(calc.totalShippingCost) : (currentShipping ? parseFloat(currentShipping.cost || '0') : 0);
+        const gstPercentage = cartData.gst?.percentage ? parseFloat(cartData.gst.percentage) : 10;
+        const grandTotal = subtotal + shippingCost;
+        const gstAmount = grandTotal / 11;
+
+        return { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage };
+      }
+    }
+
+    // ── Fallback: compute locally (guest mode / no shippingCalculations) ──
+    const subtotal = localSubtotal;
+    const shippingCost = currentShipping ? parseFloat(currentShipping.cost || '0') : 0;
+    const gstPercentage = cartData.gst?.percentage ? parseFloat(cartData.gst.percentage) : 10;
     const grandTotal = subtotal + shippingCost;
     const gstAmount = grandTotal / 11;
 

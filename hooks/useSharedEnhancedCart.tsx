@@ -136,6 +136,7 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
         delete qtyDebounceTimers.current[productId];
         try {
           await cartData.updateQuantity(productId, newQuantity);
+          // Optimistic update already reflects the change — no full refetch needed
           triggerUpdate();
         } catch (error) {
           console.error('Enhanced update quantity error:', error);
@@ -154,6 +155,8 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
 
     try {
       const result = await cartData.removeItem(productId);
+      // Re-fetch so shippingCalculations reflects the new cart total
+      await cartData.fetchCartData(true);
       triggerUpdate();
       return result;
     } catch (error) {

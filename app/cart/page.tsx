@@ -97,6 +97,7 @@ export default function Page() {
   // Get calculated totals
   const { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage } = calculateTotals;
   const [syncTrigger, setSyncTrigger] = useState(0);
+  const [summaryRefreshing, setSummaryRefreshing] = useState(false);
 
   // Recompute discount dynamically so display stays in sync when quantities change
   const couponDiscount = appliedCoupon
@@ -121,7 +122,7 @@ export default function Page() {
     }
   }, [subtotal, appliedCoupon]);
 
-  // Handle quantity update
+  // Handle quantity update — optimistic, no summary overlay needed
   const handleQuantityUpdate = async (productId: string, newQuantity: number) => {
     setUpdatingItems((prev) => new Set(prev).add(productId));
     try {
@@ -138,9 +139,11 @@ export default function Page() {
   // Handle remove item
   const handleRemoveItem = async (productId: string) => {
     setUpdatingItems((prev) => new Set(prev).add(productId));
+    setSummaryRefreshing(true);
     try {
       await removeItem(productId);
     } finally {
+      setSummaryRefreshing(false);
       setUpdatingItems((prev) => {
         const newSet = new Set(prev);
         newSet.delete(productId);
@@ -431,6 +434,14 @@ export default function Page() {
                 {/* Decorative background grain */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-bl from-white/20 to-transparent rounded-full -mr-16 -mt-16 pointer-events-none" />
 
+                {/* Refreshing overlay — shown while backend re-computes shipping after a cart change */}
+                {(summaryRefreshing || refreshing) && (
+                  <div className="absolute inset-0 z-50 rounded-4xl bg-[#EBE5D9]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+                    <Loader className="h-8 w-8 animate-spin text-[#8B5E3C]" />
+                    <p className="text-sm font-medium text-[#6D5443]">Updating totals…</p>
+                  </div>
+                )}
+
                 <div className="mb-8 relative z-10">
                     <h2 className="text-3xl font-serif text-[#2C1810]">Summary</h2>
                 </div>
@@ -464,7 +475,9 @@ export default function Page() {
                                     <p className="text-xs text-[#8B5E3C]">{shipping.estimatedDays}</p>
                                 </div>
                             </div>
-                            <span className="font-bold text-[#4A3728]">${parseFloat(shipping.cost).toFixed(2)}</span>
+                            <span className="font-bold text-[#4A3728]">
+                                ${(Number(cartData?.shippingCalculations?.[shipping.id]?.totalShippingCost) || parseFloat(shipping.cost || '0')).toFixed(2)}
+                            </span>
                         </div>
                     </label>
                     ))}

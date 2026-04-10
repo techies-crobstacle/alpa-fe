@@ -1117,7 +1117,13 @@ export default function GuestCheckoutForm() {
               <h3 className="text-base font-semibold text-[#5A1E12] mb-4">Shipping Method</h3>
               {fieldErrors.shippingMethodId && <p className="mb-2 text-xs text-red-500">{fieldErrors.shippingMethodId}</p>}
               <div className="space-y-3">
-                {shippingMethods.map((method) => (
+                {shippingMethods.map((method) => {
+                  const calc = cartData?.shippingCalculations?.[method.id];
+                  const displayCost = calc?.totalShippingCost != null
+                    ? Number(calc.totalShippingCost)
+                    : parseFloat(method.cost || "0");
+                  const sellerCount = calc?.sellerCount ?? 1;
+                  return (
                   <label key={method.id}
                     className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       selectedShipping?.id === method.id ? "border-[#5A1E12] bg-[#5A1E12]/5" : "border-[#5A1E12]/15 hover:border-[#5A1E12]/40"
@@ -1127,12 +1133,18 @@ export default function GuestCheckoutForm() {
                     <div className="flex-1">
                       <p className="font-medium text-sm text-[#3b1a08]">{method.name}</p>
                       {method.estimatedDays && (
-                        <p className="text-xs text-[#5A1E12]/60">Est. {method.estimatedDays} business days</p>
+                        <p className="text-xs text-[#5A1E12]/60">
+                          Est. {method.estimatedDays.replace(/\s*business\s*days?\s*$/i, "")} business days
+                        </p>
                       )}
+                      {/* {sellerCount > 1 && (
+                        <p className="text-xs text-[#5A1E12]/50">×{sellerCount} sellers · ${parseFloat(method.cost).toFixed(2)} each</p>
+                      )} */}
                     </div>
-                    <span className="font-semibold text-sm text-[#5A1E12]">${parseFloat(method.cost).toFixed(2)}</span>
+                    <span className="font-semibold text-sm text-[#5A1E12]">${displayCost.toFixed(2)}</span>
                   </label>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
