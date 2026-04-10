@@ -187,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       window.location.href =
         "https://alpa-dashboard.vercel.app/logout-callback?redirect=" +
-        encodeURIComponent("https://apla-fe.vercel.app/login");
+        encodeURIComponent("https://apla-fe.vercel.app");
     }
   };
 

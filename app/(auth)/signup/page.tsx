@@ -297,32 +297,32 @@ export default function SignupPage() {
   };
 
   return (
-    
-    <main className="min-h-screen w-full overflow-hidden bg-linear-to-r
-  from-[#440C03]
-  via-[#440C03]
-  to-[#440C03]">
-      {/* Left side - Form */}
-      <div className="flex min-h-screen max-w-screen-2xl ml-auto pl-20">
-      <section
-        className="
-  w-full md:w-1/2 
-  px-1 md:px-20 text-white
-"
-      >
-        <div className="absolute top-6 left-4 md:left-8">
+    <main className="relative min-h-screen w-full overflow-hidden text-white">
+      <Image
+        src="/images/top2.jpg"
+        alt="Auth Visual"
+        fill
+        className="hidden object-contain object-[150%_center] lg:block"
+        priority
+      />
+      <div className="absolute inset-0 bg-[#440C03] lg:hidden" />
+      <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(90deg,_#440C03_0%,_#440C03_44%,_rgba(68,12,3,0.55)_68%,_rgba(68,12,3,0)_100%)]" />
+
+      <section className="relative z-10 flex min-h-screen w-full items-start px-6 md:pt-20 pt-10 pb-12 sm:px-10 md:px-16 lg:px-20">
+        <div className="w-full max-w-lg md:pl-20">
+        <div className="relative mb-6 md:mb-0 md:absolute md:top-6 md:left-8">
           <Link href="/">
             <Image
               src="/images/navbarLogo.png"
               alt="Logo"
               width={90}
               height={90}
-              className="hover:opacity-90 transition-opacity w-20"
+              className="w-14 h-14 md:w-20 md:h-20 hover:opacity-90 transition-opacity"
             />
           </Link>
         </div>
 
-        <div className="max-w-lg py-20">
+        <div className="w-full">
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">
             Create new Account
           </h1>
@@ -648,24 +648,8 @@ export default function SignupPage() {
             </button>
           </form>
         </div>
+        </div>
       </section>
-
-      {/* Right side - Image */}
-      <section className="relative w-1/2">
-        <Image
-          src="/images/top2.jpg"
-          alt="Auth Visual"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div
-          className="absolute inset-0 bg-linear-to-r
-               from-[#440C03] via-[#440C03]/40 to-transparent"
-        ></div>
-      </section>
-      </div>
     </main>
-    
   );
 }

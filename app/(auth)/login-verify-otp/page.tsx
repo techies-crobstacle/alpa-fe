@@ -244,18 +244,18 @@ const handleSubmit = async (e: React.FormEvent) => {
   };
 
   return (
-    <main className="min-h-screen w-full flex flex-col lg:flex-row overflow-hidden">
+    <main className="min-h-screen w-full flex flex-col lg:flex-row overflow-hidden bg-[#7A2F12]">
       {/* LEFT PANEL */}
-      <section className="relative w-full lg:w-1/2 flex flex-col justify-center px-6 md:px-12 lg:px-16 text-white bg-linear-to-r from-[#7A2F12] via-[#8E3A18] to-[#9B3F1A]">
+      <section className="relative min-h-screen w-full lg:w-1/2 flex flex-col justify-center px-6 md:px-12 lg:px-16 text-white bg-linear-to-r from-[#7A2F12] via-[#8E3A18] to-[#9B3F1A]">
         {/* Logo */}
-        <div className="absolute top-6 left-6">
+        <div className="relative mt-3 mb-3 w-fit md:absolute md:top-6 md:left-6 md:mt-0 md:mb-0">
           <Link href="/">
             <Image
               src="/images/navbarLogo.png"
               alt="Logo"
               width={70}
               height={70}
-              className="hover:scale-105 transition-transform"
+              className="w-14 h-14 md:w-[70px] md:h-[70px] hover:scale-105 transition-transform"
               priority
             />
           </Link>
@@ -273,7 +273,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
 
         {/* Content */}
-        <div className="max-w-md mx-auto w-full py-12">
+        <div className="max-w-md mx-auto w-full py-4 md:py-12">
           {/* Email Display */}
           <div className="mb-8 p-4 bg-white/10 rounded-2xl border border-white/20">
             <div className="flex items-center gap-3">

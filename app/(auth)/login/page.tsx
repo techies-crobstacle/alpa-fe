@@ -5,11 +5,11 @@ import { useCart } from "@/context/CartContext";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { syncGuestCartAfterLogin } from "@/lib/guestCartUtils";
 import { motion, AnimatePresence } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 
 export default function LoginPage() {
   const url = "https://alpa-be.onrender.com";
@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  const { setUserDirect } = useAuth(); // Use setUserDirect instead of fetchUser
+  const { setUserDirect } = useAuth();
   const { notifyLogin } = useCart();
   const { fetchCartData } = useSharedEnhancedCart();
 
@@ -49,19 +49,12 @@ export default function LoginPage() {
         return;
       }
 
-      /**
-       * CASE 1: OTP REQUIRED
-       */
       if (data.requiresVerification) {
         router.push(`/login-verify-otp?email=${data.email || email}`);
         return;
       }
 
-      /**
-       * CASE 2: TOKEN ALREADY VALID (NO OTP)
-       */
       if (data.token && data.user) {
-        // Block admin accounts from logging in via this portal
         if (data.role === "ADMIN" || data.user?.role === "ADMIN") {
           setError("This portal is not for Admin login. Please use the Admin dashboard.");
           setShowModal(false);
@@ -70,9 +63,7 @@ export default function LoginPage() {
 
         localStorage.setItem("alpa_token", data.token);
         setUserDirect(data.user);
-        // Sync any guest cart items into the user's server cart
         await syncGuestCartAfterLogin(data.token);
-        // Reload server cart into both cart stores.
         await notifyLogin(data.token);
         await fetchCartData(true);
         router.push("/");
@@ -80,8 +71,6 @@ export default function LoginPage() {
       }
 
       console.log("LOGIN RESPONSE:", data);
-
-      // fallback safety
       setError("Unexpected login response");
     } catch (err) {
       setError("Something went wrong");
@@ -92,8 +81,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen w-full flex overflow-hidden">
-      {/* ── Login Loading Modal ── */}
+    <main className="relative min-h-screen w-full overflow-hidden text-white min-[1360px]:bg-[#440C03]">
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -118,7 +106,7 @@ export default function LoginPage() {
                   </svg>
                 </div>
                 <div className="text-center">
-                  <p className="font-bold text-gray-800 text-lg">Logging you in…</p>
+                  <p className="font-bold text-gray-800 text-lg">Logging you in...</p>
                   <p className="text-sm text-gray-400 mt-1">Please wait a moment</p>
                 </div>
               </div>
@@ -126,62 +114,63 @@ export default function LoginPage() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* LEFT PANEL */}
-      <section
-        className="relative w-1/2 flex flex-col justify-center px-20 text-white
-        bg-linear-to-r from-[#440C03] via-[#440C03] to-[#440C03]"
-      >
-        {/* Logo */}
-        <Link href="/" className="absolute top-8 left-8">
+
+      <Image
+        src="/images/top2.jpg"
+        alt="Auth Visual"
+        fill
+        className="hidden object-contain object-[130%_center] lg:block"
+        priority
+      />
+
+      <div className="absolute inset-0 bg-[#440C03] lg:hidden" />
+      <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(90deg,_#440C03_0%,_#440C03_44%,_rgba(68,12,3,0.55)_68%,_rgba(68,12,3,0)_100%)]" />
+
+      <section className="relative z-10 flex min-h-screen w-full items-center px-6 py-20 sm:px-10 md:px-16 lg:px-20">
+        <Link href="/" className="absolute top-6 left-6 sm:top-8 sm:left-8">
           <Image
             src="/images/navbarLogo.png"
             alt="Logo"
             width={90}
             height={90}
+            className="w-14 h-14 md:w-[90px] md:h-[90px]"
           />
         </Link>
 
-        {/* Content */}
-        <div className="max-w-md">
-          <p className="uppercase text-xs tracking-widest mb-4 opacity-80">
-            Start for free
-          </p>
-
-          <h1 className="text-4xl font-bold mb-2">Log into your account</h1>
+        <div className="w-full max-w-md">
+          <p className="uppercase text-xs tracking-widest mb-4 opacity-80">Start for free</p>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Log into your account</h1>
 
           <p className="text-sm mb-10 opacity-80">
             New here?{" "}
-            <Link
-              href="/signup"
-              className="font-semibold underline hover:opacity-100 transition"
-            >
+            <Link href="/signup" className="font-semibold underline hover:opacity-100 transition">
               Sign up
             </Link>
           </p>
 
-          {/* Form */}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <input
               type="email"
               placeholder="Email"
               value={email}
-              className="w-120 rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
+              className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 placeholder="Password"
-                className="w-120 rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
+                className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
                 tabIndex={-1}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
@@ -194,30 +183,12 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-120 mt-6 bg-white text-[#7A2F12] font-semibold
-              rounded-full py-3 flex items-center justify-center gap-2"
+              className="w-full mt-6 bg-white text-[#7A2F12] font-semibold rounded-full py-3 flex items-center justify-center gap-2"
             >
-              {loading ? "Logging in..." : "Login →"}
+              {loading ? "Logging in..." : "Login \u2192"}
             </button>
           </form>
         </div>
-      </section>
-
-      {/* RIGHT IMAGE PANEL */}
-      <section className="relative w-1/2">
-        <Image
-          src="/images/top2.jpg"
-          alt="Auth Visual"
-          fill
-          className="object-cover"
-          priority
-        />
-
-        {/* Gradient blend */}
-        <div
-          className="absolute inset-0 bg-linear-to-r
-          from-[#440C03] via-[#440C03]/40 to-transparent"
-        ></div>
       </section>
     </main>
   );

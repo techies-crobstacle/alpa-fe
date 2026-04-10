@@ -582,9 +582,15 @@ export default function ArtistOnboardingForm() {
   // ─── AUTH SCREEN (Login / Resume / Forgot / Reset) ────────────────────────
   if (mode !== 'onboarding') {
     return (
-      <div className="min-h-screen bg-[#EAD7B7] flex items-center justify-center px-4 py-16">
-        <Link href="/" className="absolute top-8 left-8">
-          <Image src="/images/navbarLogo.png" alt="Logo" width={90} height={90} />
+      <div className="relative min-h-screen bg-[#EAD7B7] flex flex-col items-center justify-center px-4 py-12 sm:py-16">
+        <Link href="/" className="mb-6 block w-fit md:absolute md:top-8 md:left-8 md:mb-0">
+          <Image
+            src="/images/navbarLogo.png"
+            alt="Logo"
+            width={90}
+            height={90}
+            className="w-14 h-14 md:w-[90px] md:h-[90px]"
+          />
         </Link>
 
         <div className="w-full max-w-md">
@@ -759,13 +765,19 @@ export default function ArtistOnboardingForm() {
 
   // ─── MAIN ONBOARDING FORM ─────────────────────────────────────────────────
   return (
-    <div>
-      <Link href="/" className="absolute top-8 left-8">
-        <Image src="/images/navbarLogo.png" alt="Logo" width={90} height={90} />
+    <div className="relative min-h-screen bg-[#EAD7B7] py-8 sm:py-12 px-4">
+      <Link href="/" className="mx-auto mb-4 block w-fit md:absolute md:top-8 md:left-8 md:mx-0 md:mb-0">
+        <Image
+          src="/images/navbarLogo.png"
+          alt="Logo"
+          width={90}
+          height={90}
+          className="w-14 h-14 md:w-[90px] md:h-[90px]"
+        />
       </Link>
 
-      <div className="min-h-screen bg-[#EAD7B7] py-12 px-4">
-        <div className="flex flex-col justify-center items-center mb-8">
+      <div>
+        <div className="mb-8 flex flex-col items-center justify-center text-center">
           <h2 className="text-3xl font-extrabold text-[#5A1E12] mb-2 tracking-tight">
             Start your journey as a Seller
           </h2>
@@ -809,7 +821,7 @@ export default function ArtistOnboardingForm() {
             {/* Accuracy Notice */}
             <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 mb-6">
               <span className="text-amber-500 text-lg mt-0.5">ⓘ</span>
-              <p className="text-sm text-amber-800 leading-relaxed">
+              <p className="md:text-sm text-xs  text-amber-800 leading-relaxed">
                 <span className="font-semibold">Please ensure all details are accurate.</span>{' '}
                 The information you provide including your business name, store profile, and contact details may be
                 visible to buyers and other users on the platform. Incorrect or misleading information may result in
@@ -943,11 +955,11 @@ export default function ArtistOnboardingForm() {
                 </div>
                 <div>
                   <label className={labelCls}>ABN *</label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <input type="text" name="abn" value={formData.abn} onChange={(e) => { handleInputChange(e); setAbnVerified(false); }}
-                      placeholder="11-digit ABN" className={`flex-1 px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A1E12]/40 bg-white text-[#5A1E12] placeholder-[#5A1E12]/40 transition-all ${errors.abn ? 'border-red-400' : 'border-[#5A1E12]/20'}`} />
+                      placeholder="11-digit ABN" className={`min-w-0 flex-1 px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A1E12]/40 bg-white text-[#5A1E12] placeholder-[#5A1E12]/40 transition-all ${errors.abn ? 'border-red-400' : 'border-[#5A1E12]/20'}`} />
                     <button type="button" onClick={handleValidateABN} disabled={loading || abnVerified}
-                      className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${abnVerified ? 'bg-[#5A1E12]/10 text-[#5A1E12] border border-[#5A1E12]/30' : 'bg-[#5A1E12] hover:bg-[#4a180f] text-white disabled:opacity-60'}`}>
+                      className={`w-full px-4 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap sm:w-auto ${abnVerified ? 'bg-[#5A1E12]/10 text-[#5A1E12] border border-[#5A1E12]/30' : 'bg-[#5A1E12] hover:bg-[#4a180f] text-white disabled:opacity-60'}`}>
                       {abnVerified ? '✓ Verified' : loading ? 'Checking…' : 'Verify ABN'}
                     </button>
                   </div>
@@ -1256,11 +1268,11 @@ export default function ArtistOnboardingForm() {
             {/* Navigation */}
             <div className="flex justify-between mt-8 pt-6 border-t border-[#5A1E12]/15">
               <button onClick={handlePrevious} disabled={currentStep === 1 || currentStep === 7}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all shadow-sm border ${currentStep === 1 || currentStep === 7 ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed' : 'border-[#5A1E12]/30 bg-[#EAD7B7] text-[#5A1E12] hover:bg-[#5A1E12]/10'}`}>
+                className={`px-4 py-2.5 text-sm sm:px-6 sm:py-3 sm:text-base rounded-xl font-semibold transition-all shadow-sm border ${currentStep === 1 || currentStep === 7 ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed' : 'border-[#5A1E12]/30 bg-[#EAD7B7] text-[#5A1E12] hover:bg-[#5A1E12]/10'}`}>
                 Previous
               </button>
               <button onClick={handleNext} disabled={loading || (currentStep === 6 && !tcAccepted)}
-                className={`px-8 py-3 text-white rounded-xl font-semibold shadow transition-all ${
+                className={`px-5 py-2.5 text-sm sm:px-8 sm:py-3 sm:text-base text-white rounded-xl font-semibold shadow transition-all ${
                   loading || (currentStep === 6 && !tcAccepted)
                     ? 'bg-[#5A1E12]/40 cursor-not-allowed'
                     : 'bg-[#5A1E12] hover:bg-[#4a180f]'
