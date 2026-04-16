@@ -237,8 +237,8 @@ export default function Page() {
           <span className="mb-4 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-sm font-medium backdrop-blur-md">
             Review your items
           </span>
-          <h1 className="text-6xl font-bold mb-6 tracking-tight">Your Cart Summary</h1>
-          <p className="text-xl text-gray-200 max-w-2xl leading-relaxed">
+          <h1 className="text-4xl md:text-6xl font-bold mb-2 md:mb-6 tracking-tight">Your Cart Summary</h1>
+          <p className="text-sm md:text-xl text-gray-200 max-w-2xl leading-relaxed">
             Review your selected items and proceed to checkout when you're ready.
           </p>
         </div>
@@ -287,9 +287,9 @@ export default function Page() {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr_1fr_auto] gap-6 items-center">
+                      <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr_1fr_auto] gap-4 md:gap-6 items-center">
                         {/* Product Info */}
-                        <div className="flex gap-5 items-center">
+                        <div className="flex gap-5 items-center mr-6">
                           <div className="relative w-20 h-20 md:w-20 md:h-20 rounded-lg overflow-hidden bg-[#F5F1EB] shadow-inner shrink-0">
                             <Image
                               src={item.product.featuredImage || item.product.images?.[0] || "/images/placeholder.svg"}
@@ -324,11 +324,11 @@ export default function Page() {
                             <button
                               onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1)}
                               disabled={item.quantity <= 1 || isUpdating}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-[#4A3728] disabled:opacity-30 transition-colors"
+                              className="w-3 h-3 md:w-8 md:h-8 flex items-center justify-center rounded-lg hover:bg-white text-[#4A3728] disabled:opacity-30 transition-colors"
                             >
                               <Minus size={14} />
                             </button>
-                            <span className="w-10 text-center font-medium text-[#4A3728]">
+                            <span className="w-8 md:w-10 text-center text-sm md:text-base font-medium text-[#4A3728]">
                                 {item.quantity}
                             </span>
                             <button
@@ -340,7 +340,7 @@ export default function Page() {
                                    return stock != null ? item.quantity >= stock : false;
                                  })()
                                ) || isUpdating}
-                               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-[#4A3728] disabled:opacity-30 transition-colors"
+                               className="w-3 h-3 md:w-8 md:h-8 flex items-center justify-center rounded-lg hover:bg-white text-[#4A3728] disabled:opacity-30 transition-colors"
                             >
                               <Plus size={14} />
                             </button>
@@ -361,7 +361,7 @@ export default function Page() {
                         </div>
 
                         {/* Remove */}
-                        <div className="flex justify-end">
+                        <div className="flex justify-end md:static absolute top-2 right-0">
                           <button
                             onClick={() => handleRemoveItem(item.productId)}
                             disabled={isUpdating}

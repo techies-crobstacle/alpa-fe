@@ -212,12 +212,12 @@ export default function Page() {
             Our Story
           </motion.p>
 
-          <div className="overflow-hidden mb-2">
+          <div className="overflow-hidden">
             <motion.h1
               initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="text-5xl md:text-7xl font-bold leading-tight"
+              className="text-4xl md:text-7xl font-bold leading-tight"
             >
               Built with <span className="text-[#e5d3b3]">Passion.</span>
             </motion.h1>
@@ -227,7 +227,7 @@ export default function Page() {
               initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.75, delay: 0.38, ease: [0.22, 1, 0.36, 1] }}
-              className="text-5xl md:text-7xl font-bold leading-tight"
+              className="text-4xl md:text-7xl font-bold leading-tight"
             >
               Driven by people.
             </motion.h1>
@@ -296,35 +296,35 @@ export default function Page() {
       {/* ══════════════════════════════════════════════════
           OUR STORY
       ══════════════════════════════════════════════════ */}
-      <section id="our-story" className="py-20 md:py-28 px-4">
-        <div className="max-w-7xl mx-auto flex gap-12 items-center">
+      <section id="our-story" className="py-14 md:py-28 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 md:gap-12 items-start lg:items-center">
           {/* Image */}
-          <div className="flex-6/10">
+          <div className="w-full lg:w-3/5">
             <Image
               src="/images/about2.png"
               alt="Our story"
               width={800}
               height={600}
-              className="w-full"
+               className="w-full h-auto"
             />
           </div>
 
           {/* Text */}
-          <div className="flex-4/10">
+          <div className="w-full lg:w-2/5">
             <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">
               Who We Are
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold leading-snug mb-5">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug mb-4 md:mb-5">
               A marketplace built on{" "}
               <span className="text-[#5A1E12]">values, not just products.</span>
             </h2>
-            <p className="text-gray-500 leading-relaxed mb-4">
+            <p className="text-gray-500 leading-relaxed mb-4 text-[15px] md:text-base">
               Alpa was born from a simple frustration — finding quality products
               online shouldn&apos;t feel like a gamble. We set out to build a
               platform where every listing is curated, every seller is vetted,
               and every customer feels looked after.
             </p>
-            <p className="text-gray-500 leading-relaxed mb-8">
+            <p className="text-gray-500 leading-relaxed mb-6 md:mb-8 text-[15px] md:text-base">
               From our first sale to thousands of happy deliveries, we&apos;ve
               stayed true to our founding belief: great commerce is built on
               trust. We&apos;re not just a marketplace — we&apos;re the team
@@ -355,7 +355,7 @@ export default function Page() {
       {/* ══════════════════════════════════════════════════
           STATS
       ══════════════════════════════════════════════════ */}
-      <section className="bg-[#F4E9DC] py-16 md:py-24 px-4">
+      {/* <section className="bg-[#F4E9DC] py-16 md:py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-2">
@@ -382,39 +382,123 @@ export default function Page() {
             ))}
           </div>
         </div>
+      </section> */}
+
+      <section className="bg-[#F4E9DC] py-16 md:py-24 px-4 relative overflow-hidden">
+  {/* Decorative circles */}
+  <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-[#5A1E12]/5" />
+<div className="absolute -bottom-12 -right-8 w-52 h-52 rounded-full bg-[#5A1E12]/5" />
+<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-[#5A1E12]/3" />
+
+  <div className="relative z-10 max-w-6xl mx-auto">
+    <div className="text-center mb-8 md:mb-12">
+      <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-2">
+        By The Numbers
+      </p>
+      <h2 className="text-3xl md:text-4xl font-bold">
+        Growing every day.
+      </h2>
+    </div>
+
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+      {STATS.map((s, i) => (
+        <div
+          key={s.label}
+          className={`rounded-2xl p-6 md:p-8 text-center transition-transform hover:-translate-y-1 duration-300 ${
+            i === 1 || i === 2
+              ? "bg-[#5A1E12] border border-[#5A1E12]"
+              : "bg-white border border-[#e8d5c0] shadow-sm"
+          }`}
+        >
+          <p
+            className={`text-2xl md:text-3xl font-black mb-1 ${
+              i === 1 || i === 2 ? "text-white" : "text-[#5A1E12]"
+            }`}
+          >
+            <Counter end={s.end} suffix={s.suffix} />
+          </p>
+          <p
+            className={`font-semibold text-sm mb-2 ${
+              i === 1 || i === 2 ? "text-white/80" : "text-gray-800"
+            }`}
+          >
+            {s.label}
+          </p>
+          <div
+            className={`h-0.5 w-6 rounded-full mx-auto mb-2 ${
+              i === 1 || i === 2 ? "bg-white/30" : "bg-[#5A1E12]/30"
+            }`}
+          />
+          <p
+            className={`text-xs leading-relaxed hidden md:block ${
+              i === 1 || i === 2 ? "text-white/60" : "text-gray-400"
+            }`}
+          >
+            {s.desc}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
       </section>
 
       {/* ══════════════════════════════════════════════════
           WHAT WE OFFER  (two-column challenge section)
       ══════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28 px-4 border-t border-gray-100">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          <div className="lg:sticky lg:top-24">
+      <section className="bg-white bg-[url('/images/about-pattern1.png')] bg-cover bg-center py-20 md:py-28 px-4 text-[#1a0a06]">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-start">
+          <div>
             <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-3">
-              The Challenge
+              What we offer
             </p>
-            <h2 className="text-3xl md:text-5xl font-bold leading-tight">
-              What we
+            <h2 className="text-5xl md:text-6xl font-bold text-[#3a1208] leading-[1.05] mb-8">
+              One place.
               <br />
-              Offer
+              Every <span className="text-[#803512]">thing.</span>
             </h2>
+            <p className="text-base leading-[1.75] text-[#7a6558] border-l-2 border-[#C47A5A] pl-5 max-w-xl">
+              A carefully curated marketplace where quality, convenience, and
+              trust come together in one seamless experience.
+            </p>
           </div>
-          <div className="space-y-6">
-            <p className="text-lg md:text-xl font-semibold text-gray-800 leading-relaxed">
-              We offer a carefully curated marketplace where quality,
-              convenience, and trust come together in one seamless experience.
-            </p>
-            <p className="text-gray-500 leading-relaxed">
-              From everyday essentials to specialty products, our catalogue is
-              built around real customer needs. Every category is managed by a
-              dedicated team who reviews listings, compares pricing, and ensures
-              the standards we promise are the standards you receive.
-            </p>
-            <p className="text-gray-500 leading-relaxed">
-              We also partner closely with sellers to provide tools, insights,
-              and support — so the businesses on our platform thrive, and in
-              turn, so do you.
-            </p>
+
+          <div className="flex flex-col">
+            <div className="flex items-start gap-5 py-7 border-y border-[#e8d5c0]">
+              <p className="text-xs font-medium text-[#C47A5A] min-w-7 pt-1">01</p>
+              <div>
+                <h3 className="text-base font-semibold text-[#1a0a06] mb-1.5">
+                  Curated catalogue
+                </h3>
+                <p className="text-[13px] leading-[1.65] text-[#7a6558]">
+                  Every category is managed by a dedicated team who reviews
+                  listings, compares pricing, and holds our standards firm.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-5 py-7 border-b border-[#e8d5c0]">
+              <p className="text-xs font-medium text-[#C47A5A] min-w-7 pt-1">02</p>
+              <div>
+                <h3 className="text-base font-semibold text-[#1a0a06] mb-1.5">
+                  Built around real needs
+                </h3>
+                <p className="text-[13px] leading-[1.65] text-[#7a6558]">
+                  From everyday essentials to specialty products, we stock what
+                  customers genuinely look for, nothing filler.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-5 py-7 border-b border-[#e8d5c0]">
+              <p className="text-xs font-medium text-[#C47A5A] min-w-7 pt-1">03</p>
+              <div>
+                <h3 className="text-base font-semibold text-[#1a0a06] mb-1.5">
+                  Seller partnership
+                </h3>
+                <p className="text-[13px] leading-[1.65] text-[#7a6558]">
+                  We equip sellers with tools, insights, and support so their
+                  businesses thrive, and in turn, so do you.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -422,9 +506,9 @@ export default function Page() {
       {/* ══════════════════════════════════════════════════
           OUR VALUES
       ══════════════════════════════════════════════════ */}
-      <section className="bg-[#F4E9DC] py-20 md:py-28 px-4">
+      <section className="bg-[#F4E9DC] bg-[url('/images/about-pattern4.png')] bg-cover bg-center bg-no-repeat bg-blend-soft-light py-20 md:py-28 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
+          <div className="text-center mb-8 md:mb-14">
             <p className="text-xs font-bold tracking-[0.25em] uppercase text-[#5A1E12] mb-2">
               Our Values
             </p>
@@ -455,10 +539,10 @@ export default function Page() {
           LEADERSHIP
       ══════════════════════════════════════════════════ */}
       <section className="py-20 md:py-28 px-4 bg-white border-t border-gray-100">
-        <div className="max-w-screen-2xl px-12 mx-auto">
+        <div className="max-w-screen-2xl md:px-12 mx-auto">
 
           {/* Header */}
-          <div className="flex flex-col items-center text-center mb-16">
+          <div className="flex flex-col items-center text-center mb-8 md:mb-16">
             <span className="text-xs font-bold tracking-[0.3em] uppercase text-[#5A1E12]/60 mb-3">The People Behind Alpa</span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1a0a06] leading-tight mb-4">
               Meet our <span className="text-[#5A1E12]">Leadership</span>

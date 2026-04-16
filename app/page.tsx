@@ -314,7 +314,7 @@ const Page = () => {
       <Sponsored />
 
       {/* Fetch the Product cards dynamically  */}
-      <section className="relative max-w-screen-2xl mx-auto py-20 px-12 overflow-hidden">
+      <section className="relative max-w-screen-2xl mx-auto py-20 sm:px-12 px-4 overflow-hidden">
         {/* ── ABORIGINAL PATTERN: TOP-RIGHT ── */}
         <div
           className="absolute top-0 right-0 w-72 h-72 sm:w-96 sm:h-96 pointer-events-none opacity-[0.13]"
@@ -428,7 +428,7 @@ const Page = () => {
         </div>
 
         <div>
-          <div className="flex flex-col items-center text-center mb-12">
+          <div className="flex flex-col items-center text-center sm:mb-12 mb-6">
             <span className="text-xs font-bold tracking-[0.3em] uppercase text-[#803512]/60 mb-3">
               Handpicked Collection
             </span>
@@ -799,7 +799,7 @@ const Page = () => {
 
 
       {/* STATIC VIDEO SECTION */}
-      <section className=" mx-auto px-12 bg-white pt-22 pb-28">
+      <section className=" mx-auto sm:px-12 px-4 bg-white sm:pt-22 pt-18 sm:pb-28 pb-18">
         <div className="max-w-screen-2xl mx-auto flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold tracking-[0.3em] uppercase text-[#803512]/60 mb-3">
             Experience the Land
@@ -815,7 +815,7 @@ const Page = () => {
             Immerse yourself in the world's oldest living culture — ancient
             stories, sacred land, and timeless art.
           </p>
-          <div className="relative max-w-5xl w-full h-120 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="relative max-w-5xl w-full sm:h-120 h-48 rounded-2xl overflow-hidden shadow-2xl">
             <iframe
               src="https://www.youtube.com/embed/5Szjemb24QA?si=JsPlufnKMBD809G5"
               title="YouTube video player"

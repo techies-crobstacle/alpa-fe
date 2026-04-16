@@ -256,7 +256,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                   <button
                     onClick={() => handleRemoveItem(item.productId)}
                     disabled={isUpdating}
-                    className="absolute top-3 right-3 p-1.5 rounded-full bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                    className="absolute top-3 right-3 p-1.5 rounded-full bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 transition opacity-100 md:opacity-0 md:group-hover:opacity-100 disabled:opacity-50"
                     aria-label="Remove item"
                   >
                     <X size={16} />

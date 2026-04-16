@@ -112,7 +112,7 @@ const Sponsored = () => {
     
   return (
     <div>
-      <section className="relative bg-[#632013] p-4 sm:p-6 lg:p-8  lg:pt-12 rounded-2xl lg:rounded-4xl mx-2 sm:mx-4 lg:mx-10 -mt-8 sm:-mt-12 lg:-mt-20 ">
+      <section className="relative bg-[#632013] p-4 sm:p-6 lg:p-8 lg:pt-12 rounded-2xl lg:rounded-4xl mx-4 sm:mx-4 lg:mx-10 mt-14 sm:-mt-12 lg:-mt-20 ">
         <div className="flex flex-col w-full">
           {/* CAROUSEL WRAPPER */}
           <div 
