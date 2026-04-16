@@ -133,7 +133,7 @@ const Page = () => {
   const scrollProductByOne = (direction: 1 | -1) => {
     if (productScrollRef.current) {
       const card = productScrollRef.current.children[0] as HTMLElement;
-      const gap = 24; // gap-6 = 1.5rem = 24px
+      const gap = window.innerWidth >= 1024 ? 24 : window.innerWidth >= 640 ? 16 : 12;
       const cardWidth = card ? card.offsetWidth + gap : 300;
       productScrollRef.current.scrollBy({
         left: direction * cardWidth,
@@ -184,7 +184,7 @@ const Page = () => {
           </svg> */}
 
           {/* Hero content */}
-          <div className="relative z-10 flex flex-col justify-center min-h-screen text-white px-6 sm:px-10 lg:px-24 pt-56 pb-24">
+          <div className="relative z-10 flex flex-col justify-center min-h-screen text-white px-6 sm:px-10 lg:px-24 pt-24 sm:pt-40 lg:pt-56 pb-10 sm:pb-16 lg:pb-24">
             {/* Animated badge */}
             {/* <motion.div
               initial={{ opacity: 0, y: 24 }}
@@ -314,7 +314,7 @@ const Page = () => {
       <Sponsored />
 
       {/* Fetch the Product cards dynamically  */}
-      <section className="relative max-w-screen-2xl mx-auto py-20 sm:px-12 px-4 overflow-hidden">
+      <section className="relative max-w-screen-2xl mx-auto py-10 sm:py-16 lg:py-20 sm:px-12 px-4 overflow-hidden">
         {/* ── ABORIGINAL PATTERN: TOP-RIGHT ── */}
         <div
           className="absolute top-0 right-0 w-72 h-72 sm:w-96 sm:h-96 pointer-events-none opacity-[0.13]"
@@ -489,14 +489,14 @@ const Page = () => {
             {/* Scrollable Cards */}
             <div
               ref={productScrollRef}
-              className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 scroll-smooth"
+              className="flex overflow-x-auto snap-x snap-mandatory gap-3 sm:gap-4 lg:gap-6 pb-4 scroll-smooth"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
               {productsLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
                     <div
                       key={i}
-                      className="shrink-0 snap-start w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)] animate-pulse rounded-xl border border-stone-100 shadow-sm overflow-hidden bg-white flex flex-col"
+                      className="shrink-0 snap-start w-[calc(100%-1px)] sm:w-[calc(50%-8px)] lg:w-[calc(25%-18px)] animate-pulse rounded-xl border border-stone-100 shadow-sm overflow-hidden bg-white flex flex-col"
                     >
                       {/* ── IMAGE SECTION ── */}
                       <div className="relative aspect-[6/4 bg-stone-100 overflow-hidden">
@@ -558,7 +558,7 @@ const Page = () => {
                 : limitedProducts.map((product) => (
                     <div
                       key={product.id}
-                      className="shrink-0 snap-start w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
+                      className="shrink-0 snap-start w-[calc(100%-1px)] sm:w-[calc(50%-8px)] lg:w-[calc(25%-18px)]"
                     >
                       <OptimisticProductCard
                         id={product.id}
@@ -594,7 +594,7 @@ const Page = () => {
       </section>
 
       {/* ================= SPLIT EXPLORE STRIP ================= */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 min-h-64 overflow-hidden">
+      <section className="grid grid-cols-1 lg:grid-cols-2 min-h-70 lg:min-h-64 overflow-hidden">
         {/* ── LEFT: Register as Seller ── */}
         <Link
           href="/sellerOnboarding"
@@ -799,8 +799,9 @@ const Page = () => {
 
 
       {/* STATIC VIDEO SECTION */}
-      <section className=" mx-auto sm:px-12 px-4 bg-white sm:pt-22 pt-18 sm:pb-28 pb-18">
-        <div className="max-w-screen-2xl mx-auto flex flex-col justify-center items-center text-center">
+      <section className="relative mx-auto sm:px-12 px-4 bg-[url('/images/about-pattern2.jpg')] bg-cover bg-center pt-12 sm:pt-22 pb-14 sm:pb-28">
+        <div className="absolute inset-0 bg-white/80" />
+        <div className="relative z-10 max-w-screen-2xl mx-auto flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold tracking-[0.3em] uppercase text-[#803512]/60 mb-3">
             Experience the Land
           </p>
@@ -829,10 +830,10 @@ const Page = () => {
       </section>
 
       {/* ================= BLOG SECTION ================= */}
-      <section className="bg-[#EAD7B7] py-20 md:py-28 px-4">
+      <section className="bg-[#EAD7B7] py-12 sm:py-16 md:py-28 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-14">
             <div>
               <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] uppercase text-[#803512]/60 mb-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#803512] animate-pulse" />

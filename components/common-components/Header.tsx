@@ -2068,7 +2068,7 @@ export default function Header() {
           top: isSticky ? '0px' : '24px',
           paddingLeft: isSticky ? '0px' : '48px',
           paddingRight: isSticky ? '0px' : '48px',
-          transition: 'top 250ms cubic-bezier(0.25,0.46,0.45,0.94), padding-left 250ms cubic-bezier(0.25,0.46,0.45,0.94), padding-right 250ms cubic-bezier(0.25,0.46,0.45,0.94)',
+          transition: 'top 350ms cubic-bezier(0.4,0,0.2,1), padding-left 350ms cubic-bezier(0.4,0,0.2,1), padding-right 350ms cubic-bezier(0.4,0,0.2,1)',
         }}
       >
         {/* Inner header: overflow-visible so dropdowns are not clipped.
@@ -2080,7 +2080,7 @@ export default function Header() {
             paddingRight: isSticky ? '64px' : '40px',
             paddingTop: '12px',
             paddingBottom: '12px',
-            transition: 'padding-left 250ms cubic-bezier(0.25,0.46,0.45,0.94), padding-right 250ms cubic-bezier(0.25,0.46,0.45,0.94)',
+            transition: 'padding-left 350ms cubic-bezier(0.4,0,0.2,1), padding-right 350ms cubic-bezier(0.4,0,0.2,1)',
           }}
         >
           {/* Background layer: animates border-radius/shadow/border without clipping children */}
@@ -2088,13 +2088,13 @@ export default function Header() {
             aria-hidden="true"
             className="absolute inset-0 bg-[#EAD7B7]/98 backdrop-blur-lg border pointer-events-none"
             style={{
-              clipPath: isSticky ? 'inset(0 0 0 0 round 0px)' : 'inset(0 0 0 0 round 9999px)',
+              borderRadius: isSticky ? '0px' : '40px',
               borderColor: isSticky ? 'transparent' : 'rgba(90, 30, 18, 0.10)',
               boxShadow: isSticky
                 ? '0 4px 24px rgba(90,30,18,0.13), inset 0 -1px 0 rgba(90,30,18,0.10)'
                 : '0 8px 32px rgba(90,30,18,0.10)',
-              transition: 'clip-path 350ms cubic-bezier(0.4,0,0.2,1), box-shadow 350ms cubic-bezier(0.4,0,0.2,1), border-color 350ms cubic-bezier(0.4,0,0.2,1)',
-              willChange: 'clip-path',
+              transition: 'border-radius 350ms cubic-bezier(0.4,0,0.2,1), box-shadow 350ms cubic-bezier(0.4,0,0.2,1), border-color 350ms cubic-bezier(0.4,0,0.2,1)',
+              willChange: 'border-radius',
               transform: 'translateZ(0)',
             }}
            />

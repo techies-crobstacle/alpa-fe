@@ -21,9 +21,17 @@ const Sponsored = () => {
 
   // Function to truncate text by word count
   const truncateText = (text: string, maxWords: number): string => {
+    if (!text) return '';
     const words = text.split(' ');
     if (words.length <= maxWords) return text;
     return words.slice(0, maxWords).join(' ') + '...';
+  };
+
+  // Function to truncate text by character count
+  const truncateChars = (text: string, maxChars: number): string => {
+    if (!text) return '';
+    if (text.length <= maxChars) return text;
+    return text.substring(0, maxChars) + '...';
   };
 
   // Fetch sponsored sections from API
@@ -135,9 +143,9 @@ const Sponsored = () => {
             >
               {loading ? (
                 // Loading state
-                <div className="min-w-full snap-center">
+                <div className="w-full shrink-0 snap-center">
                   <div 
-                    className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] animate-pulse"
+                    className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] animate-pulse h-135 md:h-80"
                     style={{
                       transform: "translate3d(0, 0, 0)",
                       backfaceVisibility: "hidden",
@@ -145,8 +153,8 @@ const Sponsored = () => {
                       contain: "layout style paint"
                     }}
                   >
-                    <div className="w-full md:w-1/2 h-64 md:h-80 bg-[#5A1E12]/30"></div>
-                    <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+                    <div className="w-full md:w-1/2 h-65 md:h-full bg-[#5A1E12]/30"></div>
+                    <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center h-70 md:h-full">
                       <div className="h-4 bg-[#5A1E12]/30 rounded mb-4"></div>
                       <div className="h-8 bg-[#5A1E12]/30 rounded mb-3"></div>
                       <div className="h-16 bg-[#5A1E12]/30 rounded mb-8"></div>
@@ -156,9 +164,9 @@ const Sponsored = () => {
                 </div>
               ) : error ? (
                 // Error state
-                <div className="min-w-full snap-center">
+                <div className="w-full shrink-0 snap-center">
                   <div 
-                    className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512]"
+                    className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-135 md:h-80"
                     style={{
                       transform: "translate3d(0, 0, 0)",
                       backfaceVisibility: "hidden",
@@ -166,7 +174,7 @@ const Sponsored = () => {
                       contain: "layout style paint"
                     }}
                   >
-                    <div className="w-full p-8 md:p-12 flex flex-col justify-center text-white text-center">
+                    <div className="w-full p-8 md:p-12 flex flex-col justify-center text-white text-center h-full">
                       <h2 className="text-2xl font-bold mb-3">Unable to load content</h2>
                       <p className="text-white/70">{error}</p>
                     </div>
@@ -175,9 +183,9 @@ const Sponsored = () => {
               ) : sponsoredSections.length > 0 ? (
                 // Dynamic slides from API
                 sponsoredSections.map((section, index) => (
-                  <div key={section.id} className="min-w-full snap-center">
+                  <div key={section.id} className="w-full shrink-0 snap-center">
                     <div 
-                      className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512]"
+                      className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-135 md:h-80"
                       style={{
                         transform: "translate3d(0, 0, 0)",
                         backfaceVisibility: "hidden",
@@ -185,7 +193,7 @@ const Sponsored = () => {
                         contain: "layout style paint"
                       }}
                     >
-                      <div className="relative w-full md:w-1/2 shrink-0 h-64 md:h-80 flex items-stretch">
+                      <div className="relative w-full md:w-1/2 shrink-0 h-65 md:h-full flex items-stretch">
                         {section.mediaType === 'VIDEO' ? (
                           <video
                             src={section.mediaUrl}
@@ -203,7 +211,7 @@ const Sponsored = () => {
                         )}
                         <div className="absolute inset-0 bg-black/5"></div>
                       </div>
-                      <div className="relative w-full md:w-1/2 p-8 md:p-10 flex flex-col justify-center text-white">
+                      <div className="relative w-full md:w-1/2 p-5 sm:p-7 md:p-10 flex flex-col justify-between md:justify-center text-white h-70 md:h-full">
                         <div className="absolute top-0 bottom-0 -left-10 lg:-left-16 w-12 lg:w-20 hidden md:block text-[#803512]">
                           <svg
                             viewBox="0 0 100 100"
@@ -213,27 +221,30 @@ const Sponsored = () => {
                             <path d="M 100 0 L 100 100 L 0 100 Q 50 50 0 0 Z" />
                           </svg>
                         </div>
-                        <div className="relative z-10">
-                          <div className="mb-6 absolute -top-8 right-4 md:-top-8 md:right-4">
-                            <span className="inline-flex items-center px-2 md:px-3 py-1 rounded-full bg-black/20 border border-white/10 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-100">
+                        <div className="relative z-10 w-full flex flex-col h-full">
+                          <div className="flex justify-end w-full mb-3 md:mb-4">
+                            <span className="inline-flex items-center px-2 md:px-3 py-1 rounded-full bg-black/40 shadow-sm border border-white/10 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-100">
                               <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-orange-400 mr-1 md:mr-2 animate-pulse"></span>
                               Sponsored
                             </span>
                           </div>
-                          <h2 className="text-3xl lg:text-4xl font-bold mb-3 leading-tight">
-                            {truncateText(section.title, 6)}
-                          </h2>
-                          <p className="text-orange-50/80 text-sm lg:text-base leading-relaxed mb-8 max-w-md">
-                            {truncateText(section.description, 15)}
-                          </p>
-                          <a
-                            href={section.ctaUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-block bg-[#5A1E12] text-white px-8 py-3 rounded-full text-xs font-bold uppercase shadow-lg hover:bg-[#7a2a1a] transition-colors"
-                          >
-                            {section.ctaText}
-                          </a>
+                          
+                          <div className="flex-1 flex flex-col justify-center">
+                            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 leading-tight">
+                              {truncateChars(section.title, 25)}
+                            </h2>
+                            <p className="text-orange-50/80 text-xs sm:text-sm lg:text-base leading-relaxed mb-6 md:mb-8 max-w-md line-clamp-3">
+                              {section.description}
+                            </p>
+                            <a
+                              href={section.ctaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block bg-[#5A1E12] text-white px-8 py-3 rounded-full text-xs font-bold uppercase shadow-lg hover:bg-[#7a2a1a] transition-colors mt-auto w-max"
+                            >
+                              {section.ctaText}
+                            </a>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -241,9 +252,9 @@ const Sponsored = () => {
                 ))
               ) : (
                 // Fallback when no data
-                <div className="min-w-full snap-center px-1">
-                  <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512]">
-                    <div className="w-full p-8 md:p-12 flex flex-col justify-center text-white text-center">
+                <div className="w-full shrink-0 snap-center">
+                  <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-135 md:h-80">
+                    <div className="w-full p-8 md:p-12 flex flex-col justify-center text-white text-center h-full">
                       <h2 className="text-2xl font-bold mb-3">No sponsored content available</h2>
                     </div>
                   </div>
