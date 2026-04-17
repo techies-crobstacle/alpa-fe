@@ -56,6 +56,7 @@ interface Product {
   featured?: boolean;
   sellerId?: string;
   status?: string;
+  weight?: string | number; // Added weight field
   createdAt?: string;
   updatedAt?: string;
   isActive?: boolean;
@@ -656,16 +657,24 @@ export default function ShopSlugPage() {
               </div>
 
               {/* Stock badge */}
-              <div>
+              <div className="flex gap-3 items-center">
                 {liveIsAvailable && liveStock > 0 ? (
-                <span className="inline-flex items-center gap-1.5 bg-[#5A1E12]/8 text-[#5A1E12] border border-[#5A1E12]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
-                  <Check className="w-3.5 h-3.5" />
-                  In Stock
-                  <span className="font-normal text-[#5A1E12]/60">· {liveStock} left</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 bg-[#973c00]/8 text-[#973c00] border border-[#973c00]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 bg-[#5A1E12]/8 text-[#5A1E12] border border-[#5A1E12]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
+                    <Check className="w-3.5 h-3.5" />
+                    In Stock
+                    <span className="font-normal text-[#5A1E12]/60">· {liveStock} left</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 bg-[#973c00]/8 text-[#973c00] border border-[#973c00]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
                     Out of Stock
+                  </span>
+                )}
+
+                {/* Weight block */}
+                {(product.weight !== undefined && product.weight !== null) && (
+                  <span className="inline-flex items-center gap-1.5 bg-[#5A1E12]/8 text-[#5A1E12] border border-[#5A1E12]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
+                    <Package className="w-3.5 h-3.5" />
+                    {product.weight} kg
                   </span>
                 )}
               </div>

@@ -439,12 +439,13 @@ export default function ArtistOnboardingForm() {
   const handleStep4Submit = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.artistName?.trim()) {
-      newErrors.artistName = 'Artist name is required';
-    }
-    if (!formData.description?.trim()) {
-      newErrors.description = 'Description is required';
-    }
+    // Making it optional
+    // if (!formData.artistName?.trim()) {
+    //   newErrors.artistName = 'Business summary name is required';
+    // }
+    // if (!formData.description?.trim()) {
+    //   newErrors.description = 'Description is required';
+    // }
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -589,7 +590,7 @@ export default function ArtistOnboardingForm() {
             alt="Logo"
             width={90}
             height={90}
-            className="w-14 h-14 md:w-[90px] md:h-[90px]"
+            className="w-14 h-14 md:w-22.5 md:h-22.5"
           />
         </Link>
 
@@ -772,7 +773,7 @@ export default function ArtistOnboardingForm() {
           alt="Logo"
           width={90}
           height={90}
-          className="w-14 h-14 md:w-[90px] md:h-[90px]"
+          className="w-14 h-14 md:w-22.5 md:h-22.5"
         />
       </Link>
 
@@ -1064,17 +1065,17 @@ export default function ArtistOnboardingForm() {
             {/* Step 4 */}
             {currentStep === 4 && (
               <div className="space-y-5">
-                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Artist Profile</h3>
+                <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Business/Artists Information</h3>
                 <div>
-                  <label className={labelCls}>Artist Name *</label>
+                  <label className={labelCls}>Business Summary <span className="text-[#5A1E12]/60 font-normal">(Optional)</span></label>
                   <input type="text" name="artistName" value={formData.artistName} onChange={handleInputChange}
                     placeholder="e.g. Electronics Store, Traditional Antique" className={inputCls('artistName')} />
                   {errors.artistName && <p className="mt-1 text-xs text-red-600">{errors.artistName}</p>}
                 </div>
                 <div>
-                  <label className={labelCls}>Description *</label>
+                  <label className={labelCls}>Description <span className="text-[#5A1E12]/60 font-normal">(Optional)</span></label>
                   <textarea name="description" value={formData.description} onChange={handleInputChange} rows={6}
-                    placeholder="Story about your work…" className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A1E12]/40 bg-white text-[#5A1E12] placeholder-[#5A1E12]/40 resize-none transition-all ${errors.description ? 'border-red-400' : 'border-[#5A1E12]/20'}`} />
+                    placeholder="Tell us about your Business/Artists…" className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A1E12]/40 bg-white text-[#5A1E12] placeholder-[#5A1E12]/40 resize-none transition-all ${errors.description ? 'border-red-400' : 'border-[#5A1E12]/20'}`} />
                   {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description}</p>}
                 </div>
                 {errors.submit && <div className="bg-red-50 border border-red-200 rounded-xl p-3"><p className="text-sm text-red-800">{errors.submit}</p></div>}

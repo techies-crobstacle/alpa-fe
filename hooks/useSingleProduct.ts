@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 
 export interface SingleProduct {
+  weight?: string | number;
   id: string;
   title: string;
   description: string;
