@@ -123,30 +123,32 @@ export default function Page() {
   }, [subtotal, appliedCoupon]);
 
   // Handle quantity update — optimistic, no summary overlay needed
-  const handleQuantityUpdate = async (productId: string, newQuantity: number) => {
-    setUpdatingItems((prev) => new Set(prev).add(productId));
+  const handleQuantityUpdate = async (productId: string, newQuantity: number, variantId?: string | null) => {
+    const itemKey = variantId ? `${productId}:${variantId}` : productId;
+    setUpdatingItems((prev) => new Set(prev).add(itemKey));
     try {
-      await updateQuantity(productId, newQuantity);
+      await updateQuantity(productId, newQuantity, variantId ?? undefined);
     } finally {
       setUpdatingItems((prev) => {
         const newSet = new Set(prev);
-        newSet.delete(productId);
+        newSet.delete(itemKey);
         return newSet;
       });
     }
   };
 
   // Handle remove item
-  const handleRemoveItem = async (productId: string) => {
-    setUpdatingItems((prev) => new Set(prev).add(productId));
+  const handleRemoveItem = async (productId: string, variantId?: string | null) => {
+    const itemKey = variantId ? `${productId}:${variantId}` : productId;
+    setUpdatingItems((prev) => new Set(prev).add(itemKey));
     setSummaryRefreshing(true);
     try {
-      await removeItem(productId);
+      await removeItem(productId, variantId ?? undefined);
     } finally {
       setSummaryRefreshing(false);
       setUpdatingItems((prev) => {
         const newSet = new Set(prev);
-        newSet.delete(productId);
+        newSet.delete(itemKey);
         return newSet;
       });
     }
@@ -270,7 +272,12 @@ export default function Page() {
                 </motion.div>
               ) : (
                 cartItems.map((item, index) => {
-                  const isUpdating = updatingItems.has(item.productId);
+                  const itemKey = item.variantId ? `${item.productId}:${item.variantId}` : item.productId;
+                  const isUpdating = updatingItems.has(itemKey);
+                  const effectivePrice = item.effectivePrice ?? parseFloat(item.product.price || '0');
+                  const variantAttrs = item.variant?.attributes
+                    ? Object.entries(item.variant.attributes)
+                    : null;
                   return (
                     <motion.div
                       layout
@@ -278,7 +285,7 @@ export default function Page() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ delay: index * 0.05 }}
-                      key={item.productId}
+                      key={itemKey}
                       className="group relative bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-transparent hover:border-[#D6C0A9] hover:shadow-md transition-all duration-300"
                     >
                       {isUpdating && (
@@ -302,19 +309,38 @@ export default function Page() {
                             <h3 className="font-serif text-lg text-[#4A3728] leading-tight">
                               {item.product.title}
                             </h3>
+                            {variantAttrs && (
+                              <div className="flex flex-wrap gap-1.5 mt-1 mb-2">
+                                {variantAttrs.map(([key, attr]) =>
+                                  attr.hexColor ? (
+                                    <span
+                                      key={key}
+                                      title={`${key}: ${attr.displayValue}`}
+                                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#5A1E12] bg-[#EAD7B7]/50 border border-[#5A1E12]/15 rounded-full px-2 py-0.5"
+                                    >
+                                      <span
+                                        className="w-3 h-3 rounded-full border border-black/10 shrink-0"
+                                        style={{ backgroundColor: attr.hexColor }}
+                                      />
+                                      {attr.displayValue}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      key={key}
+                                      className="inline-flex items-center text-xs font-semibold text-[#5A1E12] bg-[#EAD7B7]/50 border border-[#5A1E12]/15 rounded-full px-2 py-0.5"
+                                    >
+                                      {attr.displayValue}
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            )}
                             {(item.product.category || productCategoryMap[item.productId]) && (
                               <p className="text-sm text-[#8B5E3C] bg-[#FAF7F2] inline-block px-2 py-1 rounded-md mb-2">
                                 {item.product.category || productCategoryMap[item.productId]}
                               </p>
                             )}
-                            {/* Real-time stock warning */}
-                            {stockMap[item.productId] !== undefined && !stockMap[item.productId].isAvailable ? (
-                              <p className="text-xs text-red-600 font-semibold">⚠️ No longer available</p>
-                            ) : stockMap[item.productId]?.stock !== undefined && stockMap[item.productId].stock < 5 && stockMap[item.productId].stock > 0 ? (
-                              <p className="text-xs text-orange-600 font-medium">Only {stockMap[item.productId].stock} left!</p>
-                            ) : item.product.stock < 5 && item.product.stock > 0 ? (
-                              <p className="text-xs text-orange-600 font-medium">Only {item.product.stock} left!</p>
-                            ) : null}
+
                           </div>
                         </div>
 
@@ -322,7 +348,7 @@ export default function Page() {
                         <div className="flex justify-start md:justify-center">
                           <div className="flex items-center bg-[#FAF7F2] rounded-xl border border-[#E6DCC8] p-1">
                             <button
-                              onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1)}
+                              onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)}
                               disabled={item.quantity <= 1 || isUpdating}
                               className="w-3 h-3 md:w-8 md:h-8 flex items-center justify-center rounded-lg hover:bg-white text-[#4A3728] disabled:opacity-30 transition-colors"
                             >
@@ -332,7 +358,7 @@ export default function Page() {
                                 {item.quantity}
                             </span>
                             <button
-                               onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1)}
+                               onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1, item.variantId)}
                                disabled={(
                                  (() => {
                                    const liveStock = stockMap[item.productId]?.stock;
@@ -352,10 +378,10 @@ export default function Page() {
                             <span className="md:hidden text-sm text-gray-500">Total:</span>
                             <div className="text-right">
                                 <p className="font-bold text-lg text-[#4A3728]">
-                                    ${(parseFloat(item.product.price) * item.quantity).toFixed(2)}
+                                    ${(effectivePrice * item.quantity).toFixed(2)}
                                 </p>
                                 <p className="text-xs text-[#8B5E3C]">
-                                    ${parseFloat(item.product.price).toFixed(2)} each
+                                    ${effectivePrice.toFixed(2)} each
                                 </p>
                             </div>
                         </div>
@@ -363,7 +389,7 @@ export default function Page() {
                         {/* Remove */}
                         <div className="flex justify-end md:static absolute top-2 right-0">
                           <button
-                            onClick={() => handleRemoveItem(item.productId)}
+                            onClick={() => handleRemoveItem(item.productId, item.variantId)}
                             disabled={isUpdating}
                             className="p-2 text-[#D6C0A9] hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                           >
@@ -522,18 +548,12 @@ export default function Page() {
                         </span>
                     </div>
 
-                    {/* Stock unavailability notice */}
-                    {cartItems.length > 0 && !stockCanCheckout && (
-                      <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
-                        ⚠️ Some items in your cart are no longer available. Please remove them to continue.
-                      </div>
-                    )}
                     <button
                         onClick={handleProceedToCheckout}
-                        disabled={cartItems.length === 0 || !stockCanCheckout}
+                        disabled={cartItems.length === 0}
                         className="group w-full py-4 bg-[#5A1E12] text-[#FAF7F2] rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl hover:bg-[#4a180f] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
                     >
-                        {stockCanCheckout ? 'Proceed to Checkout' : 'Some items are unavailable'}
+                        Proceed to Checkout
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                     

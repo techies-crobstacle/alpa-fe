@@ -30,6 +30,12 @@ export interface Product {
   updatedAt?: string;
   isActive?: boolean;
   sellerUserName?: string;
+  // Variable product fields
+  displayPrice?: string;
+  totalStock?: number;
+  variantCount?: number;
+  productType?: string;
+  type?: string;
 }
 
 export const productQueryKeys = {
@@ -51,27 +57,44 @@ export function useProducts() {
         }
 
         // Extract brand from title if not provided and add slug with null safety
-        return data.products.map((product: Product) => ({
-          ...product,
-          // Ensure required fields have safe defaults
-          title: product.title || 'Untitled Product',
-          description: product.description || 'No description available',
-          category: product.category || 'Uncategorized',
-          price: product.price || '0',
-          stock: product.stock ?? 0,
-          images: product.images || [],
-          tags: product.tags || [],
-          // Safe brand extraction
-          brand: product.brand || (product.title ? product.title.split(" ")[0] : 'Unknown'),
-          // Safe slug generation
-          slug: product.title ? product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `product-${product.id}`,
-          rating: product.avgRating ?? 0,
-          // Keep artistName as-is (undefined if not available)
-          artistName: product.artistName,
-          // Handle featured/discount fields safely
-          featured: product.featured ?? false,
-          discount: product.discount ?? false,
-        }));
+        return data.products.map((product: Product) => {
+          // For VARIABLE products, price and stock are null on the root level.
+          // The API provides displayPrice (e.g. "$25") and totalStock instead.
+          const effectivePrice =
+            product.price ||
+            (product.displayPrice
+              ? product.displayPrice.replace(/[^0-9.]/g, '')
+              : '0');
+          const effectiveStock =
+            product.stock != null ? product.stock : (product.totalStock ?? 0);
+
+          return {
+            ...product,
+            // Ensure required fields have safe defaults
+            title: product.title || 'Untitled Product',
+            description: product.description || 'No description available',
+            category: product.category || 'Uncategorized',
+            price: effectivePrice,
+            stock: effectiveStock,
+            images: product.images || [],
+            tags: product.tags || [],
+            // Safe brand extraction
+            brand: product.brand || (product.title ? product.title.split(" ")[0] : 'Unknown'),
+            // Safe slug generation
+            slug: product.title ? product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `product-${product.id}`,
+            rating: product.avgRating ?? 0,
+            // Keep artistName as-is (undefined if not available)
+            artistName: product.artistName,
+            // Handle featured/discount fields safely
+            featured: product.featured ?? false,
+            discount: product.discount ?? false,
+            // Preserve variable product metadata
+            displayPrice: product.displayPrice,
+            totalStock: product.totalStock,
+            variantCount: product.variantCount,
+            productType: product.productType || product.type,
+          };
+        });
       } catch (error) {
         console.error("Error fetching products:", error);
         // Re-throw with more context

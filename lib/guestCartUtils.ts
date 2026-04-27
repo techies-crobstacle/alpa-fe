@@ -10,6 +10,11 @@ export interface GuestCartItem {
   productId: string;
   quantity: number;
   product: CartProduct;
+  variantId?: string;
+  variant?: {
+    id: string;
+    attributes?: Record<string, { value: string; displayValue: string; hexColor?: string | null }>;
+  };
 }
 
 export interface GSTOption {
@@ -101,10 +106,14 @@ export const guestCartUtils = {
   addItemToGuestCart: (
     productId: string,
     productData: CartProduct,
-    quantity: number = 1
+    quantity: number = 1,
+    variantId?: string,
+    variantAttributes?: Record<string, { value: string; displayValue: string; hexColor?: string | null }>,
   ): GuestCartItem[] => {
     const items = guestCartUtils.getGuestCart();
-    const existingItem = items.find((item) => item.productId === productId);
+    const existingItem = items.find((item) =>
+      item.productId === productId && (!variantId || item.variantId === variantId)
+    );
 
     if (existingItem) {
       existingItem.quantity += quantity;
@@ -113,6 +122,10 @@ export const guestCartUtils = {
         productId,
         quantity,
         product: productData,
+        ...(variantId && { variantId }),
+        ...(variantId && variantAttributes && {
+          variant: { id: variantId, attributes: variantAttributes },
+        }),
       });
     }
 
@@ -121,14 +134,18 @@ export const guestCartUtils = {
   },
 
   // Update item quantity in guest cart
-  updateGuestCartItem: (productId: string, newQuantity: number): GuestCartItem[] => {
+  updateGuestCartItem: (productId: string, newQuantity: number, variantId?: string): GuestCartItem[] => {
     const items = guestCartUtils.getGuestCart();
-    const item = items.find((i) => i.productId === productId);
+    const item = items.find((i) =>
+      i.productId === productId && (!variantId || i.variantId === variantId)
+    );
 
     if (item) {
       if (newQuantity <= 0) {
         // Remove item if quantity is 0 or less
-        const updatedItems = items.filter((i) => i.productId !== productId);
+        const updatedItems = items.filter((i) =>
+          !(i.productId === productId && (!variantId || i.variantId === variantId))
+        );
         guestCartUtils.saveGuestCart(updatedItems);
         return updatedItems;
       } else {
@@ -141,9 +158,11 @@ export const guestCartUtils = {
   },
 
   // Remove item from guest cart
-  removeFromGuestCart: (productId: string): GuestCartItem[] => {
+  removeFromGuestCart: (productId: string, variantId?: string): GuestCartItem[] => {
     const items = guestCartUtils.getGuestCart();
-    const updatedItems = items.filter((item) => item.productId !== productId);
+    const updatedItems = items.filter((item) =>
+      !(item.productId === productId && (!variantId || item.variantId === variantId))
+    );
     guestCartUtils.saveGuestCart(updatedItems);
     return updatedItems;
   },

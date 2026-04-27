@@ -1258,9 +1258,9 @@ export default function GuestCheckoutForm() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate text-sm">{item.product?.title || "Product"}</p>
-                    <p className="text-sm text-gray-500">Qty {item.quantity} x ${parseFloat(item.product?.price || "0").toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">Qty {item.quantity} x ${(item.effectivePrice ?? parseFloat(item.product?.price || '0')).toFixed(2)}</p>
                   </div>
-                  <p className="font-medium text-sm">${(item.quantity * parseFloat(item.product?.price || "0")).toFixed(2)}</p>
+                  <p className="font-medium text-sm">${(item.quantity * (item.effectivePrice ?? parseFloat(item.product?.price || '0'))).toFixed(2)}</p>
                 </div>
               ))}
             </div>

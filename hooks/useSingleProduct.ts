@@ -4,6 +4,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 
+export interface VariantAttributeValue {
+  value: string;
+  displayValue: string;
+  hexColor?: string | null;
+}
+
+export interface ProductVariant {
+  id: string;
+  price?: string;
+  stock?: number;
+  sku?: string;
+  isActive?: boolean;
+  isAvailable?: boolean;
+  featuredImage?: string;
+  images?: string[];
+  attributes?: Record<string, VariantAttributeValue>;
+  // Legacy / fallback fields
+  title?: string;
+  options?: Record<string, string>;
+}
+
 export interface SingleProduct {
   weight?: string | number;
   id: string;
@@ -34,6 +55,14 @@ export interface SingleProduct {
     name: string;
     email: string;
   };
+  variants?: ProductVariant[];
+  hasVariants?: boolean;
+  // Variable product fields
+  displayPrice?: string;
+  totalStock?: number;
+  variantCount?: number;
+  productType?: string;
+  type?: string;
 }
 
 interface ProductResponse {
@@ -56,10 +85,23 @@ export function useSingleProduct(productId: string | undefined) {
       
       // Handle both wrapped and unwrapped responses
       const productData = response.product || (response as any as SingleProduct);
+
+      // For VARIABLE products, price and stock come as null on root level.
+      // The API returns displayPrice (e.g. "$25") and totalStock as the real values.
+      const effectivePrice =
+        productData.price ||
+        (productData.displayPrice
+          ? productData.displayPrice.replace(/[^0-9.]/g, '')
+          : '0');
+      const effectiveStock =
+        productData.stock != null ? productData.stock : (productData.totalStock ?? 0);
       
       return {
         ...productData,
-        stock: productData.stock ?? 0, // Ensure stock is always present
+        price: effectivePrice,
+        stock: effectiveStock,
+        productType: productData.productType || productData.type,
+        hasVariants: !!(productData.variants?.length || productData.variantCount),
       };
     },
     // Only fetch if we have a productId

@@ -42,11 +42,6 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
 
   const [syncTrigger, setSyncTrigger] = useState(0);
 
-  // Helper function to generate product slug from title
-  const generateSlug = (title: string) => {
-    return title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  };
-
   // Subscribe to cart updates for real-time sync
   useEffect(() => {
     const unsubscribe = subscribeToUpdates(() => {
@@ -59,32 +54,34 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
   }, [subscribeToUpdates]);
 
   // Optimized quantity update with loading state
-  const handleQuantityUpdate = async (productId: string, newQuantity: number) => {
-    setUpdatingItems(prev => new Set(prev).add(productId));
+  const handleQuantityUpdate = async (productId: string, newQuantity: number, variantId?: string | null) => {
+    const itemKey = variantId ? `${productId}:${variantId}` : productId;
+    setUpdatingItems(prev => new Set(prev).add(itemKey));
     try {
-      await updateQuantity(productId, newQuantity);
+      await updateQuantity(productId, newQuantity, variantId ?? undefined);
     } catch (error) {
       console.error("Failed to update quantity:", error);
     } finally {
       setUpdatingItems(prev => {
         const newSet = new Set(prev);
-        newSet.delete(productId);
+        newSet.delete(itemKey);
         return newSet;
       });
     }
   };
 
   // Optimized remove with loading state
-  const handleRemoveItem = async (productId: string) => {
-    setUpdatingItems(prev => new Set(prev).add(productId));
+  const handleRemoveItem = async (productId: string, variantId?: string | null) => {
+    const itemKey = variantId ? `${productId}:${variantId}` : productId;
+    setUpdatingItems(prev => new Set(prev).add(itemKey));
     try {
-      await removeItem(productId);
+      await removeItem(productId, variantId ?? undefined);
     } catch (error) {
       console.error("Failed to remove item:", error);
     } finally {
       setUpdatingItems(prev => {
         const newSet = new Set(prev);
-        newSet.delete(productId);
+        newSet.delete(itemKey);
         return newSet;
       });
     }
@@ -168,10 +165,15 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
         ) : (
           <div className="space-y-4 overflow-x-hidden">
             {cartItems.map((item) => {
-              const isUpdating = updatingItems.has(item.productId);
+              const itemKey = item.variantId ? `${item.productId}:${item.variantId}` : item.productId;
+              const isUpdating = updatingItems.has(itemKey);
+              const effectivePrice = item.effectivePrice ?? parseFloat(item.product.price || '0');
+              const variantAttrs = item.variant?.attributes
+                ? Object.entries(item.variant.attributes)
+                : null;
               return (
                 <div
-                  key={item.productId}
+                  key={itemKey}
                   className={`group relative bg-white p-4 rounded-2xl border border-gray-200 hover:border-[#A48068] hover:shadow-md transition-all duration-200 ${
                     isUpdating ? 'opacity-70' : ''
                   }`}
@@ -186,7 +188,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                     {/* IMAGE */}
                     <div 
                       className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-50 shrink-0 cursor-pointer group-hover:scale-[1.02] transition-transform"
-                      onClick={() => navigate(`/shop/${generateSlug(item.product.title)}`)}
+                      onClick={() => navigate(`/shop/${item.productId}`)}
                     >
                       <Image
                         src={item.product.featuredImage || item.product.images?.[0] || "/images/placeholder.svg"}
@@ -202,20 +204,46 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                       <h3
                         className="font-semibold text-gray-800 line-clamp-2 cursor-pointer hover:text-[#440C03] transition-colors mb-1 wrap-break-words max-w-full truncate"
                         style={{ maxWidth: '120px', overflowWrap: 'break-word', wordBreak: 'break-word' }}
-                        onClick={() => navigate(`/shop/${generateSlug(item.product.title)}`)}
+                        onClick={() => navigate(`/shop/${item.productId}`)}
                       >
                         {item.product.title}
                       </h3>
 
                       <p className="text-xs text-gray-500 mb-2 wrap-break-words max-w-full truncate" style={{ maxWidth: '120px', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
-                        ${parseFloat(item.product.price).toFixed(2)} each • Stock: {item.product.stock}
+                        ${effectivePrice.toFixed(2)} each • Stock: {item.product.stock}
                       </p>
+                      {variantAttrs && (
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {variantAttrs.map(([key, attr]) =>
+                            attr.hexColor ? (
+                              <span
+                                key={key}
+                                title={`${key}: ${attr.displayValue}`}
+                                className="flex items-center gap-1 text-[10px] font-semibold text-[#5A1E12] bg-[#EAD7B7]/60 border border-[#5A1E12]/15 rounded-full px-1.5 py-0.5"
+                              >
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0"
+                                  style={{ backgroundColor: attr.hexColor }}
+                                />
+                                {attr.displayValue}
+                              </span>
+                            ) : (
+                              <span
+                                key={key}
+                                className="text-[10px] font-semibold text-[#5A1E12] bg-[#EAD7B7]/60 border border-[#5A1E12]/15 rounded-full px-1.5 py-0.5"
+                              >
+                                {attr.displayValue}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      )}
 
                       {/* QTY CONTROLS */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                           <button
-                            onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1)}
+                            onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)}
                             disabled={item.quantity <= 1 || isUpdating}
                             className="px-2 py-1 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                             aria-label="Decrease quantity"
@@ -228,7 +256,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                           </span>
 
                           <button
-                            onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1)}
+                            onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1, item.variantId)}
                             disabled={(
                               (() => {
                                 const liveStock = stockMap[item.productId]?.stock;
@@ -245,7 +273,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
 
                         <div className="text-right ml-2">
                           <p className="font-bold text-base text-[#440C03]">
-                            ${(parseFloat(item.product.price) * item.quantity).toFixed(2)}
+                            ${(effectivePrice * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -254,7 +282,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
 
                   {/* REMOVE BUTTON */}
                   <button
-                    onClick={() => handleRemoveItem(item.productId)}
+                    onClick={() => handleRemoveItem(item.productId, item.variantId)}
                     disabled={isUpdating}
                     className="absolute top-3 right-3 p-1.5 rounded-full bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 transition opacity-100 md:opacity-0 md:group-hover:opacity-100 disabled:opacity-50"
                     aria-label="Remove item"

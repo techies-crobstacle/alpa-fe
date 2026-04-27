@@ -496,60 +496,81 @@ const Page = () => {
                 ? Array.from({ length: 4 }).map((_, i) => (
                     <div
                       key={i}
-                      className="shrink-0 snap-start w-[calc(100%-1px)] sm:w-[calc(50%-8px)] lg:w-[calc(25%-18px)] animate-pulse rounded-xl border border-stone-100 shadow-sm overflow-hidden bg-white flex flex-col"
+                      className="shrink-0 snap-start w-[calc(100%-1px)] sm:w-[calc(50%-8px)] lg:w-[calc(25%-18px)] rounded-xl border border-stone-100 shadow-sm overflow-hidden bg-white flex flex-col"
                     >
                       {/* ── IMAGE SECTION ── */}
-                      <div className="relative aspect-[6/4 bg-stone-100 overflow-hidden">
-                        {/* Logo placeholder (top-left) */}
-                        <div className="absolute top-3 left-3 z-10 w-10 h-10 rounded-md bg-stone-200" />
-                        {/* Full image wash */}
-                        <div className="absolute inset-0 bg-stone-200" />
+                      <div className="relative aspect-6/4 overflow-hidden bg-[#EAD7B7]/30">
+                        {/* Shimmer overlay */}
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+                        {/* Logo placeholder top-left */}
+                        <div className="absolute top-3 left-3 w-10 h-10 rounded-lg bg-[#EAD7B7]/80" />
+                        {/* Low-stock badge placeholder top-right */}
+                        <div className="absolute top-3 right-3 w-16 h-5 rounded-full bg-[#EAD7B7]/60" />
                       </div>
 
                       {/* ── DETAILS SECTION ── */}
                       <div className="flex flex-col grow p-4 bg-white gap-y-3">
-                        {/* Row: artist label + 5 stars */}
+                        {/* Artist label + stars */}
                         <div className="flex justify-between items-center">
-                          <div className="h-2.5 w-20 rounded bg-stone-200" />
+                          <div className="h-2.5 w-20 rounded-full bg-stone-200 relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                          </div>
                           <div className="flex gap-0.5">
                             {Array.from({ length: 5 }).map((_, j) => (
-                              <div
-                                key={j}
-                                className="h-3 w-3 rounded-sm bg-stone-200"
-                              />
+                              <div key={j} className="h-3 w-3 rounded-sm bg-stone-200 relative overflow-hidden">
+                                <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                              </div>
                             ))}
                           </div>
                         </div>
 
-                        {/* Title */}
+                        {/* Title lines */}
                         <div className="space-y-1.5">
-                          <div className="h-4 w-4/5 rounded bg-stone-200" />
-                          <div className="h-4 w-2/5 rounded bg-stone-200" />
+                          <div className="h-4 w-4/5 rounded-full bg-stone-200 relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                          </div>
+                          <div className="h-4 w-2/5 rounded-full bg-stone-200 relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                          </div>
                         </div>
 
-                        {/* Description — 2 lines */}
+                        {/* Description lines */}
                         <div className="space-y-1.5">
-                          <div className="h-3 w-full rounded bg-stone-200" />
-                          <div className="h-3 w-3/4 rounded bg-stone-200" />
+                          <div className="h-3 w-full rounded-full bg-stone-200 relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                          </div>
+                          <div className="h-3 w-3/4 rounded-full bg-stone-200 relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                          </div>
                         </div>
 
                         {/* Tags */}
                         <div className="flex gap-1.5">
-                          <div className="h-5 w-14 rounded-sm bg-stone-200" />
-                          <div className="h-5 w-16 rounded-sm bg-stone-200" />
+                          <div className="h-5 w-14 rounded-sm bg-[#EAD7B7]/70 relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                          </div>
+                          <div className="h-5 w-16 rounded-sm bg-[#EAD7B7]/70 relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                          </div>
                         </div>
 
                         {/* Footer: price + buttons */}
                         <div className="mt-auto pt-3 border-t border-stone-100 flex items-center justify-between">
-                          {/* Price block */}
-                          <div className="space-y-1">
-                            <div className="h-2.5 w-8 rounded bg-stone-200" />
-                            <div className="h-5 w-16 rounded bg-stone-200" />
+                          <div className="space-y-1.5">
+                            <div className="h-2.5 w-8 rounded-full bg-stone-200 relative overflow-hidden">
+                              <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                            </div>
+                            <div className="h-5 w-16 rounded-full bg-stone-200 relative overflow-hidden">
+                              <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                            </div>
                           </div>
-                          {/* Wishlist circle + Cart pill */}
                           <div className="flex items-center gap-2">
-                            <div className="h-9 w-9 rounded-full bg-stone-200" />
-                            <div className="h-10 w-24 rounded-full bg-stone-200" />
+                            <div className="h-9 w-9 rounded-full bg-[#EAD7B7]/70 relative overflow-hidden">
+                              <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                            </div>
+                            <div className="h-10 w-24 rounded-full bg-[#973c00]/20 relative overflow-hidden">
+                              <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/50 to-transparent" />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -576,6 +597,7 @@ const Page = () => {
                         tags={product.tags}
                         featured={product.featured}
                         artistName={product.artistName}
+                        productType={product.productType || product.type}
                       />
                     </div>
                   ))}

@@ -1011,11 +1011,11 @@ export default function CheckOutPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{item.product.title}</p>
                         <p className="text-sm text-gray-600">
-                          Qty {item.quantity} × ${parseFloat(item.product.price).toFixed(2)}
+                          Qty {item.quantity} × ${(item.effectivePrice ?? parseFloat(item.product.price || '0')).toFixed(2)}
                         </p>
                       </div>
                       <p className="font-medium text-sm">
-                        ${(item.quantity * parseFloat(item.product.price)).toFixed(2)}
+                        ${(item.quantity * (item.effectivePrice ?? parseFloat(item.product.price || '0'))).toFixed(2)}
                       </p>
                     </div>
                   ))}

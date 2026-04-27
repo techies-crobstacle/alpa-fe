@@ -180,9 +180,15 @@ function ShopContent() {
         selectedCategories.length === 0 ||
         (product.category && selectedCategories.includes(product.category));
 
-      // Price match with safe parsing
+      // Price match with safe parsing.
+      // VARIABLE products have price derived from displayPrice — include them
+      // even if their parsed price is 0 (no direct price on root level).
       const productPrice = parseFloat(product.price || '0');
-      const priceMatch = !isNaN(productPrice) && productPrice >= priceRange[0] && productPrice <= priceRange[1];
+      const isVariableProduct = product.productType === 'VARIABLE' || product.type === 'VARIABLE';
+      const priceMatch =
+        isVariableProduct
+          ? true // variable products are always included — price is per-variant
+          : !isNaN(productPrice) && productPrice >= priceRange[0] && productPrice <= priceRange[1];
 
       // Search match - check title, description, artist, and category with null safety
       const searchMatch =
@@ -1035,12 +1041,13 @@ function ShopContent() {
                     name={product.title || 'Untitled Product'}
                     description={product.description || 'No description available'}
                     amount={parseFloat(product.price || '0') || 0}
-                    stock={product.stock || 0}
+                    stock={product.stock != null ? product.stock : (product.totalStock ?? 0)}
                     slug={product.slug || `product-${product.id}`}
                     rating={product.rating || 0}
                     tags={product.tags || []}
                     featured={product.featured || false}
-                    artistName={product.artistName} // Only pass if it exists, undefined otherwise
+                    artistName={product.artistName}
+                    productType={product.productType || product.type}
                   />
                 ))}
               </div>
@@ -1144,8 +1151,107 @@ function ShopLoading() {
   return (
     <section className="min-h-screen bg-[url('/images/main-bg.png')] bg-repeat bg-center">
       <section className="container mx-auto px-4 py-12 sm:py-16 lg:py-20">
-        <div className="flex justify-center items-center min-h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A1E12]"></div>
+        {/* Page title skeleton */}
+        <div className="mb-8 space-y-2">
+          <div className="h-8 w-48 rounded-full bg-[#EAD7B7]/70 relative overflow-hidden">
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+          </div>
+          <div className="h-4 w-72 rounded-full bg-[#EAD7B7]/50 relative overflow-hidden">
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+          </div>
+        </div>
+
+        <div className="flex gap-8">
+          {/* ── SIDEBAR SKELETON ── */}
+          <aside className="hidden lg:flex flex-col gap-6 w-64 shrink-0">
+            {/* Search bar */}
+            <div className="h-10 w-full rounded-full bg-[#EAD7B7]/60 relative overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+            </div>
+            {/* Filter groups */}
+            {Array.from({ length: 3 }).map((_, g) => (
+              <div key={g} className="space-y-3">
+                <div className="h-4 w-24 rounded-full bg-[#EAD7B7]/70 relative overflow-hidden">
+                  <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+                </div>
+                {Array.from({ length: 4 }).map((_, r) => (
+                  <div key={r} className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded bg-[#EAD7B7]/60 relative overflow-hidden">
+                      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+                    </div>
+                    <div className="h-3 w-28 rounded-full bg-[#EAD7B7]/50 relative overflow-hidden">
+                      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </aside>
+
+          {/* ── PRODUCT GRID SKELETON ── */}
+          <div className="flex-1">
+            {/* Sort + count bar */}
+            <div className="flex justify-between items-center mb-6">
+              <div className="h-4 w-32 rounded-full bg-[#EAD7B7]/50 relative overflow-hidden">
+                <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+              </div>
+              <div className="h-9 w-36 rounded-full bg-[#EAD7B7]/60 relative overflow-hidden">
+                <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+              </div>
+            </div>
+
+            {/* Cards grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-stone-100 shadow-sm overflow-hidden bg-white flex flex-col"
+                >
+                  {/* Image area */}
+                  <div className="relative aspect-6/4 bg-[#EAD7B7]/30 overflow-hidden">
+                    <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+                    <div className="absolute top-3 right-3 w-16 h-5 rounded-full bg-[#EAD7B7]/60" />
+                  </div>
+                  {/* Details */}
+                  <div className="flex flex-col grow p-4 gap-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="h-2.5 w-20 rounded-full bg-stone-200 relative overflow-hidden">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                      </div>
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 5 }).map((_, j) => (
+                          <div key={j} className="h-3 w-3 rounded-sm bg-stone-200 relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="h-4 w-4/5 rounded-full bg-stone-200 relative overflow-hidden">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                      </div>
+                      <div className="h-4 w-2/5 rounded-full bg-stone-200 relative overflow-hidden">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                      </div>
+                    </div>
+                    <div className="mt-auto pt-3 border-t border-stone-100 flex items-center justify-between">
+                      <div className="h-5 w-16 rounded-full bg-stone-200 relative overflow-hidden">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-9 w-9 rounded-full bg-[#EAD7B7]/70 relative overflow-hidden">
+                          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/70 to-transparent" />
+                        </div>
+                        <div className="h-10 w-24 rounded-full bg-[#973c00]/20 relative overflow-hidden">
+                          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/50 to-transparent" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
     </section>

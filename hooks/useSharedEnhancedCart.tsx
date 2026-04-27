@@ -12,7 +12,9 @@ type SharedCartContextType = ReturnType<typeof useEnhancedCart> & {
     price: string, 
     featuredImage?: string,
     images?: string[],
-    galleryImages?: string[]
+    galleryImages?: string[],
+    variantId?: string,
+    variantAttributes?: Record<string, { value: string; displayValue: string; hexColor?: string | null }>;
   }) => Promise<void>;
   clearCart: () => void;
 };
@@ -46,7 +48,9 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
     price: string, 
     featuredImage?: string,
     images?: string[],
-    galleryImages?: string[]
+    galleryImages?: string[],
+    variantId?: string,
+    variantAttributes?: Record<string, { value: string; displayValue: string; hexColor?: string | null }>;
   }) => {
     // 1. OPTIMISTIC UPDATE FIRST
     try {
@@ -61,7 +65,7 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
         galleryImages: productData.galleryImages || [],
         stock: 99, 
         category: ''
-      }, 1);
+      }, 1, productData.variantId, productData.variantAttributes);
     } catch (e) {
       console.error("Optimistic add failed", e);
     }
@@ -80,7 +84,7 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
           galleryImages: productData.galleryImages || [],
           stock: 100,
           category: '',
-        }, 1);
+        }, 1, productData.variantId, productData.variantAttributes);
         
         // Small delay to ensure localStorage is updated before triggering refresh
         setTimeout(() => {
@@ -99,6 +103,7 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
         body: JSON.stringify({
           productId,
           quantity: 1,
+          ...(productData.variantId && { variantId: productData.variantId }),
         }),
       });
 
@@ -118,24 +123,25 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
 
   // Enhanced update function with debounce — optimistic update fires instantly,
   // the API call is debounced 400 ms so rapid +/- clicks only send one request.
-  const enhancedUpdateQuantity = useCallback(async (productId: string, newQuantity: number) => {
+  const enhancedUpdateQuantity = useCallback(async (productId: string, newQuantity: number, variantId?: string) => {
     // 1. OPTIMISTIC UPDATE IMMEDIATELY (instant UI)
     if (newQuantity > 0) {
-      cartData.optimisticUpdateItem(productId, newQuantity);
+      cartData.optimisticUpdateItem(productId, newQuantity, variantId);
     } else {
-      cartData.optimisticRemoveItem(productId);
+      cartData.optimisticRemoveItem(productId, variantId);
     }
 
     // 2. Debounce the actual API call per product (400 ms)
-    if (qtyDebounceTimers.current[productId]) {
-      clearTimeout(qtyDebounceTimers.current[productId]);
+    const debounceKey = variantId ? `${productId}:${variantId}` : productId;
+    if (qtyDebounceTimers.current[debounceKey]) {
+      clearTimeout(qtyDebounceTimers.current[debounceKey]);
     }
 
     return new Promise<void>((resolve) => {
-      qtyDebounceTimers.current[productId] = setTimeout(async () => {
-        delete qtyDebounceTimers.current[productId];
+      qtyDebounceTimers.current[debounceKey] = setTimeout(async () => {
+        delete qtyDebounceTimers.current[debounceKey];
         try {
-          await cartData.updateQuantity(productId, newQuantity);
+          await cartData.updateQuantity(productId, newQuantity, variantId);
           // Optimistic update already reflects the change — no full refetch needed
           triggerUpdate();
         } catch (error) {
@@ -149,12 +155,12 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
   }, [cartData, triggerUpdate]);
 
   // Enhanced remove function that notifies all components
-  const enhancedRemoveItem = useCallback(async (productId: string) => {
+  const enhancedRemoveItem = useCallback(async (productId: string, variantId?: string) => {
     // 1. OPTIMISTIC UPDATE FIRST
-    cartData.optimisticRemoveItem(productId);
+    cartData.optimisticRemoveItem(productId, variantId);
 
     try {
-      const result = await cartData.removeItem(productId);
+      const result = await cartData.removeItem(productId, variantId);
       // Re-fetch so shippingCalculations reflects the new cart total
       await cartData.fetchCartData(true);
       triggerUpdate();

@@ -197,6 +197,7 @@ const Page = () => {
                   tags={product.tags}
                   featured={product.featured}
                   artistName={product.artistName}
+                  productType={product.productType || product.type}
                 />
               ))}
             </div>

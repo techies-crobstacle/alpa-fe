@@ -23,12 +23,24 @@ export interface CartProduct {
   category: string;
 }
 
+export interface CartVariant {
+  id: string;
+  price?: string;
+  stock?: number;
+  sku?: string;
+  images?: string[];
+  attributes?: Record<string, { value: string; displayValue: string; hexColor?: string | null }>;
+}
+
 export interface CartItem {
   qty: any;
   id: any;
   productId: string;
   quantity: number;
   product: CartProduct;
+  variantId?: string | null;
+  variant?: CartVariant | null;
+  effectivePrice?: number;
 }
 
 export interface ShippingOption {
@@ -95,8 +107,15 @@ export function useEnhancedCart() {
   
   // Ref to track current selection for async operations like setInterval
   const selectedShippingRef = useRef<ShippingOption | null>(null);
+  // Ref to access latest cartData inside async fetchCartData without stale closure
+  const cartDataRef = useRef<EnhancedCartData | null>(null);
 
   const baseUrl = "https://alpa-be.onrender.com";
+
+  // Keep cartDataRef in sync so fetchCartData can access latest variant attributes
+  useEffect(() => {
+    cartDataRef.current = cartData;
+  }, [cartData]);
 
   // Sync ref with state whenever selectedShipping changes
   useEffect(() => {
@@ -126,6 +145,8 @@ export function useEnhancedCart() {
           qty: item.quantity, // Legacy field
           id: item.productId, // Legacy field
           product: item.product,
+          ...(item.variantId && { variantId: item.variantId }),
+          ...(item.variant && { variant: item.variant }),
         }));
         
         // Fetch real shipping methods from backend
@@ -231,7 +252,62 @@ export function useEnhancedCart() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: EnhancedCartData = await response.json();
+      const rawData = await response.json();
+
+      // ── Normalise variant attributes: the backend may return them under several
+      // different key shapes. Unify everything to item.variant.attributes so the
+      // rest of the UI only needs to look in one place. ──
+      const normalizeItem = (item: any): CartItem => {
+        if (!item.variantId) return item as CartItem;
+
+        // Collect attributes from wherever the backend put them
+        const attrs =
+          item.variant?.attributes ||          // standard shape
+          item.selectedAttributes ||           // alternate key
+          item.variantAttributes ||            // another alternate key
+          item.variant?.selectedAttributes ||  // nested alternate
+          null;
+
+        if (attrs && Object.keys(attrs).length > 0) {
+          return {
+            ...item,
+            variant: {
+              ...(item.variant || { id: item.variantId }),
+              attributes: attrs,
+            },
+          } as CartItem;
+        }
+        return item as CartItem;
+      };
+
+      const data: EnhancedCartData = {
+        ...rawData,
+        cart: (rawData.cart || []).map(normalizeItem),
+      };
+
+      // ── Fallback merge: if server still returned no attributes, pull from
+      // the previous in-memory state (set by the optimistic add). ──
+      const prevCart = cartDataRef.current;
+      if (prevCart) {
+        data.cart = data.cart.map((item) => {
+          if (!item.variantId) return item;
+          if (item.variant?.attributes && Object.keys(item.variant.attributes).length > 0) return item;
+          const prev = prevCart.cart.find(
+            (p) => p.productId === item.productId && p.variantId === item.variantId
+          );
+          if (prev?.variant?.attributes) {
+            return {
+              ...item,
+              variant: {
+                ...(item.variant || { id: item.variantId }),
+                attributes: prev.variant.attributes,
+              },
+            };
+          }
+          return item;
+        });
+      }
+
       setCartData(data);
       
       // Set shipping method priority:
@@ -282,7 +358,7 @@ export function useEnhancedCart() {
 
     // ── Always compute local subtotal as a safe fallback ──
     const localSubtotal = cartData.cart.reduce(
-      (sum, item) => sum + parseFloat(item.product.price || '0') * item.quantity,
+      (sum, item) => sum + (item.effectivePrice ?? parseFloat(item.product.price || '0')) * item.quantity,
       0
     );
 
@@ -319,13 +395,13 @@ export function useEnhancedCart() {
   };
 
   // Update quantity
-  const updateQuantity = async (productId: string, newQuantity: number) => {
+  const updateQuantity = async (productId: string, newQuantity: number, variantId?: string) => {
     try {
       const token = localStorage.getItem("alpa_token");
       
       // Guest mode: update in localStorage
       if (!token) {
-        guestCartUtils.updateGuestCartItem(productId, newQuantity);
+        guestCartUtils.updateGuestCartItem(productId, newQuantity, variantId);
         await fetchCartData(true);
         return;
       }
@@ -333,7 +409,7 @@ export function useEnhancedCart() {
       // Authenticated mode: update via API
       if (newQuantity <= 0) {
         // Remove item if quantity is 0 or less
-        const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
+        const response = await fetch(`${baseUrl}/api/cart/remove/${productId}${variantId ? `?variantId=${variantId}` : ''}`, {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -352,6 +428,7 @@ export function useEnhancedCart() {
           body: JSON.stringify({
             productId,
             quantity: newQuantity,
+            ...(variantId && { variantId }),
           }),
         });
 
@@ -367,19 +444,19 @@ export function useEnhancedCart() {
   };
 
   // Remove item from cart
-  const removeItem = async (productId: string) => {
+  const removeItem = async (productId: string, variantId?: string) => {
     try {
       const token = localStorage.getItem("alpa_token");
       
       // Guest mode: remove from localStorage
       if (!token) {
-        guestCartUtils.removeFromGuestCart(productId);
+        guestCartUtils.removeFromGuestCart(productId, variantId);
         await fetchCartData(true);
         return;
       }
 
       // Authenticated mode: remove via API
-      const response = await fetch(`${baseUrl}/api/cart/remove/${productId}`, {
+      const response = await fetch(`${baseUrl}/api/cart/remove/${productId}${variantId ? `?variantId=${variantId}` : ''}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -467,11 +544,18 @@ export function useEnhancedCart() {
   }, [selectedShipping]);
 
   // OPTIMISTIC UPDATES
-  const optimisticAddItem = (newItem: CartProduct, quantity: number) => {
+  const optimisticAddItem = (
+    newItem: CartProduct,
+    quantity: number,
+    variantId?: string,
+    variantAttributes?: Record<string, { value: string; displayValue: string; hexColor?: string | null }>
+  ) => {
     setCartData(prev => {
       if (!prev) return prev;
       
-      const existingItemIndex = prev.cart.findIndex(item => item.productId === newItem.id);
+      const existingItemIndex = prev.cart.findIndex(item =>
+        item.productId === newItem.id && (!variantId || item.variantId === variantId)
+      );
       
       let newCart = [...prev.cart];
       if (existingItemIndex >= 0) {
@@ -490,7 +574,11 @@ export function useEnhancedCart() {
           productId: newItem.id,
           quantity: quantity,
           qty: quantity,
-          product: newItem
+          product: newItem,
+          ...(variantId && { variantId }),
+          ...(variantId && variantAttributes && {
+            variant: { id: variantId, attributes: variantAttributes },
+          }),
         });
       }
       
@@ -501,12 +589,12 @@ export function useEnhancedCart() {
     });
   };
 
-  const optimisticUpdateItem = (productId: string, quantity: number) => {
+  const optimisticUpdateItem = (productId: string, quantity: number, variantId?: string) => {
     setCartData(prev => {
       if (!prev) return prev;
       
       const newCart = prev.cart.map(item => {
-        if (item.productId === productId) {
+        if (item.productId === productId && (!variantId || item.variantId === variantId)) {
           return {
             ...item,
             quantity: quantity,
@@ -523,10 +611,12 @@ export function useEnhancedCart() {
     });
   };
 
-  const optimisticRemoveItem = (productId: string) => {
+  const optimisticRemoveItem = (productId: string, variantId?: string) => {
     setCartData(prev => {
       if (!prev) return prev;
-      const newCart = prev.cart.filter(item => item.productId !== productId);
+      const newCart = prev.cart.filter(item =>
+        !(item.productId === productId && (!variantId || item.variantId === variantId))
+      );
       return {
         ...prev,
         cart: newCart

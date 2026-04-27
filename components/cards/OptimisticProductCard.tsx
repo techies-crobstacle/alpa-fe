@@ -11,6 +11,8 @@ import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useToggleWishlist } from "@/hooks/useWishlistMutations";
 import { useWishlistQuery } from "@/hooks/useWishlist";
 import { useAuth } from "@/context/AuthContext";
+import VariantPickerModal from "@/components/cards/VariantPickerModal";
+import { useSingleProduct } from "@/hooks/useSingleProduct";
 
 // --- INTERFACE DEFINITION (Fixes the TS Error) ---
 export interface OptimisticProductCardProps {
@@ -25,6 +27,7 @@ export interface OptimisticProductCardProps {
   tags?: string[];
   featured?: boolean;
   artistName?: string;
+  productType?: string;
 }
 
 export default function OptimisticProductCard({
@@ -39,7 +42,9 @@ export default function OptimisticProductCard({
   tags = [],
   featured = false,
   artistName,
+  productType,
 }: OptimisticProductCardProps) {
+  const isVariableProduct = productType === 'VARIABLE';
   // --- HOOKS & LOGIC ---
   const { 
     cartData,
@@ -53,12 +58,49 @@ export default function OptimisticProductCard({
   const [optimisticAdded, setOptimisticAdded] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
+  const [showVariantModal, setShowVariantModal] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const { token, user: authUser } = useAuth();
   const { data: wishlistData } = useWishlistQuery();
   const toggleWishlistMutation = useToggleWishlist();
   
   // Check if user is authenticated (either token or user object exists)
   const isAuthenticated = !!(token || authUser);
+
+  // Lazy-fetch variant data only when card is hovered and product has variants
+  const { data: variantProduct } = useSingleProduct(isHovered && isVariableProduct ? id : undefined);
+
+  const variantColors = useMemo(() => {
+    if (!variantProduct?.variants?.length) return [];
+    const seen = new Set<string>();
+    const colors: { label: string; hex: string }[] = [];
+    variantProduct.variants.forEach((v) => {
+      if (!v.attributes) return;
+      Object.values(v.attributes).forEach((attr) => {
+        if (attr.hexColor && !seen.has(attr.hexColor)) {
+          seen.add(attr.hexColor);
+          colors.push({ label: attr.displayValue, hex: attr.hexColor });
+        }
+      });
+    });
+    return colors;
+  }, [variantProduct]);
+
+  const variantSizes = useMemo(() => {
+    if (!variantProduct?.variants?.length) return [];
+    const seen = new Set<string>();
+    const sizes: string[] = [];
+    variantProduct.variants.forEach((v) => {
+      if (!v.attributes) return;
+      Object.entries(v.attributes).forEach(([, attr]) => {
+        if (!attr.hexColor && !seen.has(attr.value)) {
+          seen.add(attr.value);
+          sizes.push(attr.displayValue);
+        }
+      });
+    });
+    return sizes;
+  }, [variantProduct]);
 
   // Subscribe to cart updates
   useEffect(() => {
@@ -130,7 +172,13 @@ export default function OptimisticProductCard({
 
   const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isOutOfStock || isAddingToCart || isInCart) return;
+    if (isOutOfStock || isAddingToCart || (isInCart && !isVariableProduct)) return;
+
+    // For variable products, show the variant picker modal instead
+    if (isVariableProduct) {
+      setShowVariantModal(true);
+      return;
+    }
 
     // 1. Start the loading animation
     setIsAddingToCart(true);
@@ -153,6 +201,23 @@ export default function OptimisticProductCard({
       setOptimisticAdded(true); // Show checkmark
       setIsAddingToCart(false); // Hide loader
     }, 600); // 600ms allows the user to see the spinner briefly (good feedback)
+  };
+
+  const handleVariantAddToCart = async (
+    variantId: string,
+    variantPrice: string,
+    variantAttributes?: Record<string, { value: string; displayValue: string; hexColor?: string | null }>
+  ) => {
+    // Fire-and-forget — same pattern as regular add, no blocking await
+    addToCart(id, {
+      title: name,
+      price: variantPrice,
+      images: [photo],
+      variantId,
+      variantAttributes,
+    }).catch((error) => {
+      console.error('Failed to add variant to cart:', error);
+    });
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -221,12 +286,13 @@ export default function OptimisticProductCard({
 
   // --- COMPONENT JSX ---
   return (
+    <>
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -5 }}
       transition={{ duration: 0.3 }}
-      className={`group bg-white rounded-xl border border-stone-100 shadow-sm hover:shadow-xl hover:shadow-[#973c00]/5 transition-all duration-300 relative flex flex-col h-full overflow-hidden ${isOutOfStock ? "opacity-60 grayscale" : ""}`}
+      className={`group bg-white rounded-xl border border-stone-100 shadow-sm hover:shadow-xl hover:shadow-[#973c00]/5 hover:-translate-y-1 transition-all duration-300 relative flex flex-col h-full overflow-hidden ${isOutOfStock ? "opacity-60 grayscale" : ""}`}
+      onMouseEnter={() => setIsHovered(true)}
     >
       {/* IMAGE SECTION */}
       <div className="relative aspect-6/4 bg-stone-50 overflow-hidden">
@@ -260,7 +326,7 @@ export default function OptimisticProductCard({
         )}
 
         <Link
-          href={`/shop/${slug || id}`}
+          href={`/shop/${id}`}
           className="w-full h-full block"
         >
           <Image
@@ -272,6 +338,35 @@ export default function OptimisticProductCard({
           />
           <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/5 transition-colors duration-300" />
         </Link>
+
+        {/* Variant color/size preview — always mounted, slides up on hover to avoid pop-in flicker */}
+        {isVariableProduct && (
+          <div className="absolute bottom-0 left-0 right-0 z-20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out will-change-transform">
+            {(variantColors.length > 0 || variantSizes.length > 0) && (
+              <div className="bg-white/95 backdrop-blur-sm px-3 py-2 flex items-center gap-2 flex-wrap border-t border-stone-100/60">
+                {variantColors.slice(0, 7).map((c) => (
+                  <div
+                    key={c.hex}
+                    title={c.label}
+                    className="w-4 h-4 rounded-full border-2 border-white shadow shadow-black/20 shrink-0"
+                    style={{ backgroundColor: c.hex }}
+                  />
+                ))}
+                {variantColors.length > 0 && variantSizes.length > 0 && (
+                  <span className="text-stone-300 text-xs">|</span>
+                )}
+                {variantSizes.slice(0, 5).map((s) => (
+                  <span
+                    key={s}
+                    className="text-[9px] font-bold text-stone-600 bg-stone-100 px-1.5 py-0.5 rounded leading-none"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* DETAILS SECTION */}
@@ -290,7 +385,7 @@ export default function OptimisticProductCard({
 
         {/* Title */}
         <h2 className="font-serif text-lg font-medium text-stone-800 mb-1 leading-tight group-hover:text-[#973c00] transition-colors">
-          <Link href={`/shop/${slug || id}`}>
+          <Link href={`/shop/${id}`}>
             {name}
           </Link>
         </h2>
@@ -346,12 +441,12 @@ export default function OptimisticProductCard({
             {/* Add to Cart Button */}
             <button
               onClick={handleAdd}
-              disabled={isOutOfStock || isAddingToCart || isInCart}
+              disabled={isOutOfStock || isAddingToCart || (isInCart && !isVariableProduct)}
               className={`
                 relative h-10 px-4 min-w-25 rounded-full flex items-center justify-center transition-all duration-300
                 ${isOutOfStock 
                   ? "bg-stone-200 text-stone-400 cursor-not-allowed" 
-                  : isInCart
+                  : (isInCart && !isVariableProduct)
                     ? "bg-[#f8efe9] text-[#973c00] border border-[#973c00]/30 cursor-default"
                     : "bg-[#973c00] text-white hover:bg-[#7a3100] shadow-md hover:shadow-lg shadow-[#973c00]/20 active:scale-95 cursor-pointer"
                 }
@@ -367,7 +462,7 @@ export default function OptimisticProductCard({
                   >
                     <Loader2 size={16} className="animate-spin" />
                   </motion.div>
-                ) : isInCart ? (
+                ) : (isInCart && !isVariableProduct) ? (
                   <motion.div
                     key="check"
                     initial={{ opacity: 0, y: 10 }}
@@ -387,7 +482,9 @@ export default function OptimisticProductCard({
                     className="flex items-center gap-1.5"
                   >
                     <ShoppingBag size={14} />
-                    <span className="text-xs font-bold uppercase tracking-wide">Add</span>
+                    <span className="text-xs font-bold uppercase tracking-wide">
+                      {isVariableProduct ? "Options" : "Add"}
+                    </span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -396,5 +493,18 @@ export default function OptimisticProductCard({
         </div>
       </div>
     </motion.div>
+
+    {/* Variant picker modal — only rendered for variable products */}
+    {isVariableProduct && (
+      <VariantPickerModal
+        isOpen={showVariantModal}
+        onClose={() => setShowVariantModal(false)}
+        productId={id}
+        productName={name}
+        productImage={photo}
+        onAddToCart={handleVariantAddToCart}
+      />
+    )}
+  </>
   );
 }

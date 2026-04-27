@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -30,8 +30,7 @@ import { apiClient } from "@/lib/api";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
 import { useToggleWishlist } from "@/hooks/useWishlistMutations";
 import { useWishlistCheck } from "@/hooks/useWishlist";
-import { useSingleProduct } from "@/hooks/useSingleProduct";
-import { useProducts } from "@/hooks/useProducts";
+import { useSingleProduct, ProductVariant } from "@/hooks/useSingleProduct";
 import { useProductStock } from "@/hooks/useProductStock";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-toastify";
@@ -81,28 +80,19 @@ export default function ShopSlugPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  // slugParam is the product ID — navigated to directly from product cards
   const slugParam = params?.slug as string;
 
-  // Resolve slug → product ID
-  const { data: allProducts, isLoading: allProductsLoading } = useProducts();
-  const resolvedProductId = useMemo(() => {
-    if (!allProducts || !slugParam) return undefined;
-    const match = allProducts.find((p) => {
-      const productSlug = p.slug || p.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "";
-      return productSlug === slugParam;
-    });
-    return match?.id;
-  }, [allProducts, slugParam]);
-
-  const { data: product, isLoading: productLoading, error: queryError } = useSingleProduct(resolvedProductId);
-  const loading = allProductsLoading || productLoading;
+  const { data: product, isLoading: productLoading, error: queryError } = useSingleProduct(slugParam);
+  const loading = productLoading;
   const error = queryError?.message || null;
 
   // Real-time stock — REST snapshot on mount + live socket updates thereafter
+  // Seed with totalStock for VARIABLE products (product.stock is 0 for those)
   const {
     stock: liveStock,
     isAvailable: liveIsAvailable,
-  } = useProductStock(product?.id, product?.stock ?? 0);
+  } = useProductStock(product?.id, product?.totalStock ?? product?.stock ?? 0);
 
   // UI state
   const [selectedImage, setSelectedImage] = useState(0);
@@ -214,22 +204,67 @@ export default function ShopSlugPage() {
   // Check if item is in cart
   const cartItem = cartData?.cart.find(item => item.productId === product?.id);
   const currentQtyInCart = cartItem?.quantity || 0;
-  
+
+  // Variant selection (for VARIABLE products)
+  const isVariableProduct = product?.productType === 'VARIABLE' || product?.type === 'VARIABLE';
+  // selectedAttributes holds the user's chosen value per attribute key, e.g. { color: "Blue", size: "M" }
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+
+  // Derive unique attribute keys in order (color first if present)
+  const attributeKeys = useMemo<string[]>(() => {
+    if (!product?.variants?.length) return [];
+    const keys = new Set<string>();
+    product.variants.forEach(v => {
+      if (v.attributes) Object.keys(v.attributes).forEach(k => keys.add(k));
+    });
+    // colour-like keys first
+    const sorted = Array.from(keys).sort((a, b) => {
+      const colorLike = (k: string) => /colou?r/i.test(k) ? 0 : 1;
+      return colorLike(a) - colorLike(b);
+    });
+    return sorted;
+  }, [product?.variants]);
+
+  // Find the variant that exactly matches all selected attributes
+  const selectedVariant = useMemo<ProductVariant | null>(() => {
+    if (!product?.variants?.length || !attributeKeys.length) return null;
+    if (attributeKeys.some(k => !selectedAttributes[k])) return null; // not all chosen yet
+    return product.variants.find(v =>
+      attributeKeys.every(k => v.attributes?.[k]?.value === selectedAttributes[k])
+    ) || null;
+  }, [product?.variants, selectedAttributes, attributeKeys]);
+
+  // Effective price/stock: use selected variant values if available
+  const effectivePrice = selectedVariant?.price || product?.price || '0';
+  const effectiveStock = selectedVariant != null
+    ? (selectedVariant.stock ?? 0)
+    : liveStock;
+  const effectiveIsAvailable = selectedVariant != null
+    ? ((selectedVariant.isActive !== false) && (selectedVariant.stock ?? 0) > 0)
+    : liveIsAvailable;
+
   // Use real-time liveStock so the button reflects instant server-side changes
-  const remainingStock = Math.max(0, liveStock - currentQtyInCart);
-  const isOutOfStock = !liveIsAvailable || remainingStock === 0;
+  const remainingStock = Math.max(0, effectiveStock - currentQtyInCart);
+  const isOutOfStock = !effectiveIsAvailable || remainingStock === 0;
+  // For VARIABLE products, block add-to-cart until all attributes are chosen
+  const needsVariantSelection = isVariableProduct && !selectedVariant && (product?.variants?.length ?? 0) > 0;
 
   const handleAddToCart = async () => {
     if (!product || isOutOfStock || isAddingToCart) return;
+    if (needsVariantSelection) {
+      toast.info('Please select a variant before adding to cart.', { position: 'top-right', autoClose: 2500 });
+      return;
+    }
 
     try {
       setIsAddingToCart(true);
       await addToCart(product.id, {
         title: product.title,
-        price: product.price,
-        featuredImage: product.featuredImage,
+        price: effectivePrice,
+        featuredImage: selectedVariant?.featuredImage || product.featuredImage,
         images: product.images || [],
         galleryImages: product.galleryImages || [],
+        ...(selectedVariant ? { variantId: selectedVariant.id } : {}),
       });
 
       setAddedToCart(true);
@@ -643,8 +678,15 @@ export default function ShopSlugPage() {
 
               {/* Price */}
               <div className="flex items-end gap-3">
-                <span className="text-5xl font-black text-[#3b1a08] leading-none tracking-tight">${product.price}</span>
-                {discountPercentage > 0 && (
+                <span className="text-5xl font-black text-[#3b1a08] leading-none tracking-tight">
+                  {selectedVariant?.price
+                    ? `$${selectedVariant.price}`
+                    : product.displayPrice ||
+                      (product.price && product.price !== '0'
+                        ? `$${product.price}`
+                        : null)}
+                </span>
+                {discountPercentage > 0 && product.price && product.price !== '0' && (
                   <>
                     <span className="text-xl text-[#973c00]/40 line-through mb-1">
                       ${(parseFloat(product.price) / (1 - discountPercentage / 100)).toFixed(2)}
@@ -658,15 +700,23 @@ export default function ShopSlugPage() {
 
               {/* Stock badge */}
               <div className="flex gap-3 items-center">
-                {liveIsAvailable && liveStock > 0 ? (
+                {effectiveIsAvailable && effectiveStock > 0 ? (
                   <span className="inline-flex items-center gap-1.5 bg-[#5A1E12]/8 text-[#5A1E12] border border-[#5A1E12]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
                     <Check className="w-3.5 h-3.5" />
                     In Stock
-                    <span className="font-normal text-[#5A1E12]/60">· {liveStock} left</span>
+                    {!isVariableProduct && (
+                      <span className="font-normal text-[#5A1E12]/60">· {effectiveStock} left</span>
+                    )}
+                    {isVariableProduct && !selectedVariant && product.totalStock != null && (
+                      <span className="font-normal text-[#5A1E12]/60">· {product.totalStock} total</span>
+                    )}
+                    {isVariableProduct && selectedVariant && (
+                      <span className="font-normal text-[#5A1E12]/60">· {effectiveStock} left</span>
+                    )}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 bg-[#973c00]/8 text-[#973c00] border border-[#973c00]/15 text-sm font-semibold px-3 py-1.5 rounded-full">
-                    Out of Stock
+                    {needsVariantSelection ? 'Select variant to check stock' : 'Out of Stock'}
                   </span>
                 )}
 
@@ -699,14 +749,129 @@ export default function ShopSlugPage() {
                 </div>
               )}
 
+              {/* ── Variant Selector (VARIABLE products) ─────────────── */}
+              {isVariableProduct && product.variants && product.variants.length > 0 && (
+                <div className="space-y-4">
+                  {attributeKeys.map((attrKey) => {
+                    const uniqueValues = Array.from(
+                      new Map(
+                        product.variants!
+                          .filter(v => v.attributes?.[attrKey])
+                          .map(v => [v.attributes![attrKey].value, v.attributes![attrKey]])
+                      ).values()
+                    );
+
+                    const isColorAttr = /colou?r/i.test(attrKey);
+                    const selectedValue = selectedAttributes[attrKey];
+
+                    const isValueAvailable = (val: string) => {
+                      return product.variants!.some(v => {
+                        if (v.attributes?.[attrKey]?.value !== val) return false;
+                        if ((v.stock ?? 0) === 0 || v.isActive === false) return false;
+                        return Object.entries(selectedAttributes).every(([k, sv]) =>
+                          k === attrKey || !sv || v.attributes?.[k]?.value === sv
+                        );
+                      });
+                    };
+
+                    return (
+                      <div key={attrKey}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-sm font-bold text-[#3b1a08] uppercase tracking-wider">
+                            {attrKey}
+                          </p>
+                          {selectedValue && (
+                            <span className="text-sm text-[#5A1E12] font-semibold">
+                              &mdash; {uniqueValues.find(v => v.value === selectedValue)?.displayValue || selectedValue}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {uniqueValues.map((attr) => {
+                            const available = isValueAvailable(attr.value);
+                            const isChosen = selectedValue === attr.value;
+
+                            if (isColorAttr && attr.hexColor) {
+                              return (
+                                <button
+                                  key={attr.value}
+                                  title={attr.displayValue}
+                                  disabled={!available}
+                                  onClick={() =>
+                                    setSelectedAttributes(prev => ({
+                                      ...prev,
+                                      [attrKey]: isChosen ? '' : attr.value,
+                                    }))
+                                  }
+                                  className={`relative w-9 h-9 rounded-full border-2 transition-all duration-150 shadow-sm
+                                    ${isChosen
+                                      ? 'border-[#5A1E12] scale-110 shadow-md'
+                                      : available
+                                      ? 'border-transparent hover:border-[#973c00]/40 hover:scale-105'
+                                      : 'border-transparent opacity-30 cursor-not-allowed'
+                                    }`}
+                                  style={{ backgroundColor: attr.hexColor }}
+                                >
+                                  {isChosen && (
+                                    <span className="absolute inset-0 flex items-center justify-center">
+                                      <Check className="w-4 h-4 text-white drop-shadow" />
+                                    </span>
+                                  )}
+                                  {!available && (
+                                    <span className="absolute inset-0 flex items-center justify-center">
+                                      <X className="w-3 h-3 text-white/70" />
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            }
+
+                            return (
+                              <button
+                                key={attr.value}
+                                disabled={!available}
+                                onClick={() =>
+                                  setSelectedAttributes(prev => ({
+                                    ...prev,
+                                    [attrKey]: isChosen ? '' : attr.value,
+                                  }))
+                                }
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all duration-150
+                                  ${isChosen
+                                    ? 'bg-[#5A1E12] text-white border-[#5A1E12] shadow-md'
+                                    : available
+                                    ? 'bg-white text-[#3b1a08] border-[#973c00]/20 hover:border-[#5A1E12] hover:bg-[#fdf4ef]'
+                                    : 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed line-through'
+                                  }`}
+                              >
+                                {attr.displayValue}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {needsVariantSelection && (
+                    <p className="text-xs text-[#973c00] font-medium">
+                      Please select all options to continue
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* ── Action Buttons ────────────────────────────────────── */}
               <div className="flex gap-3 pt-1">
                 <button
                   onClick={handleAddToCart}
-                  disabled={isOutOfStock || isAddingToCart}
+                  disabled={(isOutOfStock && !needsVariantSelection) || isAddingToCart}
                   className={`flex-1 inline-flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl text-base font-bold transition-all duration-200 cursor-pointer ${
                     addedToCart
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                      : needsVariantSelection
+                      ? 'bg-[#5A1E12]/60 text-white cursor-pointer'
                       : isOutOfStock
                       ? 'bg-[#973c00]/10 text-[#973c00]/40 cursor-not-allowed'
                       : 'bg-[#5A1E12] text-white hover:bg-[#3b1a08] active:scale-[.98] shadow-lg shadow-[#5A1E12]/25 hover:shadow-xl hover:shadow-[#5A1E12]/30'
@@ -717,7 +882,7 @@ export default function ShopSlugPage() {
                   ) : addedToCart ? (
                     <><Check className="w-5 h-5" />Added to Cart!</>
                   ) : (
-                    <><ShoppingCart className="w-5 h-5" />{isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</>
+                    <><ShoppingCart className="w-5 h-5" />{needsVariantSelection ? 'Select a Variant' : isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</>
                   )}
                 </button>
 
