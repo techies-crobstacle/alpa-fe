@@ -153,7 +153,11 @@ export function useEnhancedCart() {
         const availableShipping = await getShippingMethods();
 
         // ── Build shippingCalculations for guest (parallel calls per method) ──
-        const guestItemsPayload = cartItems.map(i => ({ productId: i.productId, quantity: i.quantity }));
+        const guestItemsPayload = cartItems.map(i => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          ...(i.variantId && { variantId: i.variantId }),
+        }));
         const shippingCalcEntries = await Promise.all(
           availableShipping.map(async (method) => {
             try {

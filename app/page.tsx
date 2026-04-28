@@ -591,6 +591,7 @@ const Page = () => {
                         name={product.title || "Untitled"}
                         description={product.description || ""}
                         amount={parseFloat(product.price || "0")}
+                        displayPrice={product.price || undefined}
                         stock={product.stock}
                         slug={product.slug}
                         rating={product.rating}

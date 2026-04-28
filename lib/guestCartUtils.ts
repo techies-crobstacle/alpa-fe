@@ -191,7 +191,7 @@ export const guestCartUtils = {
 
   // Calculate guest cart totals using backend API
   calculateGuestCartTotalsFromAPI: async (
-    items: { productId: string; quantity: number }[],
+    items: { productId: string; quantity: number; variantId?: string }[],
     shippingMethodId?: string,
     gstId?: string
   ): Promise<{ 

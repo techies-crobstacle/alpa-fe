@@ -1041,6 +1041,7 @@ function ShopContent() {
                     name={product.title || 'Untitled Product'}
                     description={product.description || 'No description available'}
                     amount={parseFloat(product.price || '0') || 0}
+                    displayPrice={product.price || undefined}
                     stock={product.stock != null ? product.stock : (product.totalStock ?? 0)}
                     slug={product.slug || `product-${product.id}`}
                     rating={product.rating || 0}

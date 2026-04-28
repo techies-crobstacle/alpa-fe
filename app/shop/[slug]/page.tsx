@@ -210,6 +210,18 @@ export default function ShopSlugPage() {
   // selectedAttributes holds the user's chosen value per attribute key, e.g. { color: "Blue", size: "M" }
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
+  // Auto-select first variant when product loads
+  useEffect(() => {
+    if (product?.variants?.length && isVariableProduct) {
+      const firstVariant = product.variants[0];
+      if (firstVariant?.attributes) {
+        const defaults: Record<string, string> = {};
+        Object.entries(firstVariant.attributes).forEach(([k, v]) => { defaults[k] = v.value; });
+        setSelectedAttributes(defaults);
+      }
+    }
+  }, [product?.id]);
+
   // Derive unique attribute keys in order (color first if present)
   const attributeKeys = useMemo<string[]>(() => {
     if (!product?.variants?.length) return [];
@@ -236,6 +248,15 @@ export default function ShopSlugPage() {
 
   // Effective price/stock: use selected variant values if available
   const effectivePrice = selectedVariant?.price || product?.price || '0';
+
+  // Format price for display — handles range strings like "28 - 30" from API
+  const formatPrice = (price: string) => {
+    if (price.includes('-')) {
+      return price.split('-').map(p => `$${parseFloat(p.trim()).toFixed(2)}`).join(' - ');
+    }
+    const num = parseFloat(price);
+    return isNaN(num) ? price : `$${num.toFixed(2)}`;
+  };
   const effectiveStock = selectedVariant != null
     ? (selectedVariant.stock ?? 0)
     : liveStock;
@@ -680,10 +701,10 @@ export default function ShopSlugPage() {
               <div className="flex items-end gap-3">
                 <span className="text-5xl font-black text-[#3b1a08] leading-none tracking-tight">
                   {selectedVariant?.price
-                    ? `$${selectedVariant.price}`
+                    ? formatPrice(selectedVariant.price)
                     : product.displayPrice ||
                       (product.price && product.price !== '0'
-                        ? `$${product.price}`
+                        ? formatPrice(product.price)
                         : null)}
                 </span>
                 {discountPercentage > 0 && product.price && product.price !== '0' && (

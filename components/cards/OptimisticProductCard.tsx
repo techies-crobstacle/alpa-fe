@@ -14,6 +14,20 @@ import { useAuth } from "@/context/AuthContext";
 import VariantPickerModal from "@/components/cards/VariantPickerModal";
 import { useSingleProduct } from "@/hooks/useSingleProduct";
 
+// --- COLOR NAME MAP ---
+const COLOR_NAME_TO_HEX: Record<string, string> = {
+  red: '#EF4444', blue: '#3B82F6', green: '#22C55E', yellow: '#EAB308',
+  orange: '#F97316', purple: '#A855F7', pink: '#EC4899', black: '#1C1917',
+  white: '#E7E5E4', gray: '#78716C', grey: '#78716C', brown: '#92400E',
+  beige: '#F5E6D0', navy: '#1E3A5F', teal: '#14B8A6', cyan: '#06B6D4',
+  magenta: '#D946EF', maroon: '#7F1D1D', olive: '#65740F', coral: '#F87171',
+  gold: '#F59E0B', silver: '#A1A1AA', cream: '#FFF8ED', mint: '#6EE7B7',
+  lavender: '#C4B5FD', rose: '#FB7185', turquoise: '#2DD4BF', indigo: '#6366F1',
+  violet: '#7C3AED', lime: '#A3E635', tan: '#D4B896', ivory: '#FFFFF0',
+};
+const getColorHex = (name: string): string | null =>
+  COLOR_NAME_TO_HEX[name.toLowerCase().trim()] ?? null;
+
 // --- INTERFACE DEFINITION (Fixes the TS Error) ---
 export interface OptimisticProductCardProps {
   id: string;
@@ -21,6 +35,7 @@ export interface OptimisticProductCardProps {
   name: string; 
   description: string;
   amount: number;
+  displayPrice?: string;
   stock?: number;
   slug?: string;
   rating?: number;
@@ -36,6 +51,7 @@ export default function OptimisticProductCard({
   name,
   description,
   amount,
+  displayPrice,
   stock = 50,
   slug,
   rating = 0,
@@ -76,10 +92,27 @@ export default function OptimisticProductCard({
     const colors: { label: string; hex: string }[] = [];
     variantProduct.variants.forEach((v) => {
       if (!v.attributes) return;
-      Object.values(v.attributes).forEach((attr) => {
-        if (attr.hexColor && !seen.has(attr.hexColor)) {
-          seen.add(attr.hexColor);
-          colors.push({ label: attr.displayValue, hex: attr.hexColor });
+      Object.entries(v.attributes).forEach(([key, attr]) => {
+        // Use hex from API if available
+        if (attr.hexColor) {
+          if (!seen.has(attr.hexColor)) {
+            seen.add(attr.hexColor);
+            colors.push({ label: attr.displayValue, hex: attr.hexColor });
+          }
+          return;
+        }
+        // No hex but attribute key or value maps to a known color name
+        const isColorKey = key.toLowerCase().includes('color');
+        const mappedHex = getColorHex(attr.displayValue);
+        if ((isColorKey || mappedHex) && mappedHex) {
+          if (!seen.has(mappedHex)) {
+            seen.add(mappedHex);
+            colors.push({ label: attr.displayValue, hex: mappedHex });
+          }
+        } else if (isColorKey && !mappedHex && !seen.has(attr.value)) {
+          // Unknown color name — neutral fallback swatch
+          seen.add(attr.value);
+          colors.push({ label: attr.displayValue, hex: '#CBD5E1' });
         }
       });
     });
@@ -92,8 +125,12 @@ export default function OptimisticProductCard({
     const sizes: string[] = [];
     variantProduct.variants.forEach((v) => {
       if (!v.attributes) return;
-      Object.entries(v.attributes).forEach(([, attr]) => {
-        if (!attr.hexColor && !seen.has(attr.value)) {
+      Object.entries(v.attributes).forEach(([key, attr]) => {
+        // Skip anything that is a color attribute
+        if (attr.hexColor) return;
+        if (key.toLowerCase().includes('color')) return;
+        if (getColorHex(attr.displayValue)) return;
+        if (!seen.has(attr.value)) {
           seen.add(attr.value);
           sizes.push(attr.displayValue);
         }
@@ -265,6 +302,18 @@ export default function OptimisticProductCard({
       currency: "AUD",
     }).format(price);
 
+  const priceDisplay = (() => {
+    const dp = displayPrice != null ? String(displayPrice) : '';
+    if (dp && dp !== '0') {
+      if (dp.includes('-')) {
+        return dp.split('-').map(p => `$${parseFloat(p.trim()).toFixed(2)}`).join(' – ');
+      }
+      const n = parseFloat(dp);
+      return isNaN(n) ? dp : formatPrice(n);
+    }
+    return formatPrice(amount);
+  })();
+
   // --- RENDER HELPERS ---
   const renderStars = (rating: number) => {
     return (
@@ -291,7 +340,7 @@ export default function OptimisticProductCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`group bg-white rounded-xl border border-stone-100 shadow-sm hover:shadow-xl hover:shadow-[#973c00]/5 hover:-translate-y-1 transition-all duration-300 relative flex flex-col h-full overflow-hidden ${isOutOfStock ? "opacity-60 grayscale" : ""}`}
+      className={`group bg-white rounded-xl border border-stone-100 shadow-sm hover:shadow-xl hover:shadow-[#973c00]/5 transition-all duration-300 relative flex flex-col h-full overflow-hidden ${isOutOfStock ? "opacity-60 grayscale" : ""}`}
       onMouseEnter={() => setIsHovered(true)}
     >
       {/* IMAGE SECTION */}
@@ -333,36 +382,44 @@ export default function OptimisticProductCard({
             src={photo || "/images/placeholder.png"}
             alt={name}
             fill
-            className="object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+            className="object-cover object-center group-hover:scale-106 transition-transform duration-700 ease-out"
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
           />
           <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/5 transition-colors duration-300" />
         </Link>
 
-        {/* Variant color/size preview — always mounted, slides up on hover to avoid pop-in flicker */}
+        {/* Variant color/size preview */}
         {isVariableProduct && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out will-change-transform">
+          <div className="absolute bottom-0 left-0 right-0 z-20 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out pointer-events-none group-hover:pointer-events-auto">
             {(variantColors.length > 0 || variantSizes.length > 0) && (
-              <div className="bg-white/95 backdrop-blur-sm px-3 py-2 flex items-center gap-2 flex-wrap border-t border-stone-100/60">
-                {variantColors.slice(0, 7).map((c) => (
+              <div className="bg-white/30 backdrop-blur-md px-3 py-2 flex items-center justify-center gap-1.5 flex-nowrap overflow-hidden border-t border-white/40">
+                {/* Colors — max 4 swatches */}
+                {variantColors.slice(0, 4).map((c) => (
                   <div
                     key={c.hex}
                     title={c.label}
-                    className="w-4 h-4 rounded-full border-2 border-white shadow shadow-black/20 shrink-0"
+                    className="w-4 h-4 rounded-full border-2 border-stone-300 shadow shadow-black/20 shrink-0"
                     style={{ backgroundColor: c.hex }}
                   />
                 ))}
-                {variantColors.length > 0 && variantSizes.length > 0 && (
-                  <span className="text-stone-300 text-xs">|</span>
+                {variantColors.length > 4 && (
+                  <span className="text-[9px] font-bold text-stone-700 shrink-0">+{variantColors.length - 4}</span>
                 )}
-                {variantSizes.slice(0, 5).map((s) => (
+                {variantColors.length > 0 && variantSizes.length > 0 && (
+                  <span className="text-stone-400 text-xs shrink-0 mx-0.5">|</span>
+                )}
+                {/* Sizes — max 4 pills */}
+                {variantSizes.slice(0, 4).map((s) => (
                   <span
                     key={s}
-                    className="text-[9px] font-bold text-stone-600 bg-stone-100 px-1.5 py-0.5 rounded leading-none"
+                    className="text-[9px] font-bold text-stone-700 bg-white/60 border border-stone-200 px-1.5 py-0.5 rounded leading-none shrink-0"
                   >
                     {s}
                   </span>
                 ))}
+                {variantSizes.length > 4 && (
+                  <span className="text-[9px] font-bold text-stone-700 shrink-0">+{variantSizes.length - 4}</span>
+                )}
               </div>
             )}
           </div>
@@ -414,7 +471,7 @@ export default function OptimisticProductCard({
           <div className="flex flex-col">
             <span className="text-[10px] text-stone-400 uppercase tracking-wider font-medium">Price</span>
             <span className="font-medium text-lg text-stone-900">
-              {formatPrice(amount)}
+              {priceDisplay}
             </span>
           </div>
 

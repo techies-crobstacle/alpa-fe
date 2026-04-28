@@ -686,7 +686,11 @@ export default function GuestCheckoutForm() {
     try {
       const gstId = cartData?.gst?.id;
       const body: Record<string, unknown> = {
-        items: cartItems.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: cartItems.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          ...(i.variantId && { variantId: i.variantId }),
+        })),
         customerName:  customerName.trim(),
         customerEmail: customerEmail.trim(),
         customerPhone: `${selectedCountry.dialCode} ${phoneNumber}`.trim(),
@@ -1254,7 +1258,7 @@ export default function GuestCheckoutForm() {
               {cartItems.map((item) => (
                 <div key={item.productId} className="flex gap-4">
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                    <Image src={item.product?.images?.[0] || "/images/placeholder.png"} alt={item.product?.title || "Product"} fill className="object-cover" />
+                    <Image src={item.product?.featuredImage || item.product?.images?.[0] || item.product?.image || "/images/placeholder.png"} alt={item.product?.title || "Product"} fill className="object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate text-sm">{item.product?.title || "Product"}</p>

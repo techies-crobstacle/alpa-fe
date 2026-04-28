@@ -32,13 +32,20 @@ export default function VariantPickerModal({
   const [isAdding, setIsAdding] = useState(false);
   const [added, setAdded] = useState(false);
 
-  // Reset selections when modal opens
+  // Auto-select first variant when product data loads or modal opens
   useEffect(() => {
-    if (isOpen) {
+    if (product?.variants?.length) {
+      const firstVariant = product.variants[0];
+      if (firstVariant?.attributes) {
+        const defaults: Record<string, string> = {};
+        Object.entries(firstVariant.attributes).forEach(([k, v]) => { defaults[k] = v.value; });
+        setSelectedAttrs(defaults);
+      }
+    } else if (isOpen) {
       setSelectedAttrs({});
-      setAdded(false);
     }
-  }, [isOpen]);
+    setAdded(false);
+  }, [product?.id, isOpen]);
 
   // Extract all unique attribute keys from active variants
   const attributeKeys = useMemo(() => {
