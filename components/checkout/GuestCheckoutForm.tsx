@@ -14,7 +14,6 @@ import GuestStripePaymentForm from "@/components/checkout/GuestStripePaymentForm
 import Link from "next/link";
 import { apiClient } from "@/lib/api";
 import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
-import { isValidPhoneNumber } from "react-phone-number-input";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import type { CountryCode } from "libphonenumber-js";
 
@@ -52,12 +51,10 @@ const addressTerminology: Record<string, { state: string; city: string }> = {
 // ─── Country data from react-phone-number-input ───────────────────────────
 const countryCodeList = getCountries();
 
-// Generate flag emoji from ISO2 code using Unicode regional indicator symbols.
-// Works for every valid ISO 3166-1 alpha-2 code without a manual map.
-const getFlagEmoji = (iso2: string): string =>
-  iso2.toUpperCase().replace(/./g, ch =>
-    String.fromCodePoint(127397 + ch.charCodeAt(0))
-  );
+// Return a flagcdn.com PNG URL for any ISO 3166-1 alpha-2 code.
+// Renders correctly on all platforms (Windows, Android, etc.) unlike emoji.
+const getFlagUrl = (iso2: string): string =>
+  `https://flagcdn.com/20x15/${iso2.toLowerCase()}.png`;
 
 // Use Intl.DisplayNames for localised country names (available in all modern runtimes).
 const _regionNames = typeof Intl !== "undefined" && Intl.DisplayNames
@@ -69,7 +66,7 @@ const getCountryName = (iso2: string): string =>
 // Build COUNTRIES array — all countries supported by react-phone-number-input
 const COUNTRIES_RAW = countryCodeList.map(code => ({
   code,
-  flag: getFlagEmoji(code),
+  flag: getFlagUrl(code),
   name: getCountryName(code),
   dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
 }));
@@ -82,22 +79,49 @@ const COUNTRIES = auIndex !== -1
 
 type Country = typeof COUNTRIES[number];
 
+// Renders a country flag image with a graceful fallback (two-letter code badge)
+// for territories like Ascension Island (AC) that flagcdn.com doesn't cover.
+function FlagImage({ code, name }: { code: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span
+        className="inline-flex items-center justify-center bg-gray-200 text-gray-600 font-bold rounded-sm shrink-0 text-[8px] leading-none"
+        style={{ width: 20, height: 15 }}
+        title={name}
+      >
+        {code.slice(0, 2)}
+      </span>
+    );
+  }
+  return (
+    <img
+      src={`https://flagcdn.com/20x15/${code.toLowerCase()}.png`}
+      alt={name}
+      width={20}
+      height={15}
+      className="rounded-sm shrink-0"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 // Phone validation using react-phone-number-input
 function validatePhone(digits: string, country: Country): string | null {
-  if (!digits.trim()) return 'Phone number is required.';
-  
-  // Create a full phone number with country calling code for validation
-  const fullNumber = `${country.dialCode}${digits.replace(/\D/g, '')}`;
-  
+  const cleaned = digits.replace(/\D/g, '');
+  if (!cleaned) return 'Phone number is required.';
+
+  // Strip leading 0: AU, NZ, UK and many others use a local format that
+  // starts with 0 (e.g. 0412 345 678). In E.164 that 0 is NOT part of the
+  // subscriber number, so +61 0412345678 is wrong — it must be +61412345678.
+  const normalized = cleaned.startsWith('0') ? cleaned.slice(1) : cleaned;
+  const fullNumber = `${country.dialCode}${normalized}`;
+
   try {
-    const phoneNumber = parsePhoneNumberFromString(fullNumber);
-    if (!phoneNumber) return 'Invalid phone number format.';
-    
-    const isValid = isValidPhoneNumber(fullNumber);
-    if (!isValid) return `Invalid ${country.name} phone number.`;
-    
+    const parsed = parsePhoneNumberFromString(fullNumber);
+    if (!parsed || !parsed.isValid()) return `Invalid ${country.name} phone number.`;
     return null;
-  } catch (error) {
+  } catch {
     return 'Invalid phone number format.';
   }
 }
@@ -158,6 +182,7 @@ export default function GuestCheckoutForm() {
             sessionStorage.removeItem("guestEmail");
             sessionStorage.removeItem("guestOrderId");
             guestCartUtils.clearGuestCart();
+            sessionStorage.removeItem(DRAFT_KEY);
             sessionStorage.setItem("guestOrderId",    data.orderId || storedOrderId || "");
             sessionStorage.setItem("guestOrderEmail", customerEmail);
             if (data.displayId) sessionStorage.setItem("guestOrderDisplayId", data.displayId);
@@ -273,6 +298,62 @@ export default function GuestCheckoutForm() {
     }
   }, [subtotal, appliedCoupon]);
 
+  // ── Persist form draft so browser-back doesn't wipe entries ──────────────
+  const DRAFT_KEY = "guestFormDraft";
+
+  // Restore on mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.customerName)       setCustomerName(d.customerName);
+      if (d.customerEmail)      setCustomerEmail(d.customerEmail);
+      if (d.addressLine)        setAddressLine(d.addressLine);
+      if (d.zipCode)            setZipCode(d.zipCode);
+      if (d.country)            setCountry(d.country);
+      if (d.state)              setState(d.state);
+      if (d.city)               setCity(d.city);
+      if (d.selectedCountryIso) setSelectedCountryIso(d.selectedCountryIso);
+      if (d.selectedStateIso)   setSelectedStateIso(d.selectedStateIso);
+      if (d.phoneNumber)        setPhoneNumber(d.phoneNumber);
+      if (d.phoneCountryCode) {
+        const found = COUNTRIES.find(c => c.code === d.phoneCountryCode);
+        if (found) setSelectedCountry(found);
+      }
+      // Re-fetch states & cities so the dropdowns are usable again
+      if (d.selectedCountryIso) {
+        apiClient.get(`/location/countries/${d.selectedCountryIso}/states`)
+          .then((resp: any) => {
+            if (resp?.data) {
+              setLocationStates(resp.data);
+              if (d.selectedStateIso) {
+                apiClient.get(`/location/countries/${d.selectedCountryIso}/states/${d.selectedStateIso}/cities`)
+                  .then((r: any) => { if (r?.data) setLocationCities(r.data); })
+                  .catch(() => {});
+              }
+            }
+          })
+          .catch(() => {});
+      }
+    } catch { /* ignore corrupt draft */ }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save on every field change
+  useEffect(() => {
+    // Don't persist a completely blank form
+    if (!customerName && !customerEmail && !addressLine && !phoneNumber) return;
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        customerName, customerEmail, addressLine, zipCode,
+        country, state, city,
+        selectedCountryIso, selectedStateIso,
+        phoneNumber, phoneCountryCode: selectedCountry.code,
+      }));
+    } catch { /* storage quota – silently skip */ }
+  }, [customerName, customerEmail, addressLine, zipCode, country, state, city,
+      selectedCountryIso, selectedStateIso, phoneNumber, selectedCountry.code]);
+
   // ── Steps ─────────────────────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState<"form" | "payment">("form");
 
@@ -293,9 +374,9 @@ export default function GuestCheckoutForm() {
     // Only allow digits, spaces, hyphens, parentheses
     const cleaned = value.replace(/[^\d\s\-().]/g, "");
     setPhoneNumber(cleaned);
-    if (phoneTouched) {
-      setPhoneError(validatePhone(cleaned, selectedCountry));
-    }
+    // Clear the error when the field is emptied, but don't re-validate
+    // mid-typing — that happens on blur.
+    if (!cleaned.trim()) setPhoneError(null);
   };
 
   const handleCountrySelect = (country: Country) => {
@@ -392,7 +473,13 @@ export default function GuestCheckoutForm() {
     } catch { /* silently skip */ }
   };
   // ── Google Places Autocomplete Setup ──────────────────────────────────────
+  // IMPORTANT: dependency includes `cartLoading` so the effect re-runs once the
+  // cart spinner goes away and the address <input> is actually in the DOM.
+  // With the `autocompleteInstanceRef.current` guard it won't double-attach.
   useEffect(() => {
+    // Don't try while the form isn't rendered (cart still loading or step = payment)
+    if (cartLoading) return;
+
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       console.warn('Google Maps API key not found. Address autocomplete will not work.');
@@ -462,7 +549,7 @@ export default function GuestCheckoutForm() {
       return;
     }
 
-    // Check if script is already injected
+    // Check if script is already injected (but not fully loaded yet)
     if (document.querySelector(`script[src*="maps.googleapis.com/maps/api/js"]`)) {
       const poll = setInterval(() => {
         if (window.google?.maps?.places?.Autocomplete) {
@@ -482,21 +569,50 @@ export default function GuestCheckoutForm() {
     document.head.appendChild(script);
 
     return () => {
-      // Cleanup on unmount
       if (autocompleteInstanceRef.current) {
         window.google?.maps?.event?.clearInstanceListeners?.(autocompleteInstanceRef.current);
         autocompleteInstanceRef.current = null;
       }
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartLoading]);
 
-  // ── Update autocomplete country restriction when country dropdown changes ─
+  // ── Update autocomplete country restriction when country changes;
+  //    also attach if it wasn't ready when the cart first loaded ────────────
   useEffect(() => {
-    if (!autocompleteInstanceRef.current || !selectedCountryIso) return;
-    autocompleteInstanceRef.current.setComponentRestrictions({
-      country: selectedCountryIso.toLowerCase(),
-    });
-  }, [selectedCountryIso]);
+    if (!selectedCountryIso) return;
+    if (autocompleteInstanceRef.current) {
+      autocompleteInstanceRef.current.setComponentRestrictions({
+        country: selectedCountryIso.toLowerCase(),
+      });
+    } else if (!cartLoading && window.google?.maps?.places?.Autocomplete && addressInputRef.current) {
+      // Script was already loaded before this component mounted — attach now
+      const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+        types: ["address"],
+        fields: ["formatted_address", "address_components"],
+        componentRestrictions: { country: selectedCountryIso.toLowerCase() },
+      });
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place?.address_components) return;
+        const getC = (t: string) => place.address_components.find((c: any) => c.types.includes(t))?.long_name || "";
+        const getS = (t: string) => place.address_components.find((c: any) => c.types.includes(t))?.short_name || "";
+        const cityName = getC("locality") || getC("administrative_area_level_2");
+        const stateLong = getC("administrative_area_level_1");
+        const stateShort = getS("administrative_area_level_1");
+        const postalCode = getC("postal_code");
+        const countryName = getC("country");
+        const formattedAddr = place.formatted_address || "";
+        const stripTerms = new Set([cityName, stateLong, stateShort, postalCode, countryName].filter(Boolean).map(t => t.toLowerCase()));
+        const streetOnly = formattedAddr.split(",").map((p: string) => p.trim()).filter((p: string) => p && !stripTerms.has(p.toLowerCase())).join(", ") || formattedAddr.split(",")[0].trim();
+        if (addressInputRef.current) addressInputRef.current.value = streetOnly;
+        setAddressLine(streetOnly); setCity(cityName);
+        setState(getC("administrative_area_level_1")); setZipCode(getC("postal_code")); setCountry(getC("country"));
+        setFieldErrors({});
+      });
+      autocompleteInstanceRef.current = autocomplete;
+    }
+  }, [selectedCountryIso, cartLoading]);
 
   // Final total after coupon — recomputed dynamically whenever grandTotal changes
   const discountAmount = appliedCoupon
@@ -863,7 +979,7 @@ export default function GuestCheckoutForm() {
                         onClick={() => { setShowCountryDropdown(v => !v); setCountrySearch(""); setPhoneHighlight(0); }}
                         className="flex items-center gap-1.5 px-3 h-full text-sm font-medium border-r border-[#5A1E12]/20 hover:bg-black/5 transition rounded-l-lg"
                       >
-                        <span className="text-lg leading-none">{selectedCountry.flag}</span>
+                        <FlagImage code={selectedCountry.code} name={selectedCountry.name} />
                         <span className="text-gray-700 text-xs">{selectedCountry.dialCode}</span>
                         <span className="text-gray-400 text-xs">▾</span>
                       </button>
@@ -898,7 +1014,7 @@ export default function GuestCheckoutForm() {
                                     : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
                                   }`}
                                 >
-                                  <span className="text-base w-6 shrink-0">{c.flag}</span>
+                                  <FlagImage code={c.code} name={c.name} />
                                   <span className="flex-1 truncate">{c.name}</span>
                                   <span className={`text-xs shrink-0 ${idx === phoneHighlight || c.code === selectedCountry.code ? "opacity-80" : "text-gray-400"}`}>{c.dialCode}</span>
                                 </button>
@@ -947,6 +1063,25 @@ export default function GuestCheckoutForm() {
             <div className="border-t border-[#5A1E12]/10 pt-6">
               <h3 className="text-base font-semibold text-[#5A1E12] mb-4">Shipping Address</h3>
               <div className="space-y-4">
+                {/* Street Address */}
+                <div>
+                  <label className="block text-sm font-medium text-[#5A1E12] mb-1">
+                    Street Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={addressInputRef}
+                    type="text"
+                    value={addressLine}
+                    onChange={(e) => setAddressLine(e.target.value)}
+                    placeholder="Start typing your address..."
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm transition-all ${
+                      fieldErrors.addressLine ? "border-red-400" : "border-[#5A1E12]/20"
+                    }`}
+                  />
+                  {fieldErrors.addressLine && <p className="mt-1 text-xs text-red-500">{fieldErrors.addressLine}</p>}
+                  <p className="mt-1 text-xs text-[#5A1E12]/60">💡 Start typing for address suggestions</p>
+                </div>
+
                 {/* Country custom dropdown */}
                 <div ref={locCountryRef}>
                   <label className="block text-sm font-medium text-[#5A1E12] mb-1">Country <span className="text-red-500">*</span></label>
@@ -1096,25 +1231,6 @@ export default function GuestCheckoutForm() {
               </div>
             </div>
 
-<div>
-                  <label className="block text-sm font-medium text-[#5A1E12] mb-1">
-                    Street Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    ref={addressInputRef}
-                    type="text"
-                    value={addressLine}
-                    onChange={(e) => setAddressLine(e.target.value)}
-                    placeholder="Start typing your address..."
-                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm transition-all ${
-                      fieldErrors.addressLine ? "border-red-400" : "border-[#5A1E12]/20"
-                    }`}
-                  />
-                  {fieldErrors.addressLine && <p className="mt-1 text-xs text-red-500">{fieldErrors.addressLine}</p>}
-                  <p className="mt-1 text-xs text-[#5A1E12]/60">💡 Start typing for address suggestions</p>
-                </div>
-
-
 
             {/* Shipping Method */}
             <div className="border-t border-[#5A1E12]/10 pt-6">
@@ -1232,7 +1348,7 @@ export default function GuestCheckoutForm() {
                 amount={stripeAmount}
                 currency={stripeCurrency}
                 orderId={confirmedOrderId}
-                onSuccess={() => router.push("/guest/order-success")}
+                onSuccess={() => { sessionStorage.removeItem(DRAFT_KEY); router.push("/guest/order-success"); }}
                 onError={(msg) => toast.error(msg)}
               />
             </Elements>

@@ -7,7 +7,6 @@ import { AuthContext } from "@/context/AuthContext";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
-import { isValidPhoneNumber } from "react-phone-number-input";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import type { CountryCode } from "libphonenumber-js";
 
@@ -100,12 +99,10 @@ const addressTerminology: Record<string, { state: string; city: string }> = {
 // ── Country data from react-phone-number-input ────────────────────────
 const countryCodeList = getCountries();
 
-// Generate flag emoji from ISO2 code using Unicode regional indicator symbols.
-// Works for every valid ISO 3166-1 alpha-2 code without a manual map.
-const getFlagEmoji = (iso2: string): string =>
-  iso2.toUpperCase().replace(/./g, ch =>
-    String.fromCodePoint(127397 + ch.charCodeAt(0))
-  );
+// Return a flagcdn.com PNG URL for any ISO 3166-1 alpha-2 code.
+// Renders correctly on all platforms (Windows, Android, etc.) unlike emoji.
+const getFlagUrl = (iso2: string): string =>
+  `https://flagcdn.com/20x15/${iso2.toLowerCase()}.png`;
 
 // Use Intl.DisplayNames for localised country names (available in all modern runtimes).
 const _regionNames = typeof Intl !== "undefined" && Intl.DisplayNames
@@ -117,7 +114,7 @@ const getCountryName = (iso2: string): string =>
 // Build COUNTRIES array — all countries supported by react-phone-number-input
 const COUNTRIES_RAW = countryCodeList.map(code => ({
   code,
-  flag: getFlagEmoji(code),
+  flag: getFlagUrl(code),
   name: getCountryName(code),
   dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
 }));
@@ -130,22 +127,49 @@ const COUNTRIES = auIndex !== -1
 
 type Country = typeof COUNTRIES[number];
 
+// Renders a country flag image with a graceful fallback (two-letter code badge)
+// for territories like Ascension Island (AC) that flagcdn.com doesn't cover.
+function FlagImage({ code, name }: { code: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span
+        className="inline-flex items-center justify-center bg-gray-200 text-gray-600 font-bold rounded-sm shrink-0 text-[8px] leading-none"
+        style={{ width: 20, height: 15 }}
+        title={name}
+      >
+        {code.slice(0, 2)}
+      </span>
+    );
+  }
+  return (
+    <img
+      src={`https://flagcdn.com/20x15/${code.toLowerCase()}.png`}
+      alt={name}
+      width={20}
+      height={15}
+      className="rounded-sm shrink-0"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 // Phone validation using react-phone-number-input
 function validatePhone(digits: string, country: Country): string | null {
-  if (!digits.trim()) return null;
-  
-  // Create a full phone number with country calling code for validation
-  const fullNumber = `${country.dialCode}${digits.replace(/\D/g, '')}`;
-  
+  const cleaned = digits.replace(/\D/g, '');
+  if (!cleaned) return null;
+
+  // Strip leading 0: AU, NZ, UK and many others use a local format that
+  // starts with 0 (e.g. 0412 345 678). In E.164 that 0 is NOT part of the
+  // subscriber number, so +61 0412345678 is wrong — it must be +61412345678.
+  const normalized = cleaned.startsWith('0') ? cleaned.slice(1) : cleaned;
+  const fullNumber = `${country.dialCode}${normalized}`;
+
   try {
-    const phoneNumber = parsePhoneNumberFromString(fullNumber);
-    if (!phoneNumber) return 'Invalid phone number format.';
-    
-    const isValid = isValidPhoneNumber(fullNumber);
-    if (!isValid) return `Invalid ${country.name} phone number.`;
-    
+    const parsed = parsePhoneNumberFromString(fullNumber);
+    if (!parsed || !parsed.isValid()) return `Invalid ${country.name} phone number.`;
     return null;
-  } catch (error) {
+  } catch {
     return 'Invalid phone number format.';
   }
 }
@@ -842,7 +866,16 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
     }
 
     const attachAutocomplete = () => {
-      if (!addressInputRef.current || autocompleteInstanceRef.current) return;
+      if (!addressInputRef.current) return;
+      if (autocompleteInstanceRef.current) {
+        // Already attached — just update country restriction
+        if (selectedCountryCodeRef.current) {
+          autocompleteInstanceRef.current.setComponentRestrictions(
+            { country: selectedCountryCodeRef.current.toLowerCase() }
+          );
+        }
+        return;
+      }
       if (!window.google?.maps?.places?.Autocomplete) return;
 
       const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
@@ -962,14 +995,40 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataLoaded]);
 
-  // Update country restriction on the existing instance when country dropdown changes
+  // Update country restriction when country changes; also retry attaching if not yet initialised
   useEffect(() => {
-    if (!autocompleteInstanceRef.current) return;
-    autocompleteInstanceRef.current.setComponentRestrictions(
-      selectedCountryCode
-        ? { country: selectedCountryCode.toLowerCase() }
-        : null
-    );
+    if (!selectedCountryCode) return;
+    if (autocompleteInstanceRef.current) {
+      autocompleteInstanceRef.current.setComponentRestrictions(
+        { country: selectedCountryCode.toLowerCase() }
+      );
+    } else if (window.google?.maps?.places?.Autocomplete && addressInputRef.current) {
+      // Autocomplete wasn't ready on first load — attach it now
+      const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+        types: ["address"],
+        fields: ["address_components", "formatted_address"],
+        componentRestrictions: { country: selectedCountryCode.toLowerCase() },
+      });
+      ac.addListener("place_changed", () => {
+        const ac2 = autocompleteInstanceRef.current;
+        if (!ac2) return;
+        const place = ac2.getPlace();
+        if (place?.address_components) {
+          const getC = (t: string) => place.address_components.find((c: any) => c.types.includes(t))?.long_name || "";
+          const getS = (t: string) => place.address_components.find((c: any) => c.types.includes(t))?.short_name || "";
+          const city = getC("locality") || getC("sublocality_level_1") || getC("sublocality") || getC("administrative_area_level_2");
+          const stateLong = getC("administrative_area_level_1");
+          const stateShort = getS("administrative_area_level_1");
+          const postalCode = getC("postal_code");
+          const formatted = place.formatted_address || "";
+          const stripTerms = new Set([city, stateLong, stateShort, postalCode, getC("country")].filter(Boolean).map((t: string) => t.toLowerCase()));
+          const street = formatted.split(",").map((p: string) => p.trim()).filter((p: string) => p && !stripTerms.has(p.toLowerCase())).join(", ") || formatted.split(",")[0].trim();
+          if (addressInputRef.current) addressInputRef.current.value = street;
+          setFormData(prev => ({ ...prev, address: street, city, state: stateShort || stateLong, zip: postalCode }));
+        }
+      });
+      autocompleteInstanceRef.current = ac;
+    }
   }, [selectedCountryCode]);
 
   // Close dropdowns on outside click
@@ -991,9 +1050,9 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
     // Only allow digits, spaces, hyphens
     const cleaned = value.replace(/[^\d\s\-().]/g, "");
     setPhoneNumber(cleaned);
-    if (phoneTouched) {
-      setPhoneError(validatePhone(cleaned, selectedCountry));
-    }
+    // Clear the error when the field is emptied, but don't re-validate
+    // mid-typing — that happens on blur.
+    if (!cleaned.trim()) setPhoneError(null);
   };
 
   const handlePhoneBlur = () => {
@@ -1033,6 +1092,33 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
       <div>
         <h1 className="text-2xl font-bold text-[#5A1E12]">Where should we send your order?</h1>
         <p className="text-sm text-gray-500 mt-1">Fields marked <span className="text-red-500">*</span> are required.</p>
+      </div>
+
+      {/* Street address autocomplete */}
+      <div className="flex flex-col gap-1.5 relative">
+        <label htmlFor="address" className="text-sm font-medium text-gray-600">
+          Street Address <span className="text-red-500">*</span>
+        </label>
+        <input
+          ref={addressInputRef}
+          id="address"
+          name="address"
+          type="text"
+          value={formData.address}
+          onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+          placeholder={
+            formData.city && formData.state 
+              ? `Start typing street address in ${formData.country}...` 
+              : "e.g., 123 Collins Street, Unit 5A"
+          }
+          className={inputNormal}
+          required
+        />
+        <p className="text-xs text-gray-500">
+          {selectedCountryCode 
+            ? "💡 Start typing for address suggestions" 
+            : "Include street number, name, unit/apartment number"}
+        </p>
       </div>
 
       {/* Country Dropdown */}
@@ -1102,8 +1188,6 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
           <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>✕</span>{fieldErrors.country}</p>
         )}
       </div>
-
-      
 
       {/* State Dropdown - Only show if states exist */}
       {states.length > 0 && (
@@ -1222,33 +1306,6 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
         </div>
       </div>
 
-      {/* Street address autocomplete */}
-      <div className="flex flex-col gap-1.5 relative">
-        <label htmlFor="address" className="text-sm font-medium text-gray-600">
-          Street Address <span className="text-red-500">*</span>
-        </label>
-        <input
-          ref={addressInputRef}
-          id="address"
-          name="address"
-          type="text"
-          value={formData.address}
-          onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-          placeholder={
-            formData.city && formData.state 
-              ? `Start typing street address in ${formData.country}...` 
-              : "e.g., 123 Collins Street, Unit 5A"
-          }
-          className={inputNormal}
-          required
-        />
-        <p className="text-xs text-gray-500">
-          {selectedCountryCode 
-            ? "💡 Start typing for address suggestions" 
-            : "Include street number, name, unit/apartment number"}
-        </p>
-      </div>
-
       {/* Phone — single cohesive input row */}
       <div className="flex flex-col gap-1.5" ref={countryDropdownRef}>
         <label className="text-sm font-medium text-gray-600">
@@ -1268,7 +1325,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
               onClick={() => { setShowCountryDropdown(v => !v); setCountrySearch(""); }}
               className="flex items-center gap-1.5 px-3 h-full text-sm font-medium border-r border-[#d6b896] hover:bg-black/5 transition rounded-l-xl"
             >
-              <span className="text-lg leading-none">{selectedCountry.flag}</span>
+              <FlagImage code={selectedCountry.code} name={selectedCountry.name} />
               <span className="text-gray-700 text-xs">{selectedCountry.dialCode}</span>
               <span className="text-gray-400 text-xs">▾</span>
             </button>
@@ -1310,7 +1367,7 @@ export default function AddressCart({ onAddressChange, onValidationChange }: Add
                             : "text-gray-800 hover:bg-[#f5e6d3] hover:text-[#5A1E12]"
                         }`}
                       >
-                        <span className="text-base w-6 shrink-0">{c.flag}</span>
+                        <FlagImage code={c.code} name={c.name} />
                         <span className="flex-1 truncate">{c.name}</span>
                         <span className={`text-xs shrink-0 ${idx === phoneHighlight || c.code === selectedCountry.code ? "opacity-80" : "text-gray-400"}`}>{c.dialCode}</span>
                       </button>
