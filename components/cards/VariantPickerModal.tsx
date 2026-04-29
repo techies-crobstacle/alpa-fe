@@ -89,6 +89,18 @@ export default function VariantPickerModal({
     );
   }, [product, selectedAttrs, attributeKeys]);
 
+  // Check if a value for a given attribute key is available given other current selections
+  const isValueAvailable = (key: string, val: string): boolean => {
+    if (!product?.variants?.length) return false;
+    return product.variants.some((v) => {
+      if (v.attributes?.[key]?.value !== val) return false;
+      if ((v.stock ?? 0) === 0 || v.isActive === false) return false;
+      return Object.entries(selectedAttrs).every(([k, sv]) =>
+        k === key || !sv || v.attributes?.[k]?.value === sv
+      );
+    });
+  };
+
   const allSelected = attributeKeys.length > 0 && Object.keys(selectedAttrs).length === attributeKeys.length;
 
   const handleAttrSelect = (key: string, value: string) => {
@@ -218,21 +230,36 @@ export default function VariantPickerModal({
                       <div className="flex flex-wrap gap-2">
                         {attributeOptions[key]?.map((option) => {
                           const isSelected = selectedAttrs[key] === option.value;
+                          const available = isValueAvailable(key, option.value);
 
                           // Color swatch when hexColor is provided
                           if (option.hexColor) {
                             return (
                               <button
                                 key={option.value}
-                                onClick={() => handleAttrSelect(key, option.value)}
-                                title={option.displayValue}
-                                className={`w-9 h-9 rounded-full border-2 transition-all duration-200 ${
+                                onClick={() => available && handleAttrSelect(key, option.value)}
+                                disabled={!available}
+                                title={option.displayValue + (!available ? ' — Out of stock' : '')}
+                                className={`relative w-9 h-9 rounded-full border-2 transition-all duration-200 ${
                                   isSelected
                                     ? "border-[#5A1E12] scale-110 shadow-md ring-2 ring-[#5A1E12]/20"
-                                    : "border-stone-200 hover:border-[#5A1E12]/50 hover:scale-105"
+                                    : available
+                                    ? "border-stone-200 hover:border-[#5A1E12]/50 hover:scale-105"
+                                    : "border-transparent opacity-30 cursor-not-allowed"
                                 }`}
                                 style={{ backgroundColor: option.hexColor }}
-                              />
+                              >
+                                {isSelected && (
+                                  <span className="absolute inset-0 flex items-center justify-center">
+                                    <Check size={14} className="text-white drop-shadow" />
+                                  </span>
+                                )}
+                                {!available && (
+                                  <span className="absolute inset-0 flex items-center justify-center">
+                                    <X size={12} className="text-white/70" />
+                                  </span>
+                                )}
+                              </button>
                             );
                           }
 
@@ -240,11 +267,14 @@ export default function VariantPickerModal({
                           return (
                             <button
                               key={option.value}
-                              onClick={() => handleAttrSelect(key, option.value)}
+                              onClick={() => available && handleAttrSelect(key, option.value)}
+                              disabled={!available}
                               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium border transition-all duration-200 ${
                                 isSelected
                                   ? "bg-[#5A1E12] text-white border-[#5A1E12] shadow-sm"
-                                  : "bg-white text-stone-700 border-stone-200 hover:border-[#5A1E12]/50 hover:bg-[#EAD7B7]/40"
+                                  : available
+                                  ? "bg-white text-stone-700 border-stone-200 hover:border-[#5A1E12]/50 hover:bg-[#EAD7B7]/40"
+                                  : "bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed line-through"
                               }`}
                             >
                               {option.displayValue}

@@ -47,14 +47,30 @@ function ShopContent() {
 
   const { addToCart, getItemQuantity } = useCart();
 
+  // Parse a price string (e.g. "28 - 30" or "25") into { min, max }
+  const parsePriceRange = (price: string | number | undefined): { min: number; max: number } => {
+    if (price == null) return { min: 0, max: 0 };
+    const str = String(price);
+    if (str.includes('-')) {
+      const parts = str.split('-').map(p => parseFloat(p.trim())).filter(n => !isNaN(n));
+      if (parts.length >= 2) return { min: parts[0], max: parts[parts.length - 1] };
+      if (parts.length === 1) return { min: parts[0], max: parts[0] };
+    }
+    const n = parseFloat(str);
+    return isNaN(n) ? { min: 0, max: 0 } : { min: n, max: n };
+  };
+
   /* ---------- DYNAMIC MIN/MAX PRICE ---------- */
   const { minPrice, maxPrice } = useMemo(() => {
     if (products.length === 0) return { minPrice: 0, maxPrice: 1000 };
     
-    // Filter out invalid prices and parse them safely
-    const validPrices = products
-      .map(p => parseFloat(p.price || '0'))
-      .filter(price => !isNaN(price) && price > 0);
+    // Filter out invalid prices and parse them safely — support range strings like "28 - 30"
+    const validPrices: number[] = [];
+    products.forEach(p => {
+      const { min, max } = parsePriceRange(p.price);
+      if (min > 0) validPrices.push(min);
+      if (max > 0 && max !== min) validPrices.push(max);
+    });
     
     if (validPrices.length === 0) return { minPrice: 0, maxPrice: 1000 };
     
@@ -125,8 +141,8 @@ function ShopContent() {
   /* ---------- SORT ---------- */
   const sortedProducts = useMemo(() => {
     return [...products].sort((a, b) => {
-      const priceA = parseFloat(a.price || '0');
-      const priceB = parseFloat(b.price || '0');
+      const priceA = parsePriceRange(a.price).min;
+      const priceB = parsePriceRange(b.price).min;
 
       if (sort === "price-low-high") return priceA - priceB;
       if (sort === "price-high-low") return priceB - priceA;
@@ -180,15 +196,13 @@ function ShopContent() {
         selectedCategories.length === 0 ||
         (product.category && selectedCategories.includes(product.category));
 
-      // Price match with safe parsing.
-      // VARIABLE products have price derived from displayPrice — include them
-      // even if their parsed price is 0 (no direct price on root level).
-      const productPrice = parseFloat(product.price || '0');
-      const isVariableProduct = product.productType === 'VARIABLE' || product.type === 'VARIABLE';
+      // Price match — supports range strings like "28 - 30" for VARIABLE products.
+      // A product is included if its price range overlaps with the selected filter range.
+      const { min: priceMin, max: priceMax } = parsePriceRange(product.price);
       const priceMatch =
-        isVariableProduct
-          ? true // variable products are always included — price is per-variant
-          : !isNaN(productPrice) && productPrice >= priceRange[0] && productPrice <= priceRange[1];
+        priceMin === 0 && priceMax === 0
+          ? true // no price info — include by default
+          : priceMin <= priceRange[1] && priceMax >= priceRange[0];
 
       // Search match - check title, description, artist, and category with null safety
       const searchMatch =
