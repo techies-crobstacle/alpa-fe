@@ -286,6 +286,7 @@ export default function ShopSlugPage() {
         images: product.images || [],
         galleryImages: product.galleryImages || [],
         ...(selectedVariant ? { variantId: selectedVariant.id } : {}),
+        ...(selectedVariant?.attributes ? { variantAttributes: selectedVariant.attributes } : {}),
       });
 
       setAddedToCart(true);

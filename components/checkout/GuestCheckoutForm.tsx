@@ -1378,6 +1378,18 @@ export default function GuestCheckoutForm() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate text-sm">{item.product?.title || "Product"}</p>
+                    {item.variant?.attributes && Object.keys(item.variant.attributes).length > 0 && (
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                        {Object.entries(item.variant.attributes).map(([key, attr]) => (
+                          <span key={key} className="text-xs text-gray-500 flex items-center gap-1">
+                            {attr.hexColor && (
+                              <span className="inline-block w-2.5 h-2.5 rounded-full border border-gray-300 shrink-0" style={{ backgroundColor: attr.hexColor }} />
+                            )}
+                            <span className="capitalize">{key}:</span> {attr.displayValue}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-sm text-gray-500">Qty {item.quantity} x ${(item.effectivePrice ?? parseFloat(item.product?.price || '0')).toFixed(2)}</p>
                   </div>
                   <p className="font-medium text-sm">${(item.quantity * (item.effectivePrice ?? parseFloat(item.product?.price || '0'))).toFixed(2)}</p>

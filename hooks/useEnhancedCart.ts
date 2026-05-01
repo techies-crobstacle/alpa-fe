@@ -261,16 +261,36 @@ export function useEnhancedCart() {
       // ── Normalise variant attributes: the backend may return them under several
       // different key shapes. Unify everything to item.variant.attributes so the
       // rest of the UI only needs to look in one place. ──
+
+      // Helper: convert array-format [{name, value, displayValue, hexColor}] → Record<name, ...>
+      const normalizeAttrs = (raw: any): Record<string, { value: string; displayValue: string; hexColor?: string | null }> | null => {
+        if (!raw) return null;
+        if (Array.isArray(raw)) {
+          if (raw.length === 0) return null;
+          return raw.reduce((acc: Record<string, any>, attr: any, i: number) => {
+            const key = attr.name || attr.attributeName || attr.type || attr.key || String(i);
+            acc[key] = {
+              value: attr.value ?? attr.displayValue ?? String(i),
+              displayValue: attr.displayValue || attr.value || String(i),
+              hexColor: attr.hexColor ?? null,
+            };
+            return acc;
+          }, {});
+        }
+        return raw;
+      };
+
       const normalizeItem = (item: any): CartItem => {
         if (!item.variantId) return item as CartItem;
 
         // Collect attributes from wherever the backend put them
-        const attrs =
+        const attrs = normalizeAttrs(
           item.variant?.attributes ||          // standard shape
           item.selectedAttributes ||           // alternate key
           item.variantAttributes ||            // another alternate key
           item.variant?.selectedAttributes ||  // nested alternate
-          null;
+          null
+        );
 
         if (attrs && Object.keys(attrs).length > 0) {
           return {
