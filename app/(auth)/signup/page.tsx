@@ -5,117 +5,129 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { getCountries, getCountryCallingCode } from "react-phone-number-input";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://alpa-be.onrender.com";
 
-// Country list: { code, flag, name, dialCode, digits: [min, max] }
-const COUNTRIES = [
-  {
-    code: "AU",
-    flag: "🇦🇺",
-    name: "Australia",
-    dialCode: "+61",
-    digits: [9, 9],
-  },
-  {
-    code: "US",
-    flag: "🇺🇸",
-    name: "United States",
-    dialCode: "+1",
-    digits: [10, 10],
-  },
-  {
-    code: "GB",
-    flag: "🇬🇧",
-    name: "United Kingdom",
-    dialCode: "+44",
-    digits: [10, 10],
-  },
-  { code: "IN", flag: "🇮🇳", name: "India", dialCode: "+91", digits: [10, 10] },
-  { code: "CA", flag: "🇨🇦", name: "Canada", dialCode: "+1", digits: [10, 10] },
-  {
-    code: "NZ",
-    flag: "🇳🇿",
-    name: "New Zealand",
-    dialCode: "+64",
-    digits: [8, 9],
-  },
-  {
-    code: "SG",
-    flag: "🇸🇬",
-    name: "Singapore",
-    dialCode: "+65",
-    digits: [8, 8],
-  },
-  { code: "AE", flag: "🇦🇪", name: "UAE", dialCode: "+971", digits: [9, 9] },
-  {
-    code: "SA",
-    flag: "🇸🇦",
-    name: "Saudi Arabia",
-    dialCode: "+966",
-    digits: [9, 9],
-  },
-  {
-    code: "DE",
-    flag: "🇩🇪",
-    name: "Germany",
-    dialCode: "+49",
-    digits: [10, 11],
-  },
-  { code: "FR", flag: "🇫🇷", name: "France", dialCode: "+33", digits: [9, 9] },
-  { code: "JP", flag: "🇯🇵", name: "Japan", dialCode: "+81", digits: [10, 11] },
-  { code: "CN", flag: "🇨🇳", name: "China", dialCode: "+86", digits: [11, 11] },
-  { code: "BR", flag: "🇧🇷", name: "Brazil", dialCode: "+55", digits: [10, 11] },
-  {
-    code: "ZA",
-    flag: "🇿🇦",
-    name: "South Africa",
-    dialCode: "+27",
-    digits: [9, 10],
-  },
-  {
-    code: "PK",
-    flag: "🇵🇰",
-    name: "Pakistan",
-    dialCode: "+92",
-    digits: [10, 10],
-  },
-  {
-    code: "NG",
-    flag: "🇳🇬",
-    name: "Nigeria",
-    dialCode: "+234",
-    digits: [10, 10],
-  },
-  {
-    code: "PH",
-    flag: "🇵🇭",
-    name: "Philippines",
-    dialCode: "+63",
-    digits: [10, 10],
-  },
-  {
-    code: "MY",
-    flag: "🇲🇾",
-    name: "Malaysia",
-    dialCode: "+60",
-    digits: [9, 10],
-  },
-  {
-    code: "ID",
-    flag: "🇮🇩",
-    name: "Indonesia",
-    dialCode: "+62",
-    digits: [9, 12],
-  },
-] as const;
+// Known digit lengths per country (national number, excluding country code)
+const COUNTRY_DIGITS: Record<string, [number, number]> = {
+  AU: [9, 10], // 9 without leading 0, or 10 starting with 0 (04XX...)
+  US: [10, 10], CA: [10, 10], GB: [10, 10], IN: [10, 10],
+  NZ: [8, 9], SG: [8, 8], AE: [9, 9], SA: [9, 9],
+  DE: [10, 11], FR: [9, 9], JP: [10, 11], CN: [11, 11],
+  BR: [10, 11], ZA: [9, 10], PK: [10, 10], NG: [10, 10],
+  PH: [10, 10], MY: [9, 10], ID: [9, 12],
+  KE: [9, 9], GH: [9, 9], ET: [9, 9], EG: [10, 10], TZ: [9, 9],
+  TH: [9, 9], VN: [9, 10], KR: [9, 11], MX: [10, 10], AR: [10, 10],
+  CO: [10, 10], CL: [9, 9], PE: [9, 9], IT: [9, 11], ES: [9, 9],
+  RU: [10, 10], TR: [10, 10], IR: [10, 10], IQ: [10, 10], BD: [10, 10],
+  PL: [9, 9], UA: [9, 9], NL: [9, 9], SE: [7, 9], NO: [8, 8],
+  DK: [8, 8], FI: [6, 10], CH: [9, 9], AT: [4, 13], BE: [9, 9],
+  PT: [9, 9], CZ: [9, 9], HU: [9, 9], RO: [9, 9], GR: [10, 10],
+};
 
-type Country = (typeof COUNTRIES)[number];
+type Country = {
+  code: string;
+  name: string;
+  dialCode: string;
+  digits: [number, number];
+};
+
+// Country display names
+const COUNTRY_NAMES: Record<string, string> = {
+  AC: "Ascension Island", AD: "Andorra", AE: "UAE", AF: "Afghanistan",
+  AG: "Antigua & Barbuda", AI: "Anguilla", AL: "Albania", AM: "Armenia",
+  AO: "Angola", AQ: "Antarctica", AR: "Argentina", AS: "American Samoa",
+  AT: "Austria", AU: "Australia", AW: "Aruba", AX: "Åland Islands",
+  AZ: "Azerbaijan", BA: "Bosnia & Herzegovina", BB: "Barbados", BD: "Bangladesh",
+  BE: "Belgium", BF: "Burkina Faso", BG: "Bulgaria", BH: "Bahrain",
+  BI: "Burundi", BJ: "Benin", BL: "St. Barthélemy", BM: "Bermuda",
+  BN: "Brunei", BO: "Bolivia", BQ: "Caribbean Netherlands", BR: "Brazil",
+  BS: "Bahamas", BT: "Bhutan", BW: "Botswana", BY: "Belarus",
+  BZ: "Belize", CA: "Canada", CC: "Cocos Islands", CD: "DR Congo",
+  CF: "Central African Republic", CG: "Congo", CH: "Switzerland", CI: "Côte d'Ivoire",
+  CK: "Cook Islands", CL: "Chile", CM: "Cameroon", CN: "China",
+  CO: "Colombia", CR: "Costa Rica", CU: "Cuba", CV: "Cape Verde",
+  CW: "Curaçao", CX: "Christmas Island", CY: "Cyprus", CZ: "Czechia",
+  DE: "Germany", DJ: "Djibouti", DK: "Denmark", DM: "Dominica",
+  DO: "Dominican Republic", DZ: "Algeria", EC: "Ecuador", EE: "Estonia",
+  EG: "Egypt", EH: "Western Sahara", ER: "Eritrea", ES: "Spain",
+  ET: "Ethiopia", FI: "Finland", FJ: "Fiji", FK: "Falkland Islands",
+  FM: "Micronesia", FO: "Faroe Islands", FR: "France", GA: "Gabon",
+  GB: "United Kingdom", GD: "Grenada", GE: "Georgia", GF: "French Guiana",
+  GG: "Guernsey", GH: "Ghana", GI: "Gibraltar", GL: "Greenland",
+  GM: "Gambia", GN: "Guinea", GP: "Guadeloupe", GQ: "Equatorial Guinea",
+  GR: "Greece", GS: "South Georgia", GT: "Guatemala", GU: "Guam",
+  GW: "Guinea-Bissau", GY: "Guyana", HK: "Hong Kong", HN: "Honduras",
+  HR: "Croatia", HT: "Haiti", HU: "Hungary", ID: "Indonesia",
+  IE: "Ireland", IL: "Israel", IM: "Isle of Man", IN: "India",
+  IO: "British Indian Ocean Territory", IQ: "Iraq", IR: "Iran", IS: "Iceland",
+  IT: "Italy", JE: "Jersey", JM: "Jamaica", JO: "Jordan",
+  JP: "Japan", KE: "Kenya", KG: "Kyrgyzstan", KH: "Cambodia",
+  KI: "Kiribati", KM: "Comoros", KN: "St. Kitts & Nevis", KP: "North Korea",
+  KR: "South Korea", KW: "Kuwait", KY: "Cayman Islands", KZ: "Kazakhstan",
+  LA: "Laos", LB: "Lebanon", LC: "St. Lucia", LI: "Liechtenstein",
+  LK: "Sri Lanka", LR: "Liberia", LS: "Lesotho", LT: "Lithuania",
+  LU: "Luxembourg", LV: "Latvia", LY: "Libya", MA: "Morocco",
+  MC: "Monaco", MD: "Moldova", ME: "Montenegro", MF: "St. Martin",
+  MG: "Madagascar", MH: "Marshall Islands", MK: "North Macedonia", ML: "Mali",
+  MM: "Myanmar", MN: "Mongolia", MO: "Macao", MP: "Northern Mariana Islands",
+  MQ: "Martinique", MR: "Mauritania", MS: "Montserrat", MT: "Malta",
+  MU: "Mauritius", MV: "Maldives", MW: "Malawi", MX: "Mexico",
+  MY: "Malaysia", MZ: "Mozambique", NA: "Namibia", NC: "New Caledonia",
+  NE: "Niger", NF: "Norfolk Island", NG: "Nigeria", NI: "Nicaragua",
+  NL: "Netherlands", NO: "Norway", NP: "Nepal", NR: "Nauru",
+  NU: "Niue", NZ: "New Zealand", OM: "Oman", PA: "Panama",
+  PE: "Peru", PF: "French Polynesia", PG: "Papua New Guinea", PH: "Philippines",
+  PK: "Pakistan", PL: "Poland", PM: "St. Pierre & Miquelon", PR: "Puerto Rico",
+  PS: "Palestine", PT: "Portugal", PW: "Palau", PY: "Paraguay",
+  QA: "Qatar", RE: "Réunion", RO: "Romania", RS: "Serbia",
+  RU: "Russia", RW: "Rwanda", SA: "Saudi Arabia", SB: "Solomon Islands",
+  SC: "Seychelles", SD: "Sudan", SE: "Sweden", SG: "Singapore",
+  SH: "St. Helena", SI: "Slovenia", SJ: "Svalbard & Jan Mayen", SK: "Slovakia",
+  SL: "Sierra Leone", SM: "San Marino", SN: "Senegal", SO: "Somalia",
+  SR: "Suriname", SS: "South Sudan", ST: "São Tomé & Príncipe", SV: "El Salvador",
+  SX: "Sint Maarten", SY: "Syria", SZ: "Eswatini", TC: "Turks & Caicos Islands",
+  TD: "Chad", TG: "Togo", TH: "Thailand", TJ: "Tajikistan",
+  TK: "Tokelau", TL: "Timor-Leste", TM: "Turkmenistan", TN: "Tunisia",
+  TO: "Tonga", TR: "Turkey", TT: "Trinidad & Tobago", TV: "Tuvalu",
+  TW: "Taiwan", TZ: "Tanzania", UA: "Ukraine", UG: "Uganda",
+  US: "United States", UY: "Uruguay", UZ: "Uzbekistan", VA: "Vatican City",
+  VC: "St. Vincent & Grenadines", VE: "Venezuela", VG: "British Virgin Islands",
+  VI: "US Virgin Islands", VN: "Vietnam", VU: "Vanuatu", WF: "Wallis & Futuna",
+  WS: "Samoa", XK: "Kosovo", YE: "Yemen", YT: "Mayotte",
+  ZA: "South Africa", ZM: "Zambia", ZW: "Zimbabwe",
+};
+
+const COUNTRIES: Country[] = getCountries()
+  .map((code) => ({
+    code,
+    name: COUNTRY_NAMES[code] || code,
+    dialCode: `+${getCountryCallingCode(code)}`,
+    digits: (COUNTRY_DIGITS[code] ?? [5, 15]) as [number, number],
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 function validatePhone(digits: string, country: Country): string | null {
   const clean = digits.replace(/\D/g, "");
   if (!clean) return "Mobile number is required";
+
+  // Australia: ONLY two valid forms:
+  //   - exactly 9 digits NOT starting with 0  (e.g. 412345678)
+  //   - exactly 10 digits starting with 0     (e.g. 0412345678)
+  if (country.code === "AU") {
+    if (clean.length === 9 && !clean.startsWith("0")) return null;
+    if (clean.length === 10 && clean.startsWith("0")) return null;
+    if (clean.length < 9 || (clean.length === 9 && clean.startsWith("0")))
+      return "Too short — enter 9 digits without leading 0, or 10 digits starting with 0";
+    if (clean.length > 10)
+      return "Too long — Australian numbers are at most 10 digits";
+    if (clean.length === 10 && !clean.startsWith("0"))
+      return "10-digit Australian numbers must start with 0";
+    return "Invalid format — enter 9 digits (e.g. 412345678) or 10 starting with 0 (e.g. 0412345678)";
+  }
+
   const [min, max] = country.digits;
   if (clean.length < min)
     return `Too short — ${country.name} numbers need ${min} digits`;
@@ -126,7 +138,7 @@ function validatePhone(digits: string, country: Country): string | null {
 
 function validateEmail(email: string): string | null {
   if (!email.trim()) return "Email is required";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+  if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email.trim()))
     return "Please enter a valid email address";
   return null;
 }
@@ -153,7 +165,9 @@ export default function SignupPage() {
   });
 
   // Phone state
-  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(
+    () => COUNTRIES.find((c) => c.code === "AU") ?? COUNTRIES[0]
+  );
   const [phoneNumber, setPhoneNumber] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -263,7 +277,15 @@ export default function SignupPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          mobile: `${selectedCountry.dialCode} ${phoneNumber}`.trim(),
+          mobile: (() => {
+            // For AU: strip leading 0 before combining with +61
+            const digits = phoneNumber.replace(/\D/g, "");
+            const normalized =
+              selectedCountry.code === "AU" && digits.startsWith("0")
+                ? digits.slice(1)
+                : digits;
+            return `${selectedCountry.dialCode} ${normalized}`.trim();
+          })(),
           role,
         }),
       });
@@ -306,7 +328,7 @@ export default function SignupPage() {
         priority
       />
       <div className="absolute inset-0 bg-[#440C03] lg:hidden" />
-      <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(90deg,_#440C03_0%,_#440C03_44%,_rgba(68,12,3,0.55)_68%,_rgba(68,12,3,0)_100%)]" />
+      <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(90deg,#440C03_0%,#440C03_44%,rgba(68,12,3,0.55)_68%,rgba(68,12,3,0)_100%)]" />
 
       <section className="relative z-10 flex min-h-screen w-full items-start px-6 md:pt-20 pt-10 pb-12 sm:px-10 md:px-16 lg:px-20">
         <div className="w-full max-w-lg md:pl-20">
@@ -413,9 +435,14 @@ export default function SignupPage() {
                     }}
                     className="flex items-center gap-1.5 px-3 h-full text-sm font-medium border-r border-white/20 hover:bg-white/10 transition rounded-l-full"
                   >
-                    <span className="text-lg leading-none">
-                      {selectedCountry.flag}
-                    </span>
+                    <img
+                      src={`https://flagcdn.com/w20/${selectedCountry.code.toLowerCase()}.png`}
+                      srcSet={`https://flagcdn.com/w40/${selectedCountry.code.toLowerCase()}.png 2x`}
+                      width={20}
+                      height={14}
+                      alt={selectedCountry.name}
+                      className="rounded-sm object-cover"
+                    />
                     <span className="text-white/80 text-xs">
                       {selectedCountry.dialCode}
                     </span>
@@ -450,9 +477,14 @@ export default function SignupPage() {
                                   : "text-gray-700"
                               }`}
                             >
-                              <span className="text-base w-6 shrink-0">
-                                {c.flag}
-                              </span>
+                              <img
+                                src={`https://flagcdn.com/w20/${c.code.toLowerCase()}.png`}
+                                srcSet={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png 2x`}
+                                width={20}
+                                height={14}
+                                alt={c.name}
+                                className="w-6 h-4 rounded-sm object-cover shrink-0"
+                              />
                               <span className="flex-1 truncate">{c.name}</span>
                               <span className="text-gray-400 text-xs shrink-0">
                                 {c.dialCode}
@@ -475,7 +507,11 @@ export default function SignupPage() {
                   value={phoneNumber}
                   onChange={(e) => handlePhoneChange(e.target.value)}
                   onBlur={() => touchField("phone")}
-                  placeholder={`${selectedCountry.digits[0]}-digit number`}
+                  placeholder={
+                    selectedCountry.code === "AU"
+                      ? "9-digit number (or 0X XXXX XXXX)"
+                      : `${selectedCountry.digits[0]}-digit number`
+                  }
                   className="flex-1 px-4 py-3 text-sm text-white bg-transparent outline-none placeholder:text-gray-400 rounded-r-full"
                 />
               </div>

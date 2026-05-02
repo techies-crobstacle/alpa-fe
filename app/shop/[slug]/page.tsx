@@ -1,5 +1,5 @@
 ﻿"use client";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -109,6 +109,9 @@ export default function ShopSlugPage() {
   const [tabMounted, setTabMounted] = useState(true);
   const [pageMounted, setPageMounted] = useState(false);
 
+  // Ref for scrolling to the reviews/tabs section
+  const tabsSectionRef = useRef<HTMLDivElement>(null);
+
   // Lightbox
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
@@ -146,24 +149,25 @@ export default function ShopSlugPage() {
   // Page mount animation
   useEffect(() => { const t = setTimeout(() => setPageMounted(true), 30); return () => clearTimeout(t); }, []);
 
-  // Fetch ratings
-  useEffect(() => {
-    const fetchRatings = async () => {
-      if (!product?.id) return;
-      try {
-        setRatingsLoading(true);
-        setRatingsError(null);
-        const response = await apiClient.get<any>(`/ratings/products/${product.id}/ratings`);
-        if (response && Array.isArray(response.ratings)) setRatings(response.ratings);
-        else if (response?.data && Array.isArray(response.data.ratings)) setRatings(response.data.ratings);
-        else setRatings([]);
-      } catch (err) {
-        setRatingsError(err instanceof Error ? err.message : "Failed to fetch ratings");
-        setRatings([]);
-      } finally { setRatingsLoading(false); }
-    };
-    fetchRatings();
+  // Fetch ratings — extracted so handleSubmitRating can also call it
+  const fetchRatings = useCallback(async () => {
+    if (!product?.id) return;
+    try {
+      setRatingsLoading(true);
+      setRatingsError(null);
+      const response = await apiClient.get<any>(`/ratings/products/${product.id}/ratings`);
+      if (response && Array.isArray(response.ratings)) setRatings(response.ratings);
+      else if (response?.data && Array.isArray(response.data.ratings)) setRatings(response.data.ratings);
+      else setRatings([]);
+    } catch (err) {
+      setRatingsError(err instanceof Error ? err.message : "Failed to fetch ratings");
+      setRatings([]);
+    } finally { setRatingsLoading(false); }
   }, [product?.id]);
+
+  useEffect(() => {
+    fetchRatings();
+  }, [fetchRatings]);
 
   // Check Wishlist Status with Optimistic Updates (like shop page)
   const isWishlisted = useMemo(() => {
@@ -179,6 +183,13 @@ export default function ShopSlugPage() {
     document.body.style.overflow = isModalOpen ? 'hidden' : 'unset';
     return () => { document.body.style.overflow = 'unset'; };
   }, [isModalOpen]);
+
+  // Scroll to the tabs section and switch tab
+  const scrollToTab = useCallback((tab: 'description' | 'reviews' | 'write-review') => {
+    tabsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTabMounted(false);
+    setTimeout(() => { setActiveTab(tab); setTabMounted(true); }, 150);
+  }, []);
 
   // Tab fade helper
   const switchTab = useCallback((tab: 'description' | 'reviews' | 'write-review') => {
@@ -429,7 +440,12 @@ export default function ShopSlugPage() {
         setRatingMessage("Thank you! Your rating has been submitted successfully.");
         setRatingScore(0);
         setReview("");
-        setTimeout(() => setRatingMessage(""), 3000);
+        // Re-fetch ratings immediately so the new review appears without a page reload
+        await fetchRatings();
+        setTimeout(() => {
+          setRatingMessage("");
+          switchTab('reviews');
+        }, 1500);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to submit rating";
@@ -679,24 +695,23 @@ export default function ShopSlugPage() {
               </div>
 
               {/* Rating row */}
-              <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => scrollToTab('reviews')}
+                className="flex items-center gap-2.5 group w-fit"
+                title="See all reviews"
+              >
                 <div className="flex gap-0.5">
                   {[1,2,3,4,5].map((s) => (
                     <Star key={s} className={`w-4 h-4 transition-colors ${s <= Math.round(avgRating) ? 'fill-[#973c00] text-[#973c00]' : 'text-[#973c00]/20 fill-[#973c00]/10'}`} />
                   ))}
                 </div>
-                <span className="text-sm font-semibold text-[#5A1E12]">
+                <span className="text-sm font-semibold text-[#5A1E12] group-hover:underline underline-offset-2">
                   {avgRating > 0 ? avgRating.toFixed(1) : 'No ratings yet'}
                 </span>
-                {ratings.length > 0 && (
-                  <button
-                    onClick={() => switchTab('reviews')}
-                    className="text-sm text-[#973c00]/60 hover:text-[#5A1E12] transition-colors underline-offset-2 hover:underline"
-                  >
-                    ({ratings.length} review{ratings.length !== 1 ? 's' : ''})
-                  </button>
-                )}
-              </div>
+                <span className="text-sm text-[#973c00]/60 group-hover:text-[#5A1E12] transition-colors underline-offset-2 group-hover:underline">
+                  ({ratings.length} review{ratings.length !== 1 ? 's' : ''})
+                </span>
+              </button>
 
               {/* Price */}
               <div className="flex items-end gap-3">
@@ -1066,6 +1081,7 @@ export default function ShopSlugPage() {
 
           {/* ── Tabs ──────────────────────────────────────────────────── */}
           <div
+            ref={tabsSectionRef}
             className={`mt-16 transition-all duration-700 delay-300 ${
               pageMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}

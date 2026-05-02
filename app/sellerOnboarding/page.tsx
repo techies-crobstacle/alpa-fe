@@ -3,31 +3,219 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 
 const baseURL = 'https://alpa-be.onrender.com';
 
 // ─── Country phone data ───────────────────────────────────────────────────────
-const COUNTRIES = [
-  { code: 'AU', flag: '🇦🇺', name: 'Australia',     dialCode: '+61',  digits: [9,  9]  },
-  { code: 'US', flag: '🇺🇸', name: 'United States', dialCode: '+1',   digits: [10, 10] },
-  { code: 'GB', flag: '🇬🇧', name: 'United Kingdom',dialCode: '+44',  digits: [10, 10] },
-  { code: 'IN', flag: '🇮🇳', name: 'India',         dialCode: '+91',  digits: [10, 10] },
-  { code: 'CA', flag: '🇨🇦', name: 'Canada',        dialCode: '+1',   digits: [10, 10] },
-  { code: 'NZ', flag: '🇳🇿', name: 'New Zealand',   dialCode: '+64',  digits: [8,  9]  },
-  { code: 'SG', flag: '🇸🇬', name: 'Singapore',     dialCode: '+65',  digits: [8,  8]  },
-  { code: 'AE', flag: '🇦🇪', name: 'UAE',           dialCode: '+971', digits: [9,  9]  },
-  { code: 'SA', flag: '🇸🇦', name: 'Saudi Arabia',  dialCode: '+966', digits: [9,  9]  },
-  { code: 'DE', flag: '🇩🇪', name: 'Germany',       dialCode: '+49',  digits: [10, 11] },
-  { code: 'FR', flag: '🇫🇷', name: 'France',        dialCode: '+33',  digits: [9,  9]  },
-  { code: 'JP', flag: '🇯🇵', name: 'Japan',         dialCode: '+81',  digits: [10, 11] },
-  { code: 'CN', flag: '🇨🇳', name: 'China',         dialCode: '+86',  digits: [11, 11] },
-  { code: 'BR', flag: '🇧🇷', name: 'Brazil',        dialCode: '+55',  digits: [10, 11] },
-  { code: 'PK', flag: '🇵🇰', name: 'Pakistan',      dialCode: '+92',  digits: [10, 10] },
-  { code: 'MY', flag: '🇲🇾', name: 'Malaysia',      dialCode: '+60',  digits: [9,  10] },
-  { code: 'PH', flag: '🇵🇭', name: 'Philippines',   dialCode: '+63',  digits: [10, 10] },
-  { code: 'ID', flag: '🇮🇩', name: 'Indonesia',     dialCode: '+62',  digits: [9,  12] },
-] as const;
-type Country = typeof COUNTRIES[number];
+type Country = { code: string; flag: string; name: string; dialCode: string; digits: [number, number] };
+
+const COUNTRIES: Country[] = [
+  // Oceania
+  { code: 'AU', flag: '🇦🇺', name: 'Australia',              dialCode: '+61',  digits: [9,  10] },
+  { code: 'NZ', flag: '🇳🇿', name: 'New Zealand',            dialCode: '+64',  digits: [8,  9]  },
+  { code: 'FJ', flag: '🇫🇯', name: 'Fiji',                   dialCode: '+679', digits: [7,  7]  },
+  { code: 'PG', flag: '🇵🇬', name: 'Papua New Guinea',       dialCode: '+675', digits: [7,  8]  },
+  { code: 'WS', flag: '🇼🇸', name: 'Samoa',                  dialCode: '+685', digits: [5,  7]  },
+  { code: 'TO', flag: '🇹🇴', name: 'Tonga',                  dialCode: '+676', digits: [5,  7]  },
+  { code: 'VU', flag: '🇻🇺', name: 'Vanuatu',                dialCode: '+678', digits: [5,  7]  },
+  { code: 'SB', flag: '🇸🇧', name: 'Solomon Islands',        dialCode: '+677', digits: [5,  7]  },
+  { code: 'KI', flag: '🇰🇮', name: 'Kiribati',               dialCode: '+686', digits: [5,  8]  },
+  { code: 'TV', flag: '🇹🇻', name: 'Tuvalu',                 dialCode: '+688', digits: [5,  6]  },
+  { code: 'NR', flag: '🇳🇷', name: 'Nauru',                  dialCode: '+674', digits: [4,  7]  },
+  { code: 'CK', flag: '🇨🇰', name: 'Cook Islands',           dialCode: '+682', digits: [5,  5]  },
+  // Asia
+  { code: 'CN', flag: '🇨🇳', name: 'China',                  dialCode: '+86',  digits: [11, 11] },
+  { code: 'IN', flag: '🇮🇳', name: 'India',                  dialCode: '+91',  digits: [10, 10] },
+  { code: 'JP', flag: '🇯🇵', name: 'Japan',                  dialCode: '+81',  digits: [10, 11] },
+  { code: 'KR', flag: '🇰🇷', name: 'South Korea',            dialCode: '+82',  digits: [9,  10] },
+  { code: 'SG', flag: '🇸🇬', name: 'Singapore',              dialCode: '+65',  digits: [8,  8]  },
+  { code: 'MY', flag: '🇲🇾', name: 'Malaysia',               dialCode: '+60',  digits: [9,  10] },
+  { code: 'TH', flag: '🇹🇭', name: 'Thailand',               dialCode: '+66',  digits: [9,  9]  },
+  { code: 'VN', flag: '🇻🇳', name: 'Vietnam',                dialCode: '+84',  digits: [9,  10] },
+  { code: 'PH', flag: '🇵🇭', name: 'Philippines',            dialCode: '+63',  digits: [10, 10] },
+  { code: 'ID', flag: '🇮🇩', name: 'Indonesia',              dialCode: '+62',  digits: [9,  12] },
+  { code: 'PK', flag: '🇵🇰', name: 'Pakistan',               dialCode: '+92',  digits: [10, 10] },
+  { code: 'BD', flag: '🇧🇩', name: 'Bangladesh',             dialCode: '+880', digits: [10, 10] },
+  { code: 'LK', flag: '🇱🇰', name: 'Sri Lanka',              dialCode: '+94',  digits: [9,  9]  },
+  { code: 'NP', flag: '🇳🇵', name: 'Nepal',                  dialCode: '+977', digits: [10, 10] },
+  { code: 'MM', flag: '🇲🇲', name: 'Myanmar',                dialCode: '+95',  digits: [8,  10] },
+  { code: 'KH', flag: '🇰🇭', name: 'Cambodia',               dialCode: '+855', digits: [8,  9]  },
+  { code: 'LA', flag: '🇱🇦', name: 'Laos',                   dialCode: '+856', digits: [9,  10] },
+  { code: 'MN', flag: '🇲🇳', name: 'Mongolia',               dialCode: '+976', digits: [8,  8]  },
+  { code: 'BT', flag: '🇧🇹', name: 'Bhutan',                 dialCode: '+975', digits: [7,  8]  },
+  { code: 'MV', flag: '🇲🇻', name: 'Maldives',               dialCode: '+960', digits: [7,  7]  },
+  { code: 'TL', flag: '🇹🇱', name: 'Timor-Leste',            dialCode: '+670', digits: [7,  8]  },
+  { code: 'BN', flag: '🇧🇳', name: 'Brunei',                 dialCode: '+673', digits: [7,  7]  },
+  { code: 'KP', flag: '🇰🇵', name: 'North Korea',            dialCode: '+850', digits: [8,  13] },
+  { code: 'TW', flag: '🇹🇼', name: 'Taiwan',                 dialCode: '+886', digits: [9,  9]  },
+  { code: 'HK', flag: '🇭🇰', name: 'Hong Kong',              dialCode: '+852', digits: [8,  8]  },
+  { code: 'MO', flag: '🇲🇴', name: 'Macao',                  dialCode: '+853', digits: [8,  8]  },
+  // Middle East
+  { code: 'AE', flag: '🇦🇪', name: 'UAE',                    dialCode: '+971', digits: [9,  9]  },
+  { code: 'SA', flag: '🇸🇦', name: 'Saudi Arabia',           dialCode: '+966', digits: [9,  9]  },
+  { code: 'TR', flag: '🇹🇷', name: 'Turkey',                 dialCode: '+90',  digits: [10, 10] },
+  { code: 'IL', flag: '🇮🇱', name: 'Israel',                 dialCode: '+972', digits: [9,  9]  },
+  { code: 'IQ', flag: '🇮🇶', name: 'Iraq',                   dialCode: '+964', digits: [10, 10] },
+  { code: 'IR', flag: '🇮🇷', name: 'Iran',                   dialCode: '+98',  digits: [10, 10] },
+  { code: 'KW', flag: '🇰🇼', name: 'Kuwait',                 dialCode: '+965', digits: [8,  8]  },
+  { code: 'QA', flag: '🇶🇦', name: 'Qatar',                  dialCode: '+974', digits: [8,  8]  },
+  { code: 'BH', flag: '🇧🇭', name: 'Bahrain',                dialCode: '+973', digits: [8,  8]  },
+  { code: 'OM', flag: '🇴🇲', name: 'Oman',                   dialCode: '+968', digits: [8,  8]  },
+  { code: 'JO', flag: '🇯🇴', name: 'Jordan',                 dialCode: '+962', digits: [9,  9]  },
+  { code: 'LB', flag: '🇱🇧', name: 'Lebanon',                dialCode: '+961', digits: [7,  8]  },
+  { code: 'SY', flag: '🇸🇾', name: 'Syria',                  dialCode: '+963', digits: [9,  9]  },
+  { code: 'YE', flag: '🇾🇪', name: 'Yemen',                  dialCode: '+967', digits: [9,  9]  },
+  { code: 'PS', flag: '🇵🇸', name: 'Palestine',              dialCode: '+970', digits: [9,  9]  },
+  { code: 'AF', flag: '🇦🇫', name: 'Afghanistan',            dialCode: '+93',  digits: [9,  9]  },
+  // Central Asia
+  { code: 'KZ', flag: '🇰🇿', name: 'Kazakhstan',             dialCode: '+7',   digits: [10, 10] },
+  { code: 'UZ', flag: '🇺🇿', name: 'Uzbekistan',             dialCode: '+998', digits: [9,  9]  },
+  { code: 'TM', flag: '🇹🇲', name: 'Turkmenistan',           dialCode: '+993', digits: [8,  8]  },
+  { code: 'TJ', flag: '🇹🇯', name: 'Tajikistan',             dialCode: '+992', digits: [9,  9]  },
+  { code: 'KG', flag: '🇰🇬', name: 'Kyrgyzstan',             dialCode: '+996', digits: [9,  9]  },
+  // Caucasus
+  { code: 'GE', flag: '🇬🇪', name: 'Georgia',                dialCode: '+995', digits: [9,  9]  },
+  { code: 'AM', flag: '🇦🇲', name: 'Armenia',                dialCode: '+374', digits: [8,  8]  },
+  { code: 'AZ', flag: '🇦🇿', name: 'Azerbaijan',             dialCode: '+994', digits: [9,  9]  },
+  // Europe
+  { code: 'GB', flag: '🇬🇧', name: 'United Kingdom',         dialCode: '+44',  digits: [10, 10] },
+  { code: 'DE', flag: '🇩🇪', name: 'Germany',                dialCode: '+49',  digits: [10, 11] },
+  { code: 'FR', flag: '🇫🇷', name: 'France',                 dialCode: '+33',  digits: [9,  9]  },
+  { code: 'IT', flag: '🇮🇹', name: 'Italy',                  dialCode: '+39',  digits: [9,  11] },
+  { code: 'ES', flag: '🇪🇸', name: 'Spain',                  dialCode: '+34',  digits: [9,  9]  },
+  { code: 'PT', flag: '🇵🇹', name: 'Portugal',               dialCode: '+351', digits: [9,  9]  },
+  { code: 'NL', flag: '🇳🇱', name: 'Netherlands',            dialCode: '+31',  digits: [9,  9]  },
+  { code: 'BE', flag: '🇧🇪', name: 'Belgium',                dialCode: '+32',  digits: [8,  9]  },
+  { code: 'CH', flag: '🇨🇭', name: 'Switzerland',            dialCode: '+41',  digits: [9,  9]  },
+  { code: 'AT', flag: '🇦🇹', name: 'Austria',                dialCode: '+43',  digits: [10, 13] },
+  { code: 'SE', flag: '🇸🇪', name: 'Sweden',                 dialCode: '+46',  digits: [7,  9]  },
+  { code: 'NO', flag: '🇳🇴', name: 'Norway',                 dialCode: '+47',  digits: [8,  8]  },
+  { code: 'DK', flag: '🇩🇰', name: 'Denmark',                dialCode: '+45',  digits: [8,  8]  },
+  { code: 'FI', flag: '🇫🇮', name: 'Finland',                dialCode: '+358', digits: [9,  10] },
+  { code: 'PL', flag: '🇵🇱', name: 'Poland',                 dialCode: '+48',  digits: [9,  9]  },
+  { code: 'CZ', flag: '🇨🇿', name: 'Czech Republic',         dialCode: '+420', digits: [9,  9]  },
+  { code: 'SK', flag: '🇸🇰', name: 'Slovakia',               dialCode: '+421', digits: [9,  9]  },
+  { code: 'HU', flag: '🇭🇺', name: 'Hungary',                dialCode: '+36',  digits: [9,  9]  },
+  { code: 'RO', flag: '🇷🇴', name: 'Romania',                dialCode: '+40',  digits: [9,  9]  },
+  { code: 'BG', flag: '🇧🇬', name: 'Bulgaria',               dialCode: '+359', digits: [9,  9]  },
+  { code: 'HR', flag: '🇭🇷', name: 'Croatia',                dialCode: '+385', digits: [8,  9]  },
+  { code: 'RS', flag: '🇷🇸', name: 'Serbia',                 dialCode: '+381', digits: [8,  9]  },
+  { code: 'GR', flag: '🇬🇷', name: 'Greece',                 dialCode: '+30',  digits: [10, 10] },
+  { code: 'UA', flag: '🇺🇦', name: 'Ukraine',                dialCode: '+380', digits: [9,  9]  },
+  { code: 'RU', flag: '🇷🇺', name: 'Russia',                 dialCode: '+7',   digits: [10, 10] },
+  { code: 'IE', flag: '🇮🇪', name: 'Ireland',                dialCode: '+353', digits: [9,  9]  },
+  { code: 'IS', flag: '🇮🇸', name: 'Iceland',                dialCode: '+354', digits: [7,  7]  },
+  { code: 'LU', flag: '🇱🇺', name: 'Luxembourg',             dialCode: '+352', digits: [9,  11] },
+  { code: 'EE', flag: '🇪🇪', name: 'Estonia',                dialCode: '+372', digits: [7,  8]  },
+  { code: 'LV', flag: '🇱🇻', name: 'Latvia',                 dialCode: '+371', digits: [8,  8]  },
+  { code: 'LT', flag: '🇱🇹', name: 'Lithuania',              dialCode: '+370', digits: [8,  8]  },
+  { code: 'SI', flag: '🇸🇮', name: 'Slovenia',               dialCode: '+386', digits: [8,  8]  },
+  { code: 'MK', flag: '🇲🇰', name: 'North Macedonia',        dialCode: '+389', digits: [8,  8]  },
+  { code: 'BA', flag: '🇧🇦', name: 'Bosnia & Herzegovina',   dialCode: '+387', digits: [8,  8]  },
+  { code: 'AL', flag: '🇦🇱', name: 'Albania',                dialCode: '+355', digits: [9,  9]  },
+  { code: 'ME', flag: '🇲🇪', name: 'Montenegro',             dialCode: '+382', digits: [8,  8]  },
+  { code: 'MD', flag: '🇲🇩', name: 'Moldova',                dialCode: '+373', digits: [8,  8]  },
+  { code: 'BY', flag: '🇧🇾', name: 'Belarus',                dialCode: '+375', digits: [9,  9]  },
+  { code: 'MT', flag: '🇲🇹', name: 'Malta',                  dialCode: '+356', digits: [8,  8]  },
+  { code: 'CY', flag: '🇨🇾', name: 'Cyprus',                 dialCode: '+357', digits: [8,  8]  },
+  { code: 'MC', flag: '🇲🇨', name: 'Monaco',                 dialCode: '+377', digits: [8,  9]  },
+  { code: 'AD', flag: '🇦🇩', name: 'Andorra',                dialCode: '+376', digits: [6,  9]  },
+  { code: 'LI', flag: '🇱🇮', name: 'Liechtenstein',          dialCode: '+423', digits: [7,  9]  },
+  { code: 'SM', flag: '🇸🇲', name: 'San Marino',             dialCode: '+378', digits: [6,  10] },
+  { code: 'XK', flag: '🇽🇰', name: 'Kosovo',                 dialCode: '+383', digits: [8,  8]  },
+  // Americas
+  { code: 'US', flag: '🇺🇸', name: 'United States',          dialCode: '+1',   digits: [10, 10] },
+  { code: 'CA', flag: '🇨🇦', name: 'Canada',                 dialCode: '+1',   digits: [10, 10] },
+  { code: 'MX', flag: '🇲🇽', name: 'Mexico',                 dialCode: '+52',  digits: [10, 10] },
+  { code: 'BR', flag: '🇧🇷', name: 'Brazil',                 dialCode: '+55',  digits: [10, 11] },
+  { code: 'AR', flag: '🇦🇷', name: 'Argentina',              dialCode: '+54',  digits: [10, 10] },
+  { code: 'CL', flag: '🇨🇱', name: 'Chile',                  dialCode: '+56',  digits: [9,  9]  },
+  { code: 'CO', flag: '🇨🇴', name: 'Colombia',               dialCode: '+57',  digits: [10, 10] },
+  { code: 'PE', flag: '🇵🇪', name: 'Peru',                   dialCode: '+51',  digits: [9,  9]  },
+  { code: 'VE', flag: '🇻🇪', name: 'Venezuela',              dialCode: '+58',  digits: [10, 10] },
+  { code: 'EC', flag: '🇪🇨', name: 'Ecuador',                dialCode: '+593', digits: [9,  9]  },
+  { code: 'BO', flag: '🇧🇴', name: 'Bolivia',                dialCode: '+591', digits: [8,  9]  },
+  { code: 'PY', flag: '🇵🇾', name: 'Paraguay',               dialCode: '+595', digits: [9,  9]  },
+  { code: 'UY', flag: '🇺🇾', name: 'Uruguay',                dialCode: '+598', digits: [8,  9]  },
+  { code: 'GY', flag: '🇬🇾', name: 'Guyana',                 dialCode: '+592', digits: [7,  7]  },
+  { code: 'SR', flag: '🇸🇷', name: 'Suriname',               dialCode: '+597', digits: [6,  7]  },
+  { code: 'GT', flag: '🇬🇹', name: 'Guatemala',              dialCode: '+502', digits: [8,  8]  },
+  { code: 'HN', flag: '🇭🇳', name: 'Honduras',               dialCode: '+504', digits: [8,  8]  },
+  { code: 'SV', flag: '🇸🇻', name: 'El Salvador',            dialCode: '+503', digits: [8,  8]  },
+  { code: 'NI', flag: '🇳🇮', name: 'Nicaragua',              dialCode: '+505', digits: [8,  8]  },
+  { code: 'CR', flag: '🇨🇷', name: 'Costa Rica',             dialCode: '+506', digits: [8,  8]  },
+  { code: 'PA', flag: '🇵🇦', name: 'Panama',                 dialCode: '+507', digits: [7,  8]  },
+  { code: 'CU', flag: '🇨🇺', name: 'Cuba',                   dialCode: '+53',  digits: [8,  8]  },
+  { code: 'DO', flag: '🇩🇴', name: 'Dominican Republic',     dialCode: '+1',   digits: [10, 10] },
+  { code: 'JM', flag: '🇯🇲', name: 'Jamaica',                dialCode: '+1',   digits: [10, 10] },
+  { code: 'TT', flag: '🇹🇹', name: 'Trinidad & Tobago',      dialCode: '+1',   digits: [10, 10] },
+  { code: 'BB', flag: '🇧🇧', name: 'Barbados',               dialCode: '+1',   digits: [10, 10] },
+  { code: 'HT', flag: '🇭🇹', name: 'Haiti',                  dialCode: '+509', digits: [8,  8]  },
+  { code: 'BS', flag: '🇧🇸', name: 'Bahamas',                dialCode: '+1',   digits: [10, 10] },
+  { code: 'BZ', flag: '🇧🇿', name: 'Belize',                 dialCode: '+501', digits: [7,  7]  },
+  { code: 'AG', flag: '🇦🇬', name: 'Antigua & Barbuda',      dialCode: '+1',   digits: [10, 10] },
+  { code: 'DM', flag: '🇩🇲', name: 'Dominica',               dialCode: '+1',   digits: [10, 10] },
+  { code: 'GD', flag: '🇬🇩', name: 'Grenada',                dialCode: '+1',   digits: [10, 10] },
+  { code: 'KN', flag: '🇰🇳', name: 'Saint Kitts & Nevis',    dialCode: '+1',   digits: [10, 10] },
+  { code: 'LC', flag: '🇱🇨', name: 'Saint Lucia',            dialCode: '+1',   digits: [10, 10] },
+  { code: 'VC', flag: '🇻🇨', name: 'Saint Vincent',          dialCode: '+1',   digits: [10, 10] },
+  // Africa
+  { code: 'NG', flag: '🇳🇬', name: 'Nigeria',                dialCode: '+234', digits: [10, 10] },
+  { code: 'ZA', flag: '🇿🇦', name: 'South Africa',           dialCode: '+27',  digits: [9,  9]  },
+  { code: 'EG', flag: '🇪🇬', name: 'Egypt',                  dialCode: '+20',  digits: [10, 10] },
+  { code: 'KE', flag: '🇰🇪', name: 'Kenya',                  dialCode: '+254', digits: [9,  9]  },
+  { code: 'GH', flag: '🇬🇭', name: 'Ghana',                  dialCode: '+233', digits: [9,  9]  },
+  { code: 'ET', flag: '🇪🇹', name: 'Ethiopia',               dialCode: '+251', digits: [9,  9]  },
+  { code: 'TZ', flag: '🇹🇿', name: 'Tanzania',               dialCode: '+255', digits: [9,  9]  },
+  { code: 'UG', flag: '🇺🇬', name: 'Uganda',                 dialCode: '+256', digits: [9,  9]  },
+  { code: 'ZW', flag: '🇿🇼', name: 'Zimbabwe',               dialCode: '+263', digits: [9,  9]  },
+  { code: 'ZM', flag: '🇿🇲', name: 'Zambia',                 dialCode: '+260', digits: [9,  9]  },
+  { code: 'MZ', flag: '🇲🇿', name: 'Mozambique',             dialCode: '+258', digits: [9,  9]  },
+  { code: 'MG', flag: '🇲🇬', name: 'Madagascar',             dialCode: '+261', digits: [9,  9]  },
+  { code: 'MA', flag: '🇲🇦', name: 'Morocco',                dialCode: '+212', digits: [9,  9]  },
+  { code: 'DZ', flag: '🇩🇿', name: 'Algeria',                dialCode: '+213', digits: [9,  9]  },
+  { code: 'TN', flag: '🇹🇳', name: 'Tunisia',                dialCode: '+216', digits: [8,  8]  },
+  { code: 'LY', flag: '🇱🇾', name: 'Libya',                  dialCode: '+218', digits: [9,  9]  },
+  { code: 'SD', flag: '🇸🇩', name: 'Sudan',                  dialCode: '+249', digits: [9,  9]  },
+  { code: 'SS', flag: '🇸🇸', name: 'South Sudan',            dialCode: '+211', digits: [9,  9]  },
+  { code: 'SN', flag: '🇸🇳', name: 'Senegal',                dialCode: '+221', digits: [9,  9]  },
+  { code: 'CI', flag: '🇨🇮', name: "Côte d'Ivoire",          dialCode: '+225', digits: [10, 10] },
+  { code: 'CM', flag: '🇨🇲', name: 'Cameroon',               dialCode: '+237', digits: [9,  9]  },
+  { code: 'CD', flag: '🇨🇩', name: 'DR Congo',               dialCode: '+243', digits: [9,  9]  },
+  { code: 'CG', flag: '🇨🇬', name: 'Congo',                  dialCode: '+242', digits: [9,  9]  },
+  { code: 'AO', flag: '🇦🇴', name: 'Angola',                 dialCode: '+244', digits: [9,  9]  },
+  { code: 'MW', flag: '🇲🇼', name: 'Malawi',                 dialCode: '+265', digits: [9,  9]  },
+  { code: 'BW', flag: '🇧🇼', name: 'Botswana',               dialCode: '+267', digits: [8,  8]  },
+  { code: 'NA', flag: '🇳🇦', name: 'Namibia',                dialCode: '+264', digits: [9,  9]  },
+  { code: 'LS', flag: '🇱🇸', name: 'Lesotho',                dialCode: '+266', digits: [8,  8]  },
+  { code: 'SZ', flag: '🇸🇿', name: 'Eswatini',               dialCode: '+268', digits: [8,  8]  },
+  { code: 'RW', flag: '🇷🇼', name: 'Rwanda',                 dialCode: '+250', digits: [9,  9]  },
+  { code: 'BI', flag: '🇧🇮', name: 'Burundi',                dialCode: '+257', digits: [8,  8]  },
+  { code: 'SO', flag: '🇸🇴', name: 'Somalia',                dialCode: '+252', digits: [7,  8]  },
+  { code: 'DJ', flag: '🇩🇯', name: 'Djibouti',               dialCode: '+253', digits: [8,  8]  },
+  { code: 'ER', flag: '🇪🇷', name: 'Eritrea',                dialCode: '+291', digits: [7,  7]  },
+  { code: 'ML', flag: '🇲🇱', name: 'Mali',                   dialCode: '+223', digits: [8,  8]  },
+  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso',           dialCode: '+226', digits: [8,  8]  },
+  { code: 'NE', flag: '🇳🇪', name: 'Niger',                  dialCode: '+227', digits: [8,  8]  },
+  { code: 'TD', flag: '🇹🇩', name: 'Chad',                   dialCode: '+235', digits: [8,  8]  },
+  { code: 'GN', flag: '🇬🇳', name: 'Guinea',                 dialCode: '+224', digits: [9,  9]  },
+  { code: 'GW', flag: '🇬🇼', name: 'Guinea-Bissau',          dialCode: '+245', digits: [9,  9]  },
+  { code: 'SL', flag: '🇸🇱', name: 'Sierra Leone',           dialCode: '+232', digits: [8,  8]  },
+  { code: 'LR', flag: '🇱🇷', name: 'Liberia',                dialCode: '+231', digits: [8,  8]  },
+  { code: 'GM', flag: '🇬🇲', name: 'Gambia',                 dialCode: '+220', digits: [7,  7]  },
+  { code: 'CV', flag: '🇨🇻', name: 'Cape Verde',             dialCode: '+238', digits: [7,  7]  },
+  { code: 'ST', flag: '🇸🇹', name: 'São Tomé & Príncipe',    dialCode: '+239', digits: [7,  7]  },
+  { code: 'GQ', flag: '🇬🇶', name: 'Equatorial Guinea',      dialCode: '+240', digits: [9,  9]  },
+  { code: 'GA', flag: '🇬🇦', name: 'Gabon',                  dialCode: '+241', digits: [9,  9]  },
+  { code: 'CF', flag: '🇨🇫', name: 'Central African Rep.',   dialCode: '+236', digits: [8,  8]  },
+  { code: 'MU', flag: '🇲🇺', name: 'Mauritius',              dialCode: '+230', digits: [8,  8]  },
+  { code: 'SC', flag: '🇸🇨', name: 'Seychelles',             dialCode: '+248', digits: [7,  7]  },
+  { code: 'KM', flag: '🇰🇲', name: 'Comoros',                dialCode: '+269', digits: [7,  7]  },
+  { code: 'MR', flag: '🇲🇷', name: 'Mauritania',             dialCode: '+222', digits: [8,  8]  },
+  { code: 'TG', flag: '🇹🇬', name: 'Togo',                   dialCode: '+228', digits: [8,  8]  },
+  { code: 'BJ', flag: '🇧🇯', name: 'Benin',                  dialCode: '+229', digits: [8,  8]  },
+];
 
 function validatePhone(digits: string, country: Country): string | null {
   const clean = digits.replace(/\D/g, '');
@@ -65,6 +253,39 @@ const backendStepToFrontend = (backendStep: number): number => {
   return 6;
 };
 
+function PasswordField({ label, name, value, onChange, placeholder, inputCls, error }: {
+  label: string; name: string; value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string; inputCls: string; error?: string;
+}) {
+  const [show, setShow] = React.useState(false);
+  return (
+    <div>
+      <label className="block text-sm font-medium text-[#5A1E12] mb-1">{label}</label>
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`${inputCls} pr-10`}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((v) => !v)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B5E3C] hover:text-[#5A1E12] transition-colors"
+          tabIndex={-1}
+          aria-label={show ? 'Hide password' : 'Show password'}
+        >
+          {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      </div>
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 export default function ArtistOnboardingForm() {
   const [mode, setMode] = useState<Mode>('onboarding');
   const [currentStep, setCurrentStep] = useState(1);
@@ -90,6 +311,7 @@ export default function ArtistOnboardingForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [logoError, setLogoError] = useState(false);
   const [tcAccepted, setTcAccepted] = useState(false);
 
   // ─── Phone picker — Step 1 ────────────────────────────────────────────────
@@ -99,6 +321,9 @@ export default function ArtistOnboardingForm() {
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [phoneInputError, setPhoneInputError] = useState<string | null>(null);
   const phoneDropdownRef = useRef<HTMLDivElement>(null);
+  const phonePickerBtnRef = useRef<HTMLButtonElement>(null);
+  const phonePanelRef = useRef<HTMLDivElement>(null);
+  const [phoneDropdownCoords, setPhoneDropdownCoords] = useState({ top: 0, left: 0, width: 0 });
 
   // ─── Phone picker — Step 3 (business phone) ───────────────────────────────
   const [bizPhoneCountry, setBizPhoneCountry] = useState<Country>(COUNTRIES[0]);
@@ -107,6 +332,9 @@ export default function ArtistOnboardingForm() {
   const [bizPhoneTouched, setBizPhoneTouched] = useState(false);
   const [bizPhoneInputError, setBizPhoneInputError] = useState<string | null>(null);
   const bizPhoneDropdownRef = useRef<HTMLDivElement>(null);
+  const bizPhonePickerBtnRef = useRef<HTMLButtonElement>(null);
+  const bizPhonePanelRef = useRef<HTMLDivElement>(null);
+  const [bizPhoneDropdownCoords, setBizPhoneDropdownCoords] = useState({ top: 0, left: 0, width: 0 });
 
   // ─── Persist to localStorage ──────────────────────────────────────────────
   useEffect(() => {
@@ -151,6 +379,20 @@ export default function ArtistOnboardingForm() {
     }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // ─── Close dropdowns on scroll outside the dropdown panels ─────────────────
+  useEffect(() => {
+    const close = (e: Event) => {
+      // Ignore scrolls that originate inside the fixed dropdown panels
+      const target = e.target as Node;
+      if (phonePanelRef.current && phonePanelRef.current.contains(target)) return;
+      if (bizPhonePanelRef.current && bizPhonePanelRef.current.contains(target)) return;
+      setShowPhoneDropdown(false);
+      setShowBizPhoneDropdown(false);
+    };
+    window.addEventListener('scroll', close, true);
+    return () => window.removeEventListener('scroll', close, true);
   }, []);
 
   // ─── Inputs ───────────────────────────────────────────────────────────────
@@ -546,7 +788,7 @@ export default function ArtistOnboardingForm() {
 
   // ─── STEP 7 — OTP verify ──────────────────────────────────────────────────
   const handleStep7Submit = async () => {
-    if (!formData.otp?.trim()) { setError('otp', 'OTP is required'); return; }
+    if (!formData.otp?.trim()) { setError('otp', 'One-time code is required'); return; }
 
     setLoading(true);
     try {
@@ -555,7 +797,7 @@ export default function ArtistOnboardingForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email, otp: formData.otp }),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError('otp', d.message || 'Invalid or expired OTP'); return; }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError('otp', d.message || 'Invalid or expired one-time code'); return; }
       ['sellerOnboardingStep', 'sellerOnboardingFormData', 'sellerToken'].forEach(k => localStorage.removeItem(k));
       window.location.href = '/';
     } catch { setError('submit', 'An error occurred. Please try again.'); }
@@ -585,13 +827,16 @@ export default function ArtistOnboardingForm() {
     return (
       <div className="relative min-h-screen bg-[#EAD7B7] flex flex-col items-center justify-center px-4 py-12 sm:py-16">
         <Link href="/" className="mb-6 block w-fit md:absolute md:top-8 md:left-8 md:mb-0">
-          <Image
-            src="/images/navbarLogo.png"
-            alt="Logo"
-            width={90}
-            height={90}
-            className="w-14 h-14 md:w-22.5 md:h-22.5"
-          />
+          {!logoError && (
+            <Image
+              src="/images/navbarLogo.png"
+              alt="Logo"
+              width={90}
+              height={90}
+              className="w-14 h-14 md:w-22.5 md:h-22.5"
+              onError={() => setLogoError(true)}
+            />
+          )}
         </Link>
 
         <div className="w-full max-w-md">
@@ -758,7 +1003,7 @@ export default function ArtistOnboardingForm() {
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setError('submit', d.message || 'Failed to resend OTP'); return; }
       setErrors({});
-      setSuccessMessage('OTP resent to your email');
+      setSuccessMessage('One-time code resent to your email');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch { setError('submit', 'An error occurred.'); }
     finally { setLoading(false); }
@@ -768,13 +1013,16 @@ export default function ArtistOnboardingForm() {
   return (
     <div className="relative min-h-screen bg-[#EAD7B7] py-8 sm:py-12 px-4">
       <Link href="/" className="mx-auto mb-4 block w-fit md:absolute md:top-8 md:left-8 md:mx-0 md:mb-0">
-        <Image
-          src="/images/navbarLogo.png"
-          alt="Logo"
-          width={90}
-          height={90}
-          className="w-14 h-14 md:w-22.5 md:h-22.5"
-        />
+        {!logoError && (
+          <Image
+            src="/images/navbarLogo.png"
+            alt="Logo"
+            width={90}
+            height={90}
+            className="w-14 h-14 md:w-22.5 md:h-22.5"
+            onError={() => setLogoError(true)}
+          />
+        )}
       </Link>
 
       <div>
@@ -782,7 +1030,7 @@ export default function ArtistOnboardingForm() {
           <h2 className="text-3xl font-extrabold text-[#5A1E12] mb-2 tracking-tight">
             Start your journey as a Seller
           </h2>
-          <p className="text-[#5A1E12]/70 mb-1">Complete all steps to start selling your artwork</p>
+          <p className="text-[#5A1E12]/70 mb-1">Complete all steps to sign-up & start your selling</p>
 
           {/* Resume / Login CTA */}
           {/* <div className="mt-3 flex gap-3">
@@ -857,10 +1105,17 @@ export default function ArtistOnboardingForm() {
                       {/* Country picker */}
                       <button
                         type="button"
-                        onClick={() => { setShowPhoneDropdown(v => !v); setPhoneSearch(''); }}
-                        className="flex items-center gap-1.5 px-3 h-full text-sm font-medium border-r border-[#5A1E12]/20 hover:bg-[#5A1E12]/5 transition rounded-l-xl shrink-0"
+                        ref={phonePickerBtnRef}
+                        onClick={() => {
+                          if (phonePickerBtnRef.current) {
+                            const r = phonePickerBtnRef.current.getBoundingClientRect();
+                            setPhoneDropdownCoords({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 280) });
+                          }
+                          setShowPhoneDropdown(v => !v); setPhoneSearch('');
+                        }}
+                        className="flex items-center gap-1.5 px-3 h-full text-sm font-medium border-r border-[#5A1E12]/20 hover:bg-[#5A1E12]/5 transition rounded-l-xl shrink-0 py-2.5"
                       >
-                        <span className="text-lg leading-none">{phoneCountry.flag}</span>
+                        <img src={`https://flagcdn.com/20x15/${phoneCountry.code.toLowerCase()}.png`} alt={phoneCountry.name} width={20} height={15} className="rounded-sm object-cover shrink-0" />
                         <span className="text-[#5A1E12] text-xs font-semibold">{phoneCountry.dialCode}</span>
                         <span className="text-[#5A1E12]/40 text-xs">▾</span>
                       </button>
@@ -875,13 +1130,17 @@ export default function ArtistOnboardingForm() {
                           if (phoneTouched) setPhoneInputError(validatePhone(v, phoneCountry));
                         }}
                         onBlur={() => { setPhoneTouched(true); setPhoneInputError(validatePhone(formData.phone, phoneCountry)); }}
-                        placeholder={`${phoneCountry.digits[0]}-digit number`}
+                        placeholder={phoneCountry.digits[0] === phoneCountry.digits[1] ? `${phoneCountry.digits[0]}-digit number` : `${phoneCountry.digits[0]}–${phoneCountry.digits[1]}-digit number`}
                         className="flex-1 px-4 py-2.5 text-sm text-[#5A1E12] bg-transparent outline-none placeholder-[#5A1E12]/40"
                       />
                     </div>
-                    {/* Dropdown */}
+                    {/* Dropdown — fixed so it's never clipped by parent overflow */}
                     {showPhoneDropdown && (
-                      <div className="absolute top-full left-0 z-50 mt-1 w-68 bg-white border border-[#5A1E12]/20 rounded-xl shadow-xl overflow-hidden" style={{ minWidth: '260px' }}>
+                      <div
+                        ref={phonePanelRef}
+                        style={{ position: 'fixed', top: phoneDropdownCoords.top, left: phoneDropdownCoords.left, minWidth: '280px', zIndex: 99999 }}
+                        className="bg-white border border-[#5A1E12]/20 rounded-xl shadow-2xl overflow-hidden"
+                      >
                         <div className="p-2 border-b border-[#5A1E12]/10">
                           <input
                             type="text"
@@ -892,7 +1151,7 @@ export default function ArtistOnboardingForm() {
                             className="w-full px-3 py-2 text-sm border border-[#5A1E12]/20 rounded-lg outline-none focus:border-[#5A1E12] bg-white text-[#5A1E12]"
                           />
                         </div>
-                        <ul className="max-h-52 overflow-y-auto">
+                        <ul className="max-h-60 overflow-y-auto">
                           {COUNTRIES.filter(c => c.name.toLowerCase().includes(phoneSearch.toLowerCase()) || c.dialCode.includes(phoneSearch)).map(c => (
                             <li key={c.code}>
                               <button
@@ -906,7 +1165,7 @@ export default function ArtistOnboardingForm() {
                                 }}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[#5A1E12]/5 text-left transition ${c.code === phoneCountry.code ? 'bg-[#5A1E12]/10 font-medium text-[#5A1E12]' : 'text-gray-700'}`}
                               >
-                                <span className="text-base w-6 shrink-0">{c.flag}</span>
+                                <img src={`https://flagcdn.com/20x15/${c.code.toLowerCase()}.png`} alt={c.name} width={20} height={15} className="rounded-sm object-cover shrink-0" />
                                 <span className="flex-1 truncate">{c.name}</span>
                                 <span className="text-[#5A1E12]/50 text-xs shrink-0">{c.dialCode}</span>
                               </button>
@@ -928,18 +1187,24 @@ export default function ArtistOnboardingForm() {
             {currentStep === 2 && (
               <div className="space-y-5">
                 <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Set Your Password</h3>
-                <div>
-                  <label className={labelCls}>Password *</label>
-                  <input type="password" name="password" value={formData.password} onChange={handleInputChange}
-                    placeholder="Set your password (min. 6 characters)" className={inputCls('password')} />
-                  {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
-                </div>
-                <div>
-                  <label className={labelCls}>Confirm Password *</label>
-                  <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange}
-                    placeholder="Re-enter your password" className={inputCls('confirmPassword')} />
-                  {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
-                </div>
+                <PasswordField
+                  label="Password *"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Set your password (min. 6 characters)"
+                  inputCls={inputCls('password')}
+                  error={errors.password}
+                />
+                <PasswordField
+                  label="Confirm Password *"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="Re-enter your password"
+                  inputCls={inputCls('confirmPassword')}
+                  error={errors.confirmPassword}
+                />
                 {errors.submit && <div className="bg-red-50 border border-red-200 rounded-xl p-3"><p className="text-sm text-red-800">{errors.submit}</p></div>}
               </div>
             )}
@@ -983,10 +1248,17 @@ export default function ArtistOnboardingForm() {
                       {/* Country picker */}
                       <button
                         type="button"
-                        onClick={() => { setShowBizPhoneDropdown(v => !v); setBizPhoneSearch(''); }}
-                        className="flex items-center gap-1.5 px-3 h-full text-sm font-medium border-r border-[#5A1E12]/20 hover:bg-[#5A1E12]/5 transition rounded-l-xl shrink-0"
+                        ref={bizPhonePickerBtnRef}
+                        onClick={() => {
+                          if (bizPhonePickerBtnRef.current) {
+                            const r = bizPhonePickerBtnRef.current.getBoundingClientRect();
+                            setBizPhoneDropdownCoords({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 280) });
+                          }
+                          setShowBizPhoneDropdown(v => !v); setBizPhoneSearch('');
+                        }}
+                        className="flex items-center gap-1.5 px-3 h-full text-sm font-medium border-r border-[#5A1E12]/20 hover:bg-[#5A1E12]/5 transition rounded-l-xl shrink-0 py-2.5"
                       >
-                        <span className="text-lg leading-none">{bizPhoneCountry.flag}</span>
+                        <img src={`https://flagcdn.com/20x15/${bizPhoneCountry.code.toLowerCase()}.png`} alt={bizPhoneCountry.name} width={20} height={15} className="rounded-sm object-cover shrink-0" />
                         <span className="text-[#5A1E12] text-xs font-semibold">{bizPhoneCountry.dialCode}</span>
                         <span className="text-[#5A1E12]/40 text-xs">▾</span>
                       </button>
@@ -1001,13 +1273,17 @@ export default function ArtistOnboardingForm() {
                           if (bizPhoneTouched) setBizPhoneInputError(validatePhone(v, bizPhoneCountry));
                         }}
                         onBlur={() => { setBizPhoneTouched(true); setBizPhoneInputError(validatePhone(formData.businessPhone, bizPhoneCountry)); }}
-                        placeholder={`${bizPhoneCountry.digits[0]}-digit number`}
+                        placeholder={bizPhoneCountry.digits[0] === bizPhoneCountry.digits[1] ? `${bizPhoneCountry.digits[0]}-digit number` : `${bizPhoneCountry.digits[0]}–${bizPhoneCountry.digits[1]}-digit number`}
                         className="flex-1 px-4 py-2.5 text-sm text-[#5A1E12] bg-transparent outline-none placeholder-[#5A1E12]/40"
                       />
                     </div>
-                    {/* Dropdown */}
+                    {/* Dropdown — fixed so it's never clipped by parent overflow */}
                     {showBizPhoneDropdown && (
-                      <div className="absolute top-full left-0 z-50 mt-1 w-68 bg-white border border-[#5A1E12]/20 rounded-xl shadow-xl overflow-hidden" style={{ minWidth: '260px' }}>
+                      <div
+                        ref={bizPhonePanelRef}
+                        style={{ position: 'fixed', top: bizPhoneDropdownCoords.top, left: bizPhoneDropdownCoords.left, minWidth: '280px', zIndex: 99999 }}
+                        className="bg-white border border-[#5A1E12]/20 rounded-xl shadow-2xl overflow-hidden"
+                      >
                         <div className="p-2 border-b border-[#5A1E12]/10">
                           <input
                             type="text"
@@ -1018,7 +1294,7 @@ export default function ArtistOnboardingForm() {
                             className="w-full px-3 py-2 text-sm border border-[#5A1E12]/20 rounded-lg outline-none focus:border-[#5A1E12] bg-white text-[#5A1E12]"
                           />
                         </div>
-                        <ul className="max-h-52 overflow-y-auto">
+                        <ul className="max-h-60 overflow-y-auto">
                           {COUNTRIES.filter(c => c.name.toLowerCase().includes(bizPhoneSearch.toLowerCase()) || c.dialCode.includes(bizPhoneSearch)).map(c => (
                             <li key={c.code}>
                               <button
@@ -1032,7 +1308,7 @@ export default function ArtistOnboardingForm() {
                                 }}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[#5A1E12]/5 text-left transition ${c.code === bizPhoneCountry.code ? 'bg-[#5A1E12]/10 font-medium text-[#5A1E12]' : 'text-gray-700'}`}
                               >
-                                <span className="text-base w-6 shrink-0">{c.flag}</span>
+                                <img src={`https://flagcdn.com/20x15/${c.code.toLowerCase()}.png`} alt={c.name} width={20} height={15} className="rounded-sm object-cover shrink-0" />
                                 <span className="flex-1 truncate">{c.name}</span>
                                 <span className="text-[#5A1E12]/50 text-xs shrink-0">{c.dialCode}</span>
                               </button>
@@ -1236,25 +1512,25 @@ export default function ArtistOnboardingForm() {
               </div>
             )}
 
-            {/* Step 7 — OTP Verification */}
+            {/* Step 7 — One-time code Verification */}
             {currentStep === 7 && (
               <div className="space-y-5">
                 <h3 className="text-xl font-semibold text-[#5A1E12] mb-4">Verify Your Application</h3>
                 <div className="bg-[#5A1E12]/5 border border-[#5A1E12]/20 rounded-xl p-4">
                   <p className="text-sm text-[#5A1E12]">
-                    An OTP has been sent to <strong>{formData.email}</strong>. Enter it below to complete your application.
+                    A one-time code has been sent to <strong>{formData.email}</strong>. Enter it below to complete your application.
                   </p>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className={labelCls}>OTP *</label>
+                    <label className={labelCls}>One-time code *</label>
                     <button type="button" onClick={handleResendOTP} disabled={loading}
                       className="text-sm font-semibold text-[#5A1E12] hover:text-[#5A1E12]/70 underline disabled:opacity-50">
-                      {loading ? 'Sending…' : 'Resend OTP'}
+                      {loading ? 'Sending…' : 'Resend code'}
                     </button>
                   </div>
                   <input type="text" name="otp" value={formData.otp} onChange={handleInputChange}
-                    placeholder="Enter OTP received" className={inputCls('otp')} />
+                    placeholder="Enter one-time code" className={inputCls('otp')} />
                   {errors.otp && <p className="mt-1 text-xs text-red-600">{errors.otp}</p>}
                 </div>
                 {successMessage && (

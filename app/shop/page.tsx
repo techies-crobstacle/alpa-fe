@@ -32,6 +32,9 @@ function ShopContent() {
   
   // Price range filter - dual range slider
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  // Editable text inputs for min/max — kept in sync with the slider
+  const [minInputVal, setMinInputVal] = useState<string>("0");
+  const [maxInputVal, setMaxInputVal] = useState<string>("1000");
   const [showAllArtists, setShowAllArtists] = useState(false);
 
   const [page, setPage] = useState(1);
@@ -296,6 +299,36 @@ function ShopContent() {
     setDebouncedSearchTerm("");
     setPage(1);
     setShowMobileFilters(false);
+  };
+
+  // Keep input strings in sync whenever priceRange changes (slider drag, reset, etc.)
+  useEffect(() => {
+    setMinInputVal(String(priceRange[0]));
+    setMaxInputVal(String(priceRange[1]));
+  }, [priceRange]);
+
+  const handleMinInput = (val: string) => {
+    setMinInputVal(val);
+  };
+
+  const handleMaxInput = (val: string) => {
+    setMaxInputVal(val);
+  };
+
+  const handleMinBlur = () => {
+    const n = parseInt(minInputVal, 10);
+    const clamped = isNaN(n) ? minPrice : Math.max(minPrice, Math.min(n, priceRange[1] - 1));
+    setPriceRange([clamped, priceRange[1]]);
+    setMinInputVal(String(clamped));
+    setPage(1);
+  };
+
+  const handleMaxBlur = () => {
+    const n = parseInt(maxInputVal, 10);
+    const clamped = isNaN(n) ? maxPrice : Math.min(maxPrice, Math.max(n, priceRange[0] + 1));
+    setPriceRange([priceRange[0], clamped]);
+    setMaxInputVal(String(clamped));
+    setPage(1);
   };
 
   const removeActiveFilter = (value: string) => {
@@ -604,16 +637,36 @@ function ShopContent() {
                       <span>${priceRange[1]}</span>
                     </div>
                   </div>
-                  {/* Price pill */}
+                  {/* Price inputs */}
                   <div className="flex items-center justify-between bg-[#EAD7B7]/50 rounded-xl px-4 py-2.5 mt-1">
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wide">Min</p>
-                      <p className="font-bold text-[#5A1E12]">${priceRange[0]}</p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Min</p>
+                      <div className="flex items-center justify-center gap-0.5">
+                        <span className="font-bold text-[#5A1E12] text-sm">$</span>
+                        <input
+                          type="number"
+                          value={minInputVal}
+                          onChange={(e) => handleMinInput(e.target.value)}
+                          onBlur={handleMinBlur}
+                          onKeyDown={(e) => e.key === 'Enter' && handleMinBlur()}
+                          className="w-16 bg-transparent font-bold text-[#5A1E12] text-sm outline-none text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                      </div>
                     </div>
                     <div className="w-8 h-px bg-[#5A1E12]/30" />
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wide">Max</p>
-                      <p className="font-bold text-[#5A1E12]">${priceRange[1]}</p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Max</p>
+                      <div className="flex items-center justify-center gap-0.5">
+                        <span className="font-bold text-[#5A1E12] text-sm">$</span>
+                        <input
+                          type="number"
+                          value={maxInputVal}
+                          onChange={(e) => handleMaxInput(e.target.value)}
+                          onBlur={handleMaxBlur}
+                          onKeyDown={(e) => e.key === 'Enter' && handleMaxBlur()}
+                          className="w-16 bg-transparent font-bold text-[#5A1E12] text-sm outline-none text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 </>
@@ -762,16 +815,36 @@ function ShopContent() {
                 <FilterSkeleton />
               ) : (
                 <>
-                  {/* Price pills */}
+                  {/* Price pills — editable */}
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-center">
                       <p className="text-[10px] text-gray-400 mb-0.5">Min</p>
-                      <p className="text-sm font-semibold text-gray-800">${priceRange[0]}</p>
+                      <div className="flex items-center justify-center gap-0.5">
+                        <span className="text-sm font-semibold text-gray-800">$</span>
+                        <input
+                          type="number"
+                          value={minInputVal}
+                          onChange={(e) => handleMinInput(e.target.value)}
+                          onBlur={handleMinBlur}
+                          onKeyDown={(e) => e.key === 'Enter' && handleMinBlur()}
+                          className="w-16 bg-transparent text-sm font-semibold text-gray-800 outline-none text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                      </div>
                     </div>
                     <div className="w-4 h-px bg-gray-300" />
                     <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-center">
                       <p className="text-[10px] text-gray-400 mb-0.5">Max</p>
-                      <p className="text-sm font-semibold text-gray-800">${priceRange[1]}</p>
+                      <div className="flex items-center justify-center gap-0.5">
+                        <span className="text-sm font-semibold text-gray-800">$</span>
+                        <input
+                          type="number"
+                          value={maxInputVal}
+                          onChange={(e) => handleMaxInput(e.target.value)}
+                          onBlur={handleMaxBlur}
+                          onKeyDown={(e) => e.key === 'Enter' && handleMaxBlur()}
+                          className="w-16 bg-transparent text-sm font-semibold text-gray-800 outline-none text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1078,10 +1151,10 @@ function ShopContent() {
                     <button
                       disabled={page === 1}
                       onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                         page === 1
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                          ? "bg-white/50 border-gray-200 text-gray-300 cursor-not-allowed"
+                          : "bg-white border-[#973c00]/20 text-[#5A1E12] hover:bg-[#5A1E12] hover:text-white hover:border-[#5A1E12] shadow-sm hover:shadow-md"
                       }`}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -1121,10 +1194,10 @@ function ShopContent() {
                               setPage(p as number);
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
-                            className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${
+                            className={`w-9 h-9 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                               page === p
-                                ? "bg-[#5A1E12] text-white shadow-sm shadow-[#5A1E12]/30"
-                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                ? "bg-[#5A1E12] text-white border-[#5A1E12] shadow-md shadow-[#5A1E12]/25"
+                                : "bg-white text-[#3b1a08] border-[#973c00]/20 hover:bg-[#5A1E12] hover:text-white hover:border-[#5A1E12] shadow-sm hover:shadow-md"
                             }`}
                           >
                             {p}
@@ -1137,10 +1210,10 @@ function ShopContent() {
                     <button
                       disabled={page === totalPages}
                       onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                         page === totalPages
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                          ? "bg-white/50 border-gray-200 text-gray-300 cursor-not-allowed"
+                          : "bg-white border-[#973c00]/20 text-[#5A1E12] hover:bg-[#5A1E12] hover:text-white hover:border-[#5A1E12] shadow-sm hover:shadow-md"
                       }`}
                     >
                       <span className="hidden sm:inline">Next</span>

@@ -1,4 +1,5 @@
-
+"use client";
+import { useState } from "react";
 import {
   FaLinkedinIn,
   FaFacebookF,
@@ -8,10 +9,12 @@ import {
   FaHeart,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import { X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function Footer() {
+  const [email, setEmail] = useState("");
   return (
     <footer className="bg-[#440C03] bg-[url('/images/footer-pattern.png')] bg-cover text-white px-4 sm:px-8 md:px-12 lg:px-20 pt-12 lg:pb-10 md:py-16"> 
       {/* Top Main Section */}
@@ -109,8 +112,20 @@ export default function Footer() {
             <input
               type="email"
               placeholder="Enter Email here"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="bg-transparent outline-none text-white placeholder-white/80 flex-1 text-sm md:text-base"
             />
+            {email && (
+              <button
+                type="button"
+                onClick={() => setEmail("")}
+                aria-label="Clear email"
+                className="text-white/70 hover:text-white transition-colors shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
             <button 
               type="submit" 
               aria-label="Subscribe to newsletter"
