@@ -132,7 +132,7 @@ export function StickyLeftCouponDrawer() {
       </div>
 
       {/* Floating Tab Button (visible when drawer is closed) */}
-      {!open && (
+      {/* {!open && (
         <button
           onClick={() => setOpen(true)}
           className="fixed left-0 top-1/2 transform -translate-y-1/2 z-50 w-10 h-28 bg-[#5A1E12] text-white flex flex-col items-center justify-center gap-1 rounded-r-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all outline-none"
@@ -144,7 +144,7 @@ export function StickyLeftCouponDrawer() {
             Coupons
           </span>
         </button>
-      )}
+      )} */}
     </>
   );
 }

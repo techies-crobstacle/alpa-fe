@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { FaArrowUp } from "react-icons/fa";
 
 export default function ScrollToTop() {
+  const pathname = usePathname();
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -22,6 +24,8 @@ export default function ScrollToTop() {
     });
   };
 
+  const hiddenPaths = ["/cart", "/checkout", "/shop/cart/checkout"];
+  if (hiddenPaths.includes(pathname)) return null;
   if (!showScrollTop) return null;
 
   return (

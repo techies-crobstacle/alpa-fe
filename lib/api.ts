@@ -141,6 +141,38 @@ export const couponsApi = {
     apiClient.post("/coupons/validate", { code, orderTotal }, false),
 };
 
+// ── Seller Coupon types ───────────────────────────────────────────────────
+
+export interface SellerCouponItem {
+  productId: string;
+  variantId: string | null;
+  quantity: number;
+}
+
+export interface AppliedSellerCoupon {
+  code: string;
+  couponType: string;
+  eligibleSellerId: string;
+  savings: number;   // summary.totalSavingsExGST from API
+  total: number;     // summary.discountedInclTotal from API
+  nonQualifyingItems: { productId: string; quantity: number; reason: string }[];
+}
+
+export const sellerCouponsApi = {
+  /** No auth required — public endpoint */
+  applyCoupon: (
+    code: string,
+    items: SellerCouponItem[],
+  ): Promise<any> =>
+    apiClient.post("/seller-coupons/apply", { code, items }, false),
+
+  /** Fetch active coupons, optionally scoped to one seller */
+  getActiveCoupons: (sellerId?: string): Promise<any> => {
+    const qs = sellerId ? `?sellerId=${sellerId}` : "";
+    return apiClient.get(`/seller-coupons/active${qs}`, false);
+  },
+};
+
 export const cartApi = {
   getCart: (): Promise<{ items: CartItem[] }> => apiClient.get("/cart"),
   getMyCart: (): Promise<{ cart: any[] }> => apiClient.get("/cart/my-cart"),

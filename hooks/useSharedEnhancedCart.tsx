@@ -109,8 +109,9 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
 
       if (!response.ok) throw new Error("Failed to add to cart");
 
-      // Optimistic update already applied above — no re-fetch needed on success.
-      // Trigger a lightweight UI sync without a full GET /api/cart.
+      // Optimistic update already applied above — refetch to get updated
+      // shippingCalculations (multi-seller totals) for all shipping methods.
+      await cartData.fetchCartData(true);
       triggerUpdate();
       
     } catch (error) {
@@ -142,7 +143,8 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
         delete qtyDebounceTimers.current[debounceKey];
         try {
           await cartData.updateQuantity(productId, newQuantity, variantId);
-          // Optimistic update already reflects the change — no full refetch needed
+          // Refetch to get updated shippingCalculations after quantity change
+          await cartData.fetchCartData(true);
           triggerUpdate();
         } catch (error) {
           console.error('Enhanced update quantity error:', error);

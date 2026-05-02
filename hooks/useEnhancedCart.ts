@@ -352,7 +352,50 @@ export function useEnhancedCart() {
            setSelectedShipping(generalShipping);
         }
       }
-      
+
+      // ── Re-calculate shipping for ALL methods in parallel so the summary
+      // always shows the correct multi-seller total when switching methods ──
+      if (data.availableShipping.length > 0 && data.cart.length > 0) {
+        const itemsPayload = data.cart.map((i: CartItem) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          ...(i.variantId && { variantId: i.variantId }),
+        }));
+        Promise.all(
+          data.availableShipping.map(async (method) => {
+            try {
+              const res = await fetch(`${baseUrl}/api/cart/calculate-guest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: itemsPayload, shippingMethodId: method.id }),
+              });
+              if (!res.ok) return null;
+              const json = await res.json();
+              const c = json.calculations || {};
+              const sc = json.shippingCalculations?.[method.id] || {};
+              return [method.id, {
+                shippingMethodId: method.id,
+                baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? 0),
+                sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
+                totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? 0),
+                subtotal: Number(sc.subtotal ?? c.subtotal ?? 0),
+                gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
+                grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? 0),
+              }] as [string, ShippingCalculation];
+            } catch {
+              return null;
+            }
+          })
+        ).then((entries) => {
+          const calcs: Record<string, ShippingCalculation> = Object.fromEntries(
+            entries.filter((e): e is [string, ShippingCalculation] => e !== null)
+          );
+          if (Object.keys(calcs).length > 0) {
+            setCartData((prev) => prev ? { ...prev, shippingCalculations: calcs } : prev);
+          }
+        });
+      }
+
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch cart data");

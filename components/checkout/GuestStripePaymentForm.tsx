@@ -90,8 +90,7 @@ export default function GuestStripePaymentForm({
       const data = await res.json();
 
       if (data.success) {
-        // Clear guest cart and store order info for success page
-        guestCartUtils.clearGuestCart();
+        // Store order info for success page — cart is cleared by the parent after navigation
         sessionStorage.setItem("guestOrderId", data.orderId || orderId);
         sessionStorage.setItem("guestOrderEmail", customerEmail);
         if (data.displayId) sessionStorage.setItem("guestOrderDisplayId", data.displayId);

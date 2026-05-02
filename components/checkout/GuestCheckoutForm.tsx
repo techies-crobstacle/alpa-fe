@@ -8,7 +8,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Loader2, Tag, X, CheckCircle, ChevronRight } from "lucide-react";
 import { useSharedEnhancedCart } from "@/hooks/useSharedEnhancedCart";
-import { couponsApi, ValidatedCoupon } from "@/lib/api";
+import { sellerCouponsApi, AppliedSellerCoupon } from "@/lib/api";
 import { guestCartUtils } from "@/lib/guestCartUtils";
 import GuestStripePaymentForm from "@/components/checkout/GuestStripePaymentForm";
 import Link from "next/link";
@@ -181,12 +181,16 @@ export default function GuestCheckoutForm() {
           if (data.success) {
             sessionStorage.removeItem("guestEmail");
             sessionStorage.removeItem("guestOrderId");
-            guestCartUtils.clearGuestCart();
             sessionStorage.removeItem(DRAFT_KEY);
             sessionStorage.setItem("guestOrderId",    data.orderId || storedOrderId || "");
             sessionStorage.setItem("guestOrderEmail", customerEmail);
             if (data.displayId) sessionStorage.setItem("guestOrderDisplayId", data.displayId);
             router.push("/guest/order-success");
+            // Clear cart AFTER navigation starts so the order summary stays visible
+            setTimeout(() => {
+              guestCartUtils.clearGuestCart();
+              localStorage.removeItem("cartProductCoupons");
+            }, 100);
           } else {
             setRedirectError(data.message || "Payment confirmation failed. Please contact support.");
             setIsProcessingRedirect(false);
@@ -268,35 +272,19 @@ export default function GuestCheckoutForm() {
   const autocompleteInstanceRef = useRef<any>(null);
 
   // ── Coupon ────────────────────────────────────────────────────────────────
-  const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
-  const [couponError, setCouponError] = useState("");
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [appliedCoupons, setAppliedCoupons] = useState<AppliedSellerCoupon[]>([]);
 
-  // Pre-populate coupon applied on the cart page (only if cart still meets minimum)
+  // Pre-populate coupons applied on the cart page
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("cartAppliedCoupon");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setAppliedCoupon(parsed);
+      const perProduct = localStorage.getItem("cartProductCoupons");
+      if (perProduct) {
+        const parsed: Record<string, AppliedSellerCoupon> = JSON.parse(perProduct);
+        const coupons = Object.values(parsed).filter(Boolean) as AppliedSellerCoupon[];
+        if (coupons.length > 0) setAppliedCoupons(coupons);
       }
     } catch {}
   }, []);
-
-  // Auto-invalidate coupon if cart subtotal drops below the coupon's minimum
-  useEffect(() => {
-    if (appliedCoupon && subtotal < appliedCoupon.minCartValue) {
-      const removedCode = appliedCoupon.code;
-      const minVal = appliedCoupon.minCartValue;
-      setAppliedCoupon(null);
-      setCouponCode(removedCode);
-      setCouponError(
-        `Coupon "${removedCode}" requires a minimum cart value of $${minVal.toFixed(2)}. It has been removed.`
-      );
-      localStorage.removeItem("cartAppliedCoupon");
-    }
-  }, [subtotal, appliedCoupon]);
 
   // ── Persist form draft so browser-back doesn't wipe entries ──────────────
   const DRAFT_KEY = "guestFormDraft";
@@ -614,44 +602,9 @@ export default function GuestCheckoutForm() {
     }
   }, [selectedCountryIso, cartLoading]);
 
-  // Final total after coupon — recomputed dynamically whenever grandTotal changes
-  const discountAmount = appliedCoupon
-    ? appliedCoupon.discountType === "percentage"
-      ? (appliedCoupon.maxDiscount > 0
-          ? Math.min((grandTotal * appliedCoupon.discountValue) / 100, appliedCoupon.maxDiscount)
-          : (grandTotal * appliedCoupon.discountValue) / 100)
-      : Math.min(appliedCoupon.discountValue, grandTotal)
-    : 0;
+  // Final total after coupon — discount is pre-computed by backend at apply time
+  const discountAmount = appliedCoupons.reduce((sum, c) => sum + (c.savings ?? 0), 0);
   const finalTotal     = Math.max(0, grandTotal - discountAmount);
-
-  // ── Coupon handlers ───────────────────────────────────────────────────────
-  const handleApplyCoupon = async () => {
-    const code = couponCode.trim();
-    if (!code) { setCouponError("Please enter a coupon code."); return; }
-    setCouponError("");
-    setIsValidatingCoupon(true);
-    try {
-      const data = await couponsApi.validateCoupon(code, grandTotal);
-      if (!data.success || !data.coupon) {
-        setCouponError(data.message || "Invalid coupon code.");
-        setAppliedCoupon(null);
-        return;
-      }
-      setAppliedCoupon(data.coupon);
-      localStorage.setItem("cartAppliedCoupon", JSON.stringify(data.coupon));
-    } catch {
-      setCouponError("Failed to validate coupon. Please try again.");
-    } finally {
-      setIsValidatingCoupon(false);
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode("");
-    setCouponError("");
-    localStorage.removeItem("cartAppliedCoupon");
-  };
 
   // ── Postcode ↔ State validation (fully dynamic, no hardcoding) ─────────────
   // Strategy (ordered by reliability):
@@ -825,7 +778,7 @@ export default function GuestCheckoutForm() {
         mobileNumber: `${selectedCountry.dialCode} ${phoneNumber}`.trim(),
         paymentMethod: "credit/debit card",
         ...(gstId && { gstId }),
-        ...(appliedCoupon?.code && { couponCode: appliedCoupon.code }),
+        ...(appliedCoupons.length > 0 && { couponCode: appliedCoupons[0].code, couponCodes: appliedCoupons.map(c => c.code) }),
       };
 
       console.log("=== GUEST ORDER DEBUG ===");
@@ -847,7 +800,7 @@ export default function GuestCheckoutForm() {
         const msg = data.message || data.error || "Failed to create payment. Please try again.";
         toast.error(msg);
         if (msg.toLowerCase().includes("coupon")) {
-          setCouponError(msg); setAppliedCoupon(null); setCouponCode("");
+          setPhoneError(msg);
         }
         return;
       }
@@ -1269,35 +1222,19 @@ export default function GuestCheckoutForm() {
             </div>
 
             {/* Coupon */}
-            <div className="border-t border-[#5A1E12]/10 pt-6">
-              <h3 className="text-base font-semibold text-[#5A1E12] mb-4">Coupon Code (Optional)</h3>
-              {appliedCoupon ? (
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-300 rounded-lg">
-                  <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-                  <span className="flex-1 text-sm font-medium text-green-700">
-                    {appliedCoupon.code} — -${appliedCoupon.discountAmount.toFixed(2)} discount applied
-                  </span>
-                  <button onClick={handleRemoveCoupon} className="text-green-600 hover:text-red-500 transition-colors cursor-pointer">
-                    <X className="w-4 h-4" />
-                  </button>
+            {appliedCoupons.length > 0 && (
+              <div className="border-t border-[#5A1E12]/10 pt-6">
+                <h3 className="text-base font-semibold text-[#5A1E12] mb-3">Coupons Applied</h3>
+                <div className="space-y-1.5">
+                  {appliedCoupons.map((c) => (
+                    <div key={c.code} className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-300 rounded-lg">
+                      <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
+                      <span className="text-sm font-medium text-green-700">{c.code} &mdash; -${c.savings.toFixed(2)} saved</span>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div className="flex gap-2">
-                  <input type="text" value={couponCode}
-                    onChange={(e) => { setCouponCode(e.target.value); setCouponError(""); }}
-                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
-                    placeholder="Enter coupon code" disabled={isValidatingCoupon}
-                    className={`flex-1 border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 ${
-                      couponError ? "border-red-400 focus:ring-red-400" : "border-[#5A1E12]/20 focus:ring-[#5A1E12]"
-                    }`} />
-                  <button onClick={handleApplyCoupon} disabled={isValidatingCoupon || !couponCode.trim()}
-                    className="px-4 py-2.5 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
-                    {isValidatingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Tag className="w-3.5 h-3.5 mr-1" />Apply</>}
-                  </button>
-                </div>
-              )}
-              {couponError && <p className="mt-1.5 text-xs text-red-500">{couponError}</p>}
-            </div>
+              </div>
+            )}
 
             {/* Continue button */}
             <div className="pt-2">
@@ -1348,7 +1285,15 @@ export default function GuestCheckoutForm() {
                 amount={stripeAmount}
                 currency={stripeCurrency}
                 orderId={confirmedOrderId}
-                onSuccess={() => { sessionStorage.removeItem(DRAFT_KEY); router.push("/guest/order-success"); }}
+                onSuccess={() => {
+                  sessionStorage.removeItem(DRAFT_KEY);
+                  router.push("/guest/order-success");
+                  // Clear cart AFTER navigation starts so the order summary stays visible
+                  setTimeout(() => {
+                    guestCartUtils.clearGuestCart();
+                    localStorage.removeItem("cartProductCoupons");
+                  }, 100);
+                }}
                 onError={(msg) => toast.error(msg)}
               />
             </Elements>
@@ -1411,12 +1356,12 @@ export default function GuestCheckoutForm() {
               <span className="text-gray-600">GST (incl. {gstPercentage?.toFixed(1)}%)</span>
               <span>${gstAmount.toFixed(2)}</span>
             </div>
-            {appliedCoupon && (
-              <div className="flex justify-between text-sm text-green-600 font-medium">
-                <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" />Coupon {appliedCoupon.code}</span>
-                <span>-${appliedCoupon.discountAmount.toFixed(2)}</span>
+            {appliedCoupons.map(c => (
+              <div key={c.code} className="flex justify-between text-sm text-green-600 font-medium">
+                <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" />Coupon {c.code}</span>
+                <span>-${c.savings.toFixed(2)}</span>
               </div>
-            )}
+            ))}
             <hr />
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
@@ -1429,3 +1374,7 @@ export default function GuestCheckoutForm() {
     </div>
   );
 }
+function setCouponCode(arg0: string) {
+  throw new Error("Function not implemented.");
+}
+

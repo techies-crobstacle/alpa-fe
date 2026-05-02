@@ -17,7 +17,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import StripePaymentForm from "@/components/checkout/StripePaymentForm";
 import GuestCheckoutForm from "@/components/checkout/GuestCheckoutForm";
 import { Loader2, Tag, X } from "lucide-react";
-import { couponsApi, ValidatedCoupon } from "@/lib/api";
+import { AppliedSellerCoupon } from "@/lib/api";
 import { useCartStock } from "@/hooks/useCartStock";
 
 const stripePromise = loadStripe(
@@ -28,7 +28,6 @@ export default function CheckOutPage() {
   const router = useRouter();
   const [step, setStep] = useState(1); // Start from Email step (optional)
   const [showGuestForm, setShowGuestForm] = useState(false);
-  const [promoCode, setPromoCode] = useState("");
   // Guest checkout required fields
   const [guestEmail, setGuestEmail] = useState("");
   const [guestFirstName, setGuestFirstName] = useState("");
@@ -49,9 +48,7 @@ export default function CheckOutPage() {
   const [isAddressValid, setIsAddressValid] = useState(false);
 
   // ── Coupon state ────────────────────────────────────────────────────────────
-  const [couponError, setCouponError] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [appliedCoupons, setAppliedCoupons] = useState<AppliedSellerCoupon[]>([]);
 
   // ── Stripe payment state ──────────────────────────────────────────────────
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -118,13 +115,13 @@ export default function CheckOutPage() {
     if (savedPaymentMethod) {
       setPaymentMethod(savedPaymentMethod);
     }
-    // Restore coupon applied on the cart page (or a previous checkout visit)
+    // Restore coupons applied on the cart page
     try {
-      const savedCoupon = localStorage.getItem("cartAppliedCoupon");
-      if (savedCoupon) {
-        const parsed = JSON.parse(savedCoupon);
-        setAppliedCoupon(parsed);
-        setPromoCode(parsed.code);
+      const perProduct = localStorage.getItem("cartProductCoupons");
+      if (perProduct) {
+        const parsed: Record<string, AppliedSellerCoupon> = JSON.parse(perProduct);
+        const coupons = Object.values(parsed).filter(Boolean) as AppliedSellerCoupon[];
+        if (coupons.length > 0) setAppliedCoupons(coupons);
       }
     } catch {}
   }, []);
@@ -190,29 +187,9 @@ export default function CheckOutPage() {
   const shipping = shippingCost;
   const tax = gstAmount;
   const total = grandTotal;
-  // Recompute discount dynamically so it stays in sync when cart quantities change
-  const discountAmount = appliedCoupon
-    ? appliedCoupon.discountType === "percentage"
-      ? (appliedCoupon.maxDiscount > 0
-          ? Math.min((total * appliedCoupon.discountValue) / 100, appliedCoupon.maxDiscount)
-          : (total * appliedCoupon.discountValue) / 100)
-      : Math.min(appliedCoupon.discountValue, total)
-    : 0;
+  // Discount is pre-computed by the backend at apply time
+  const discountAmount = appliedCoupons.reduce((sum, c) => sum + (c.savings ?? 0), 0);
   const discountedTotal = Math.max(0, total - discountAmount);
-
-  // Auto-invalidate coupon when subtotal drops below the coupon's minimum
-  useEffect(() => {
-    if (appliedCoupon && subtotal < appliedCoupon.minCartValue) {
-      const removedCode = appliedCoupon.code;
-      const minVal = appliedCoupon.minCartValue;
-      setAppliedCoupon(null);
-      setPromoCode(removedCode);
-      setCouponError(
-        `Coupon "${removedCode}" requires a minimum cart value of $${minVal.toFixed(2)}. It has been removed.`
-      );
-      localStorage.removeItem("cartAppliedCoupon");
-    }
-  }, [subtotal, appliedCoupon]);
 
   /* ---------------- STEP HANDLERS ---------------- */
   const handleNext = () => {
@@ -234,37 +211,6 @@ export default function CheckOutPage() {
     setShippingState(data.state);
     setShippingCountry(data.country);
     setMobileNumber(data.phoneNumber);
-  };
-
-  const handleCouponApply = async () => {
-    const code = promoCode.trim();
-    if (!code) {
-      setCouponError("Please enter a coupon code.");
-      return;
-    }
-    setCouponError("");
-    setAppliedCoupon(null);
-    setIsValidatingCoupon(true);
-    try {
-      const data = await couponsApi.validateCoupon(code, grandTotal);
-      if (!data.success || !data.coupon) {
-        setCouponError(data.message || "Invalid coupon code.");
-        return;
-      }
-      setAppliedCoupon(data.coupon);
-      localStorage.setItem("cartAppliedCoupon", JSON.stringify(data.coupon));
-    } catch (err: any) {
-      setCouponError(err?.message || "Failed to validate coupon. Please try again.");
-    } finally {
-      setIsValidatingCoupon(false);
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setPromoCode("");
-    setCouponError("");
-    localStorage.removeItem("cartAppliedCoupon");
   };
 
   // ── Stripe: create payment intent ────────────────────────────────────────
@@ -421,7 +367,7 @@ export default function CheckOutPage() {
           paymentMethod: paymentMethod === "card" ? "credit/debit card" : paymentMethod,
           shippingMethodId: shippingMethodId,
           ...(gstId && { gstId }),
-          ...(appliedCoupon && { couponCode: appliedCoupon.code }),
+          ...(appliedCoupons.length > 0 && { couponCode: appliedCoupons[0].code, couponCodes: appliedCoupons.map(c => c.code) }),
         };
 
         response = await fetch(
@@ -458,7 +404,7 @@ export default function CheckOutPage() {
               paymentMethod: paymentMethod === "card" ? "credit/debit card" : paymentMethod,
               shippingMethodId: shippingMethodId,
               ...(gstId && { gstId }),
-              ...(appliedCoupon && { couponCode: appliedCoupon.code }),
+              ...(appliedCoupons.length > 0 && { couponCode: appliedCoupons[0].code, couponCodes: appliedCoupons.map(c => c.code) }),
             }),
           },
         );
@@ -476,10 +422,8 @@ export default function CheckOutPage() {
           "";
         const displayId = responseData.displayId || "";
 
-        setAppliedCoupon(null);
-        setPromoCode("");
-        setCouponError("");
-        localStorage.removeItem("cartAppliedCoupon");
+        setAppliedCoupons([]);
+        localStorage.removeItem("cartProductCoupons");
         localStorage.removeItem("alpa_cart_count");
         localStorage.removeItem("checkoutStep");
         localStorage.removeItem("showGuestForm");
@@ -1040,47 +984,19 @@ export default function CheckOutPage() {
               {/* ── Fixed bottom: promo + totals ── */}
               <div className="px-6 pb-6 pt-4 border-t shrink-0 space-y-4">
                 {/* COUPON */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Coupon Code</label>
-                  {appliedCoupon ? (
-                    <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-300 rounded-lg">
-                      <Tag className="w-4 h-4 text-green-600 shrink-0" />
-                      <span className="flex-1 text-sm font-medium text-green-700">{appliedCoupon.code}</span>
-                      <button
-                        onClick={handleRemoveCoupon}
-                        className="text-green-600 hover:text-red-500 transition-colors"
-                        aria-label="Remove coupon"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                {appliedCoupons.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Coupons Applied</label>
+                    <div className="space-y-1.5">
+                      {appliedCoupons.map((c) => (
+                        <div key={c.code} className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-300 rounded-lg">
+                          <Tag className="w-4 h-4 text-green-600 shrink-0" />
+                          <span className="text-sm font-medium text-green-700">{c.code} &mdash; -${c.savings.toFixed(2)}</span>
+                        </div>
+                      ))}
                     </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        value={promoCode}
-                        onChange={(e) => { setPromoCode(e.target.value); setCouponError(""); }}
-                        onKeyDown={(e) => e.key === "Enter" && handleCouponApply()}
-                        className={`flex-1 border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 ${
-                          couponError ? "border-red-400 focus:ring-red-400" : "focus:ring-[#5A1E12] focus:border-[#5A1E12]"
-                        }`}
-                        placeholder="Enter code"
-                        disabled={isValidatingCoupon}
-                      />
-                      <button
-                        onClick={handleCouponApply}
-                        disabled={isValidatingCoupon || !promoCode.trim()}
-                        className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                      >
-                        {isValidatingCoupon ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : "Apply"}
-                      </button>
-                    </div>
-                  )}
-                  {couponError && (
-                    <p className="mt-1.5 text-xs text-red-500">{couponError}</p>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
@@ -1094,21 +1010,18 @@ export default function CheckOutPage() {
                   <span className="text-gray-600">GST (incl. {gstPercentage?.toFixed(1)}%)</span>
                   <span>${gstAmount.toFixed(2)}</span>
                 </div>
-                {appliedCoupon && (
-                  <div className="flex justify-between text-sm text-green-600 font-medium">
-                    <span className="flex items-center gap-1">
-                      <Tag className="w-3.5 h-3.5" />
-                      Coupon {appliedCoupon.code}
-                    </span>
-                    <span>-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                {appliedCoupons.map(c => (
+                  <div key={c.code} className="flex justify-between text-sm text-green-600 font-medium">
+                    <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" />Coupon {c.code}</span>
+                    <span>-${c.savings.toFixed(2)}</span>
                   </div>
-                )}
+                ))}
 
                 <hr />
 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>${grandTotal.toFixed(2)}</span>
+                  <span>${discountedTotal.toFixed(2)}</span>
                 </div>
               </div>
 
