@@ -1351,7 +1351,7 @@ function ShopLoading() {
 ======================= */
 export default function Page() {
   return (
-    <Suspense fallback={<ShopLoading />}>
+    <Suspense fallback={null}>
       <ShopContent />
     </Suspense>
   )

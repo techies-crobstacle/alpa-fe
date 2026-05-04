@@ -287,7 +287,28 @@ export default function OptimisticProductCard({
     // Toggle animation and optimistic state
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 300);
-    setOptimisticWishlist(!isWishlisted);
+    const nowWishlisted = !isWishlisted;
+    setOptimisticWishlist(nowWishlisted);
+
+    if (nowWishlisted) {
+      toast.success("Added to Wishlist", {
+        position: "top-right",
+        autoClose: 2500,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } else {
+      toast.info("Removed from Wishlist", {
+        position: "top-right",
+        autoClose: 2500,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
 
     // Call the toggle mutation using server state (not optimistic state)
     toggleWishlistMutation.debouncedMutate({
