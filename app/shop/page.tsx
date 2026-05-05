@@ -417,7 +417,7 @@ function ShopContent() {
   }
 
   return (
-    <section className=" bg-[#EAD7B7]/40">
+    <section className="min-h-screen bg-[#EAD7B7]/40">
       {/* HERO SECTION */}
       <section className="bg-[#e6e6e6]">
         {/* OUTER FRAME */}
@@ -526,7 +526,7 @@ function ShopContent() {
       </div>
 
       {/* MAIN SHOP LAYOUT */}
-      <section className="mx-auto px-4 md:px-8 lg:px-20 py-4 lg:py-10 flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <section className="min-h-[calc(100vh-400px)] mx-auto px-4 md:px-8 lg:px-20 py-4 lg:py-10 flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* MOBILE FILTER DRAWER */}
         {showMobileFilters && (
           <div
@@ -1237,19 +1237,22 @@ function ShopContent() {
 ======================= */
 function ShopLoading() {
   return (
-    <section className="min-h-screen bg-[url('/images/main-bg.png')] bg-repeat bg-center">
-      <section className="container mx-auto px-4 py-12 sm:py-16 lg:py-20">
-        {/* Page title skeleton */}
-        <div className="mb-8 space-y-2">
-          <div className="h-8 w-48 rounded-full bg-[#EAD7B7]/70 relative overflow-hidden">
-            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
-          </div>
-          <div className="h-4 w-72 rounded-full bg-[#EAD7B7]/50 relative overflow-hidden">
-            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+    <section className="min-h-screen bg-[#EAD7B7]/40">
+      {/* Hero Section Placeholder */}
+      <section className="bg-[#e6e6e6]">
+        <div className="max-w-full mx-auto overflow-hidden">
+          <div className="relative h-[60vh] md:h-[65vh] lg:h-[80vh] bg-[#EAD7B7]/30">
+            <div className="relative z-10 pt-6 h-full flex flex-col items-center justify-center text-white text-center">
+              <div className="h-12 w-32 bg-white/20 rounded-lg mb-8 animate-pulse" />
+              <div className="h-8 w-64 bg-white/20 rounded-lg animate-pulse" />
+            </div>
           </div>
         </div>
-
-        <div className="flex gap-8">
+      </section>
+      
+      {/* Main Content Placeholder */}
+      <section className="min-h-[calc(100vh-400px)] mx-auto px-4 md:px-8 lg:px-20 py-4 lg:py-10">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* ── SIDEBAR SKELETON ── */}
           <aside className="hidden lg:flex flex-col gap-6 w-64 shrink-0">
             {/* Search bar */}
@@ -1351,7 +1354,7 @@ function ShopLoading() {
 ======================= */
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<ShopLoading />}>
       <ShopContent />
     </Suspense>
   )
