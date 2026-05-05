@@ -75,6 +75,7 @@ export default function OptimisticProductCard({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
   const [showVariantModal, setShowVariantModal] = useState(false);
+  const [showWishlistVariantModal, setShowWishlistVariantModal] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { token, user: authUser } = useAuth();
   const { data: wishlistData } = useWishlistQuery();
@@ -83,11 +84,13 @@ export default function OptimisticProductCard({
   // Check if user is authenticated (either token or user object exists)
   const isAuthenticated = !!(token || authUser);
 
-  // Lazy-fetch variant data only when card is hovered and product has variants
-  const { data: variantProduct } = useSingleProduct(isHovered && isVariableProduct ? id : undefined);
+  // Always call the hook with id to maintain consistent hook order
+  // React Query will handle caching efficiently, and we control data usage below
+  const { data: variantProduct } = useSingleProduct(id);
 
   const variantColors = useMemo(() => {
-    if (!variantProduct?.variants?.length) return [];
+    // Only show variant colors when hovered and it's a variable product
+    if (!isHovered || !isVariableProduct || !variantProduct?.variants?.length) return [];
     const seen = new Set<string>();
     const colors: { label: string; hex: string }[] = [];
     variantProduct.variants.forEach((v) => {
@@ -117,10 +120,11 @@ export default function OptimisticProductCard({
       });
     });
     return colors;
-  }, [variantProduct]);
+  }, [variantProduct, isHovered, isVariableProduct]);
 
   const variantSizes = useMemo(() => {
-    if (!variantProduct?.variants?.length) return [];
+    // Only show variant sizes when hovered and it's a variable product
+    if (!isHovered || !isVariableProduct || !variantProduct?.variants?.length) return [];
     const seen = new Set<string>();
     const sizes: string[] = [];
     variantProduct.variants.forEach((v) => {
@@ -137,7 +141,7 @@ export default function OptimisticProductCard({
       });
     });
     return sizes;
-  }, [variantProduct]);
+  }, [variantProduct, isHovered, isVariableProduct]);
 
   // Subscribe to cart updates
   useEffect(() => {
@@ -168,10 +172,13 @@ export default function OptimisticProductCard({
         ? wishlistData.wishlist 
         : [];
     
+    // For variable products, check if any variant is wishlisted
+    // For simple products, check the product directly
     return wishlistArray.some((item: any) => {
-      return item.id === id || item.productId === id || item.product?.id === id;
+      const itemProductId = item.productId || item.product?.id || item.id;
+      return String(itemProductId) === String(id);
     });
-  }, [wishlistData, id, optimisticWishlist]);
+  }, [wishlistData, id, optimisticWishlist, isVariableProduct]);
 
   // Get server-side wishlist status (for API calls - ignoring optimistic state)
   const serverWishlistStatus = useMemo(() => {
@@ -183,10 +190,13 @@ export default function OptimisticProductCard({
         ? wishlistData.wishlist 
         : [];
     
+    // For variable products, check if any variant is wishlisted
+    // For simple products, check the product directly
     return wishlistArray.some((item: any) => {
-      return item.id === id || item.productId === id || item.product?.id === id;
+      const itemProductId = item.productId || item.product?.id || item.id;
+      return String(itemProductId) === String(id);
     });
-  }, [wishlistData, id]); // Note: no optimisticWishlist dependency
+  }, [wishlistData, id, isVariableProduct]); // Note: no optimisticWishlist dependency
 
   // Sync Optimistic State — reset in both directions:
   // qty > 0 means real cart confirmed, clear optimistic flag
@@ -284,6 +294,12 @@ export default function OptimisticProductCard({
       return;
     }
 
+    // For variable products, show variant picker for wishlist
+    if (isVariableProduct && !isWishlisted) {
+      setShowWishlistVariantModal(true);
+      return;
+    }
+
     // Toggle animation and optimistic state
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 300);
@@ -311,9 +327,45 @@ export default function OptimisticProductCard({
     }
 
     // Call the toggle mutation using server state (not optimistic state)
+    // For simple products or removing from wishlist, no variantId needed
     toggleWishlistMutation.debouncedMutate({
       productId: id,
       isCurrentlyWishlisted: serverWishlistStatus, // Use actual server state
+      variantId: null, // For simple products or removing, no variant needed
+    });
+  };
+
+  // Handle adding specific variant to wishlist
+  const handleAddVariantToWishlist = async (
+    variantId: string,
+    variantPrice: string,
+    variantAttributes?: Record<string, { value: string; displayValue: string; hexColor?: string | null }>
+  ) => {
+    console.log('Adding variant to wishlist:', { variantId, variantPrice, variantAttributes });
+
+    // Close the modal first
+    setShowWishlistVariantModal(false);
+
+    // Set optimistic state
+    setIsHeartAnimating(true);
+    setTimeout(() => setIsHeartAnimating(false), 300);
+    setOptimisticWishlist(true);
+
+    // Show success toast
+    toast.success("Added to Wishlist", {
+      position: "top-right",
+      autoClose: 2500,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+
+    // Call the toggle mutation with variant info
+    toggleWishlistMutation.debouncedMutate({
+      productId: id,
+      isCurrentlyWishlisted: false, // Always false since we're adding
+      variantId: variantId,
     });
   };
 
@@ -396,7 +448,7 @@ export default function OptimisticProductCard({
         )}
 
         <Link
-          href={`/shop/${id}`}
+          href={`/shop/${slug}`}
           className="w-full h-full block"
         >
           <Image
@@ -463,7 +515,7 @@ export default function OptimisticProductCard({
 
         {/* Title */}
         <h2 className="font-serif text-lg font-medium text-stone-800 mb-1 leading-tight group-hover:text-[#973c00] transition-colors">
-          <Link href={`/shop/${id}`}>
+          <Link href={`/shop/${slug}`}>
             {name}
           </Link>
         </h2>
@@ -583,6 +635,19 @@ export default function OptimisticProductCard({
         onAddToCart={handleVariantAddToCart}
       />
     )}
+
+    {/* Wishlist variant picker modal — only rendered for variable products */}
+    {isVariableProduct && (
+      <VariantPickerModal
+        isOpen={showWishlistVariantModal}
+        onClose={() => setShowWishlistVariantModal(false)}
+        productId={id}
+        productName={name}
+        productImage={photo}
+        mode="wishlist"
+        onAddToCart={handleAddVariantToWishlist}
+      />
+    )}
   </>
-  );
+);
 }

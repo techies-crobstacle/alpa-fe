@@ -9,7 +9,14 @@ import { wishlistQueryKeys } from "./useWishlist";
 interface WishlistItem {
   id: string;
   productId?: string;
+  variantId?: string | null;
   product?: { id: string };
+}
+
+interface ToggleWishlistParams {
+  productId: string;
+  isCurrentlyWishlisted: boolean;
+  variantId?: string | null;
 }
 
 // Add to wishlist with debouncing and optimistic update
@@ -18,8 +25,8 @@ export function useToggleWishlist() {
   const timeout = useRef<NodeJS.Timeout | null>(null);
 
   const mutation = useMutation({
-    mutationFn: async ({ productId, isCurrentlyWishlisted }: { productId: string; isCurrentlyWishlisted: boolean }) => {
-      console.log("Toggling wishlist for productId:", productId, "currently wishlisted:", isCurrentlyWishlisted);
+    mutationFn: async ({ productId, isCurrentlyWishlisted, variantId }: ToggleWishlistParams) => {
+      console.log("Toggling wishlist for productId:", productId, "variant:", variantId, "currently wishlisted:", isCurrentlyWishlisted);
       
       // Convert to number if the API expects numeric IDs
       const numericId = parseInt(productId, 10);
@@ -27,10 +34,16 @@ export function useToggleWishlist() {
       console.log("Sending ID for toggle:", idToSend, typeof idToSend);
       
       // Use the new toggle API that intelligently handles both add and remove
-      return wishlistApi.toggleWishlist({ productId: idToSend });
+      // Include variantId if provided for variable products
+      const payload: any = { productId: idToSend };
+      if (variantId) {
+        payload.variantId = variantId;
+      }
+      
+      return wishlistApi.toggleWishlist(payload);
     },
     // Optimistic update - immediately update UI
-    onMutate: async ({ productId, isCurrentlyWishlisted }) => {
+    onMutate: async ({ productId, isCurrentlyWishlisted, variantId }) => {
       // Cancel any outgoing refetches for both main wishlist and product check
       await queryClient.cancelQueries({ queryKey: wishlistQueryKeys.wishlist });
       await queryClient.cancelQueries({ queryKey: wishlistQueryKeys.wishlistCheck(productId) });
@@ -51,16 +64,25 @@ export function useToggleWishlist() {
       const newWishlistState = !isCurrentlyWishlisted;
       
       if (isCurrentlyWishlisted) {
-        // Remove from wishlist
+        // Remove from wishlist - match both productId and variantId
         optimisticWishlist = previousWishlist.filter((item: WishlistItem) => {
           const itemId = item.productId || item.product?.id || item.id;
-          return String(itemId) !== String(productId);
+          const productMatch = String(itemId) === String(productId);
+          
+          // For variable products, also check variant ID
+          if (variantId) {
+            return !(productMatch && String(item.variantId) === String(variantId));
+          }
+          
+          // For simple products, just check product ID and ensure no variant
+          return !(productMatch && !item.variantId);
         });
       } else {
         // Add to wishlist
         const newItem: WishlistItem = {
-          id: productId,
+          id: variantId ? `${productId}-${variantId}` : productId,
           productId: productId,
+          variantId: variantId || null,
         };
         optimisticWishlist = [...previousWishlist, newItem];
       }
@@ -98,7 +120,7 @@ export function useToggleWishlist() {
   });
 
   // Debounced version of mutate
-  const debouncedMutate = useCallback((variables: { productId: string; isCurrentlyWishlisted: boolean }) => {
+  const debouncedMutate = useCallback((variables: ToggleWishlistParams) => {
     if (timeout.current) clearTimeout(timeout.current);
     timeout.current = setTimeout(() => {
       mutation.mutate(variables);

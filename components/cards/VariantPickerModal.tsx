@@ -12,6 +12,7 @@ interface VariantPickerModalProps {
   productId: string;
   productName: string;
   productImage: string;
+  mode?: 'cart' | 'wishlist'; // New prop to determine mode
   onAddToCart: (
     variantId: string,
     variantPrice: string,
@@ -25,6 +26,7 @@ export default function VariantPickerModal({
   productId,
   productName,
   productImage,
+  mode = 'cart', // Default to cart mode
   onAddToCart,
 }: VariantPickerModalProps) {
   const { data: product, isLoading } = useSingleProduct(isOpen ? productId : undefined);
@@ -321,7 +323,7 @@ export default function VariantPickerModal({
                     ) : (
                       <motion.span key="add" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
                         <ShoppingBag size={15} />
-                        Add to Cart
+                        {mode === 'wishlist' ? 'Add to Wishlist' : 'Add to Cart'}
                       </motion.span>
                     )}
                   </AnimatePresence>

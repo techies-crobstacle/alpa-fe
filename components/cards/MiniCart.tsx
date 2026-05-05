@@ -188,7 +188,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                     {/* IMAGE */}
                     <div 
                       className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-50 shrink-0 cursor-pointer group-hover:scale-[1.02] transition-transform"
-                      onClick={() => navigate(`/shop/${item.productId}`)}
+                      onClick={() => navigate(`/shop/${item.product.title ? item.product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `product-${item.productId}`}`)}
                     >
                       <Image
                         src={item.product.featuredImage || item.product.images?.[0] || "/images/placeholder.svg"}
@@ -204,7 +204,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
                       <h3
                         className="font-semibold text-gray-800 line-clamp-2 cursor-pointer hover:text-[#440C03] transition-colors mb-1 wrap-break-words max-w-full truncate"
                         style={{ maxWidth: '120px', overflowWrap: 'break-word', wordBreak: 'break-word' }}
-                        onClick={() => navigate(`/shop/${item.productId}`)}
+                        onClick={() => navigate(`/shop/${item.product.title ? item.product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `product-${item.productId}`}`)}
                       >
                         {item.product.title}
                       </h3>

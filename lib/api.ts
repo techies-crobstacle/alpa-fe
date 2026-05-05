@@ -188,21 +188,27 @@ export const wishlistApi = {
   getWishlist: (): Promise<any[]> => apiClient.get("/wishlist"),
   checkWishlist: (productId: string | number): Promise<{ inWishlist: boolean }> =>
     apiClient.get(`/wishlist/check/${productId}`),
-  addToWishlist: (data: { productId: string | number }): Promise<any> => {
-    console.log("API: Trying multiple wishlist endpoints for productId:", data.productId);
+  addToWishlist: (data: { productId: string | number; variantId?: string | null }): Promise<any> => {
+    console.log("API: Trying multiple wishlist endpoints for productId:", data.productId, "variantId:", data.variantId);
+    
+    // Prepare payload with variantId if provided
+    const payload: any = { productId: data.productId };
+    if (data.variantId) {
+      payload.variantId = data.variantId;
+    }
     
     // Try the most common patterns for wishlist APIs
     const attempts = [
-      () => apiClient.post("/wishlist", { productId: data.productId }),
-      () => apiClient.put("/wishlist", { productId: data.productId }),
-      () => apiClient.post("/user/wishlist", { productId: data.productId }),
-      () => apiClient.post("/wishlist/items", { productId: data.productId }),
-      () => apiClient.put(`/wishlist/${data.productId}`, {}),
-      () => apiClient.post(`/wishlist/${data.productId}`, {}),
+      () => apiClient.post("/wishlist", payload),
+      () => apiClient.put("/wishlist", payload),
+      () => apiClient.post("/user/wishlist", payload),
+      () => apiClient.post("/wishlist/items", payload),
+      () => apiClient.put(`/wishlist/${data.productId}`, data.variantId ? { variantId: data.variantId } : {}),
+      () => apiClient.post(`/wishlist/${data.productId}`, data.variantId ? { variantId: data.variantId } : {}),
       // Some APIs expect the product ID in the URL path
-      () => apiClient.get(`/wishlist/add/${data.productId}`),
+      () => apiClient.get(`/wishlist/add/${data.productId}${data.variantId ? `?variantId=${data.variantId}` : ''}`),
       // Or as query parameter
-      () => apiClient.post(`/wishlist/add?productId=${data.productId}`, {})
+      () => apiClient.post(`/wishlist/add?productId=${data.productId}${data.variantId ? `&variantId=${data.variantId}` : ''}`, {})
     ];
     
     let lastError: unknown;
@@ -233,21 +239,45 @@ export const wishlistApi = {
     
     return tryEndpoint();
   },
-  removeFromWishlist: (productId: string): Promise<any> => 
-    apiClient.delete(`/wishlist/${productId}`)
-      .catch(() => apiClient.delete(`/wishlist/remove/${productId}`)),
+  removeFromWishlist: (data: { productId: string | number; variantId?: string | null }): Promise<any> => {
+    const attempts = [
+      () => apiClient.delete(`/wishlist/${data.productId}${data.variantId ? `?variantId=${data.variantId}` : ''}`),
+      () => apiClient.delete(`/wishlist/remove/${data.productId}${data.variantId ? `?variantId=${data.variantId}` : ''}`),
+      () => apiClient.post(`/wishlist/remove`, { productId: data.productId, variantId: data.variantId }),
+      () => apiClient.put(`/wishlist/remove`, { productId: data.productId, variantId: data.variantId })
+    ];
+
+    const tryRemove = async (index = 0): Promise<any> => {
+      if (index >= attempts.length) {
+        throw new Error(`All remove endpoints failed for productId: ${data.productId}, variantId: ${data.variantId}`);
+      }
+      try {
+        return await attempts[index]();
+      } catch (error) {
+        return await tryRemove(index + 1);
+      }
+    };
+
+    return tryRemove();
+  },
   
   // New toggle wishlist API method
-  toggleWishlist: (data: { productId: string | number }): Promise<any> => {
-    console.log("API: Trying toggle wishlist endpoints for productId:", data.productId);
+  toggleWishlist: (data: { productId: string | number; variantId?: string | null }): Promise<any> => {
+    console.log("API: Trying toggle wishlist endpoints for productId:", data.productId, "variantId:", data.variantId);
+    
+    // Prepare payload with variantId if provided
+    const payload: any = { productId: data.productId };
+    if (data.variantId) {
+      payload.variantId = data.variantId;
+    }
     
     // Try multiple toggle endpoint patterns
     const attempts = [
-      () => apiClient.post(`/wishlist/toggle/${data.productId}`, {}),
-      () => apiClient.put(`/wishlist/toggle/${data.productId}`, {}),
-      () => apiClient.post("/wishlist/toggle", { productId: data.productId }),
-      () => apiClient.put("/wishlist/toggle", { productId: data.productId }),
-      () => apiClient.post(`/user/wishlist/toggle/${data.productId}`, {}),
+      () => apiClient.post(`/wishlist/toggle/${data.productId}`, payload),
+      () => apiClient.put(`/wishlist/toggle/${data.productId}`, payload),
+      () => apiClient.post("/wishlist/toggle", payload),
+      () => apiClient.put("/wishlist/toggle", payload),
+      () => apiClient.post(`/user/wishlist/toggle/${data.productId}`, payload),
       () => apiClient.get(`/wishlist/toggle/${data.productId}`)
     ];
     
@@ -261,7 +291,7 @@ export const wishlistApi = {
           const checkResult = await wishlistApi.checkWishlist(data.productId);
           if (checkResult.inWishlist) {
             console.log("Product in wishlist, removing...");
-            return await wishlistApi.removeFromWishlist(String(data.productId));
+            return await wishlistApi.removeFromWishlist(data);
           } else {
             console.log("Product not in wishlist, adding...");
             return await wishlistApi.addToWishlist(data);

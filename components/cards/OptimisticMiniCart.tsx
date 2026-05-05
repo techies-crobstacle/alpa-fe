@@ -291,7 +291,7 @@ export default function OptimisticMiniCart({ onClose }: { onClose: () => void })
                   {/* IMAGE */}
                   <div 
                     className="relative w-20 h-24 rounded-xl overflow-hidden bg-gray-50 shrink-0 cursor-pointer group-hover:scale-[1.02] transition-transform"
-                    onClick={() => navigate(`/shop/${item.id}`)}
+                    onClick={() => navigate(`/shop/${item.name ? item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `product-${item.id}`}`)}
                   >
                     <Image
                       src={item.image || "/images/placeholder.png"}
@@ -306,7 +306,7 @@ export default function OptimisticMiniCart({ onClose }: { onClose: () => void })
                   <div className="flex-1 min-w-0">
                     <h3
                       className="font-semibold text-gray-900 text-sm line-clamp-2 cursor-pointer hover:text-[#440C03] transition-colors"
-                      onClick={() => navigate(`/shop/${item.id}`)}
+                      onClick={() => navigate(`/shop/${item.name ? item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `product-${item.id}`}`)}
                     >
                       {item.name}
                     </h3>

@@ -16,7 +16,7 @@ import Link from "next/link";
 export default function Footer() {
   const [email, setEmail] = useState("");
   return (
-    <footer className="bg-[#440C03] bg-[url('/images/footer-pattern.png')] bg-cover text-white px-4 sm:px-8 md:px-12 lg:px-20 pt-12 lg:pb-10 md:py-16"> 
+    <footer className="bg-[#440C03]  bg-cover text-white px-4 sm:px-8 md:px-12 lg:px-20 pt-12 lg:pb-10 md:py-16"> 
       {/* Top Main Section */}
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 mb-12">
         {/* Left Section - Navigation Links */}

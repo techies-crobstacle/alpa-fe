@@ -6,7 +6,8 @@ import { wishlistApi } from "@/lib/api";
 
 export const wishlistQueryKeys = {
   wishlist: ["wishlist"] as const,
-  wishlistCheck: (productId: string | number) => ["wishlist", "check", productId] as const,
+  wishlistCheck: (productId: string | number, variantId?: string | null) => 
+    ["wishlist", "check", productId, variantId] as const,
 };
 
 export function useWishlistQuery() {
@@ -33,14 +34,32 @@ export function useWishlistQuery() {
 
 // Hook to check if a product is in the wishlist using the fast API
 import { useQuery as useCheckQuery } from "@tanstack/react-query";
-export function useWishlistCheck(productId: string | number) {
+export function useWishlistCheck(productId: string | number, variantId?: string | null) {
   return useCheckQuery({
-    queryKey: wishlistQueryKeys.wishlistCheck(productId),
+    queryKey: wishlistQueryKeys.wishlistCheck(productId, variantId),
     queryFn: async () => {
       const token = typeof window !== "undefined" ? localStorage.getItem("alpa_token") : null;
       if (!token || !productId) {
         return { inWishlist: false };
       }
+      
+      // For variant-specific checks, we need to check the full wishlist
+      // since the API might not support variant-specific checks
+      if (variantId) {
+        const wishlistData = await wishlistApi.getWishlist();
+        const wishlistArray = Array.isArray(wishlistData) ? wishlistData : 
+                             Array.isArray(wishlistData?.wishlist) ? wishlistData.wishlist : [];
+        
+        const found = wishlistArray.some((item: any) => {
+          const itemProductId = item.productId || item.product?.id || item.id;
+          return String(itemProductId) === String(productId) && 
+                 String(item.variantId) === String(variantId);
+        });
+        
+        return { inWishlist: found };
+      }
+      
+      // For simple products, use the fast check API
       return wishlistApi.checkWishlist(productId);
     },
     staleTime: 1000 * 60 * 2, // 2 minutes

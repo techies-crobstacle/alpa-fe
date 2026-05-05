@@ -33,6 +33,7 @@ import { useWishlistCheck } from "@/hooks/useWishlist";
 import { useSingleProduct, ProductVariant } from "@/hooks/useSingleProduct";
 import { useProductStock } from "@/hooks/useProductStock";
 import { useAuth } from "@/context/AuthContext";
+import { useProducts } from "@/hooks/useProducts";
 import { toast } from "react-toastify";
 
 interface Product {
@@ -80,12 +81,35 @@ export default function ShopSlugPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  // slugParam is the product ID — navigated to directly from product cards
+  // Get the slug from URL parameters
   const slugParam = params?.slug as string;
 
-  const { data: product, isLoading: productLoading, error: queryError } = useSingleProduct(slugParam);
+  // Get all products to find the ID matching this slug
+  const { data: allProducts = [] } = useProducts();
+  
+  // Find product ID from slug
+  const productId = useMemo(() => {
+    if (!slugParam || !allProducts.length) return undefined;
+    
+    // Try to find product by matching slug in these priority orders:
+    // 1. Direct slug match (if API provides slugs)
+    // 2. Generated slug from title (title.toLowerCase().replace(/[^a-z0-9]+/g, "-"))
+    // 3. Fallback slug format (`product-${id}`)
+    const product = allProducts.find(p => 
+      p.slug === slugParam || 
+      (p.title && p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") === slugParam) ||
+      `product-${p.id}` === slugParam
+    );
+    
+    return product?.id;
+  }, [slugParam, allProducts]);
+
+  const { data: product, isLoading: productLoading, error: queryError } = useSingleProduct(productId);
   const loading = productLoading;
   const error = queryError?.message || null;
+
+  // Get all products loading state
+  const { isLoading: allProductsLoading } = useProducts();
 
   // Real-time stock — REST snapshot on mount + live socket updates thereafter
   // Seed with totalStock for VARIABLE products (product.stock is 0 for those)
@@ -120,9 +144,61 @@ export default function ShopSlugPage() {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Variant selection (for VARIABLE products) - moved here to be available for wishlist check
+  const isVariableProduct = product?.productType === 'VARIABLE' || product?.type === 'VARIABLE';
+  // selectedAttributes holds the user's chosen value per attribute key, e.g. { color: "Blue", size: "M" }
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+
+  // Auto-select first variant when product loads
+  useEffect(() => {
+    if (product?.variants?.length && isVariableProduct) {
+      const firstVariant = product.variants[0];
+      if (firstVariant?.attributes) {
+        const defaults: Record<string, string> = {};
+        Object.entries(firstVariant.attributes).forEach(([k, v]) => { defaults[k] = v.value; });
+        setSelectedAttributes(defaults);
+      }
+    }
+  }, [product?.id]);
+
+  // Derive unique attribute keys in order (color first if present)
+  const attributeKeys = useMemo<string[]>(() => {
+    if (!product?.variants?.length) return [];
+    const keys = new Set<string>();
+    product.variants.forEach(v => {
+      if (v.attributes) Object.keys(v.attributes).forEach(k => keys.add(k));
+    });
+    // colour-like keys first
+    const sorted = Array.from(keys).sort((a, b) => {
+      const colorLike = (k: string) => /colou?r/i.test(k) ? 0 : 1;
+      return colorLike(a) - colorLike(b);
+    });
+    return sorted;
+  }, [product?.variants]);
+
+  // Find the variant that exactly matches all selected attributes
+  const selectedVariant = useMemo<ProductVariant | null>(() => {
+    if (!product?.variants?.length || !attributeKeys.length) return null;
+    if (attributeKeys.some(k => !selectedAttributes[k])) return null; // not all chosen yet
+    return product.variants.find(v =>
+      attributeKeys.every(k => v.attributes?.[k]?.value === selectedAttributes[k])
+    ) || null;
+  }, [product?.variants, selectedAttributes, attributeKeys]);
+
   // Cart / wishlist
   const { addToCart, cartData, loading: cartLoading } = useSharedEnhancedCart();
-  const { data: wishlistData } = useWishlistCheck(product?.id || "");
+  
+  // For variable products, check wishlist status for the selected variant
+  // Use useMemo to recalculate wishlist check params when selectedVariant changes
+  const wishlistCheckParams = useMemo(() => ({
+    productId: product?.id || "",
+    variantId: isVariableProduct && selectedVariant ? selectedVariant.id : null
+  }), [product?.id, isVariableProduct, selectedVariant?.id]);
+  
+  const { data: wishlistData } = useWishlistCheck(
+    wishlistCheckParams.productId,
+    wishlistCheckParams.variantId
+  );
   const { token, user: authUser } = useAuth();
   const toggleWishlistMutation = useToggleWishlist();
   const [optimisticWishlist, setOptimisticWishlist] = useState<boolean | null>(null);
@@ -212,50 +288,9 @@ export default function ShopSlugPage() {
     router.push(queryString ? `/shop?${queryString}` : '/shop');
   };
 
-  // Check if item is in cart
-  const cartItem = cartData?.cart.find(item => item.productId === product?.id);
+  // Check if item is in cart - only calculate when cart data is fully loaded
+  const cartItem = !cartLoading && cartData?.cart ? cartData.cart.find(item => item.productId === product?.id) : null;
   const currentQtyInCart = cartItem?.quantity || 0;
-
-  // Variant selection (for VARIABLE products)
-  const isVariableProduct = product?.productType === 'VARIABLE' || product?.type === 'VARIABLE';
-  // selectedAttributes holds the user's chosen value per attribute key, e.g. { color: "Blue", size: "M" }
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
-
-  // Auto-select first variant when product loads
-  useEffect(() => {
-    if (product?.variants?.length && isVariableProduct) {
-      const firstVariant = product.variants[0];
-      if (firstVariant?.attributes) {
-        const defaults: Record<string, string> = {};
-        Object.entries(firstVariant.attributes).forEach(([k, v]) => { defaults[k] = v.value; });
-        setSelectedAttributes(defaults);
-      }
-    }
-  }, [product?.id]);
-
-  // Derive unique attribute keys in order (color first if present)
-  const attributeKeys = useMemo<string[]>(() => {
-    if (!product?.variants?.length) return [];
-    const keys = new Set<string>();
-    product.variants.forEach(v => {
-      if (v.attributes) Object.keys(v.attributes).forEach(k => keys.add(k));
-    });
-    // colour-like keys first
-    const sorted = Array.from(keys).sort((a, b) => {
-      const colorLike = (k: string) => /colou?r/i.test(k) ? 0 : 1;
-      return colorLike(a) - colorLike(b);
-    });
-    return sorted;
-  }, [product?.variants]);
-
-  // Find the variant that exactly matches all selected attributes
-  const selectedVariant = useMemo<ProductVariant | null>(() => {
-    if (!product?.variants?.length || !attributeKeys.length) return null;
-    if (attributeKeys.some(k => !selectedAttributes[k])) return null; // not all chosen yet
-    return product.variants.find(v =>
-      attributeKeys.every(k => v.attributes?.[k]?.value === selectedAttributes[k])
-    ) || null;
-  }, [product?.variants, selectedAttributes, attributeKeys]);
 
   // Effective price/stock: use selected variant values if available
   const effectivePrice = selectedVariant?.price || product?.price || '0';
@@ -276,13 +311,14 @@ export default function ShopSlugPage() {
     : liveIsAvailable;
 
   // Use real-time liveStock so the button reflects instant server-side changes
-  const remainingStock = Math.max(0, effectiveStock - currentQtyInCart);
+  // Only calculate remaining stock when cart data is fully loaded to prevent incorrect initial values
+  const remainingStock = !cartLoading ? Math.max(0, effectiveStock - currentQtyInCart) : effectiveStock;
   const isOutOfStock = !effectiveIsAvailable || remainingStock === 0;
   // For VARIABLE products, block add-to-cart until all attributes are chosen
   const needsVariantSelection = isVariableProduct && !selectedVariant && (product?.variants?.length ?? 0) > 0;
 
   const handleAddToCart = async () => {
-    if (!product || isOutOfStock || isAddingToCart) return;
+    if (!product || isOutOfStock || isAddingToCart || cartLoading) return;
     if (needsVariantSelection) {
       toast.info('Please select a variant before adding to cart.', { position: 'top-right', autoClose: 2500 });
       return;
@@ -341,19 +377,34 @@ export default function ShopSlugPage() {
       return;
     }
 
+    // For variable products, check if variant is selected
+    if (isVariableProduct && needsVariantSelection) {
+      toast.info("Please select a variant before adding to wishlist", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
     // Heart animation and optimistic state (like shop page)
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 300);
     setOptimisticWishlist(!isWishlisted);
     
     // Call API to toggle wishlist using server state (not optimistic state)
+    // Include variantId if it's a variable product with selected variant
     toggleWishlistMutation.debouncedMutate({
       productId: product?.id || "",
       isCurrentlyWishlisted: serverWishlistStatus, // Use actual server state
+      variantId: isVariableProduct && selectedVariant ? selectedVariant.id : null,
     });
 
-    // Show appropriate success toast based on action being performed
-    if (serverWishlistStatus) {
+    // Show appropriate success toast based on current visual state (what user sees)
+    if (isWishlisted) {
       toast.success("Removed from Wishlist!", {
         position: "top-right",
         autoClose: 2000,
@@ -455,6 +506,80 @@ export default function ShopSlugPage() {
       setIsSubmittingRating(false);
     }
   };
+
+  // Handle loading states and product not found
+  if (allProductsLoading) {
+    return (
+      <div className="min-h-screen bg-[#ebe3d5] pt-28 pb-32 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#973c00]" />
+          <p className="text-[#973c00] font-medium">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!productId && slugParam && allProducts.length > 0) {
+    return (
+      <div className="min-h-screen bg-[#ebe3d5] pt-28 pb-32 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <Package className="w-16 h-16 mx-auto mb-4 text-[#973c00]/50" />
+          <h1 className="text-2xl font-serif font-bold text-[#3b1a08] mb-2">Product Not Found</h1>
+          <p className="text-[#973c00]/70 mb-6">
+            The product you're looking for doesn't exist or has been moved.
+          </p>
+          <button
+            onClick={() => router.push('/shop')}
+            className="inline-flex items-center gap-2 bg-[#973c00] hover:bg-[#5A1E12] text-white px-6 py-3 rounded-xl font-medium transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Shop
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#ebe3d5] pt-28 pb-32 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#973c00]" />
+          <p className="text-[#973c00] font-medium">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#ebe3d5] pt-28 pb-32 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <Package className="w-16 h-16 mx-auto mb-4 text-red-400" />
+          <h1 className="text-2xl font-serif font-bold text-[#3b1a08] mb-2">Error Loading Product</h1>
+          <p className="text-red-600 mb-6">{error}</p>
+          <button
+            onClick={() => router.push('/shop')}
+            className="inline-flex items-center gap-2 bg-[#973c00] hover:bg-[#5A1E12] text-white px-6 py-3 rounded-xl font-medium transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Shop
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#ebe3d5] pt-28 pb-32 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#973c00]" />
+          <p className="text-[#973c00] font-medium">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Skeleton ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -903,10 +1028,12 @@ export default function ShopSlugPage() {
               <div className="flex gap-3 pt-1">
                 <button
                   onClick={handleAddToCart}
-                  disabled={(isOutOfStock && !needsVariantSelection) || isAddingToCart}
+                  disabled={(isOutOfStock && !needsVariantSelection) || isAddingToCart || cartLoading}
                   className={`flex-1 inline-flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl text-base font-bold transition-all duration-200 cursor-pointer ${
                     addedToCart
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                      : cartLoading
+                      ? 'bg-[#5A1E12]/40 text-white cursor-wait'
                       : needsVariantSelection
                       ? 'bg-[#5A1E12]/60 text-white cursor-pointer'
                       : isOutOfStock
@@ -914,7 +1041,9 @@ export default function ShopSlugPage() {
                       : 'bg-[#5A1E12] text-white hover:bg-[#3b1a08] active:scale-[.98] shadow-lg shadow-[#5A1E12]/25 hover:shadow-xl hover:shadow-[#5A1E12]/30'
                   }`}
                 >
-                  {isAddingToCart ? (
+                  {cartLoading ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" />Loading Cart...</>
+                  ) : isAddingToCart ? (
                     <><Loader2 className="w-5 h-5 animate-spin" />Adding…</>
                   ) : addedToCart ? (
                     <><Check className="w-5 h-5" />Added to Cart!</>
