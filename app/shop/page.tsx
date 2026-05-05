@@ -424,7 +424,7 @@ function ShopContent() {
         <div className="max-w-full mx-auto overflow-hidden">
           {/* FULL IMAGE */}
           <div
-            className="relative h-[80vh] bg-[url('/images/main.png')] bg-cover bg-center"
+            className="relative h-[60vh] md:h-[65vh] lg:h-[80vh] bg-[url('/images/main.png')] bg-cover bg-center"
           >
             {/* Layered gradient overlay */}
             <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />

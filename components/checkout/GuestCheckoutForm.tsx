@@ -881,30 +881,30 @@ export default function GuestCheckoutForm() {
     <div className="flex flex-col lg:flex-row flex-1 min-h-screen bg-[#ead7b7]">
 
       {/* ================= LEFT: FORM / PAYMENT ================= */}
-      <div className="flex-1 px-4 md:px-8 lg:px-12 pt-20 pb-8">
+      <div className="flex-1 px-3 xs:px-4 md:px-8 lg:px-12 pt-16 xs:pt-20 lg:pt-28 pb-6 xs:pb-8">
 
         {/* Breadcrumb + header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-sm text-[#5A1E12]/60">
+        <div className="mb-6 xs:mb-8">
+          <div className="flex items-center justify-between mb-3 xs:mb-4 gap-2">
+            <div className="flex items-center gap-1.5 xs:gap-2 text-sm text-[#5A1E12]/60">
               <span className={currentStep === "form" ? "font-bold text-[#5A1E12]" : ""}>1. Your Details</span>
               <ChevronRight className="w-4 h-4" />
               <span className={currentStep === "payment" ? "font-bold text-[#5A1E12]" : ""}>2. Payment</span>
             </div>
             <Link
               href="/cart"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#5A1E12] bg-white/70 hover:bg-white border border-[#5A1E12]/20 hover:border-[#5A1E12]/50 px-3 py-1.5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#5A1E12] bg-white/70 hover:bg-white border border-[#5A1E12]/20 hover:border-[#5A1E12]/50 px-3 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 shrink-0"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
               Back to Cart
             </Link>
           </div>
-          <h2 className="text-2xl font-bold text-[#5A1E12]">
+          <h2 className="text-xl xs:text-2xl font-bold text-[#5A1E12]">
             {currentStep === "form" ? "Guest Checkout" : "Complete Payment"}
           </h2>
-          <p className="text-[#5A1E12]/60 text-sm mt-1">
+          <p className="text-[#5A1E12]/60 text-sm xs:text-base mt-1">
             {currentStep === "form"
               ? "Fill in your details below to proceed."
               : "Enter your card details to securely complete your order."}
@@ -919,16 +919,16 @@ export default function GuestCheckoutForm() {
 
         {/* STEP 1: FORM */}
         {currentStep === "form" && (
-          <div className="space-y-6 bg-white rounded-2xl p-6 shadow-sm">
+          <div className="space-y-4 xs:space-y-6 bg-white rounded-xl xs:rounded-2xl p-4 xs:p-6 shadow-sm">
 
             {/* Personal Details */}
             <div>
-              <h3 className="text-base font-semibold text-[#5A1E12] mb-4">Personal Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h3 className="text-sm xs:text-base font-semibold text-[#5A1E12] mb-3 xs:mb-4">Personal Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 xs:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#5A1E12] mb-1">Full Name <span className="text-red-500">*</span></label>
                   <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Jane Doe"
-                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.customerName ? "border-red-400" : "border-[#5A1E12]/20"}`} />
+                    className={`w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border rounded-lg xs:rounded-xl focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm xs:text-base touch-target-44 ${fieldErrors.customerName ? "border-red-400" : "border-[#5A1E12]/20"}`} />
                   {fieldErrors.customerName && <p className="mt-1 text-xs text-red-500">{fieldErrors.customerName}</p>}
                 </div>
                 <div>
@@ -1018,7 +1018,7 @@ export default function GuestCheckoutForm() {
               <div className="mt-4">
                 <label className="block text-sm font-medium text-[#5A1E12] mb-1">Email Address <span className="text-red-500">*</span></label>
                 <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="jane@example.com"
-                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.customerEmail ? "border-red-400" : "border-[#5A1E12]/20"}`} />
+                  className={`w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border rounded-lg xs:rounded-xl focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm xs:text-base touch-target-44 ${fieldErrors.customerEmail ? "border-red-400" : "border-[#5A1E12]/20"}`} />
                 {fieldErrors.customerEmail && <p className="mt-1 text-xs text-red-500">{fieldErrors.customerEmail}</p>}
               </div>
             </div>
@@ -1038,7 +1038,7 @@ export default function GuestCheckoutForm() {
                     value={addressLine}
                     onChange={(e) => setAddressLine(e.target.value)}
                     placeholder="Start typing your address..."
-                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm transition-all ${
+                    className={`w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border rounded-lg xs:rounded-xl focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm xs:text-base transition-all touch-target-44 ${
                       fieldErrors.addressLine ? "border-red-400" : "border-[#5A1E12]/20"
                     }`}
                   />
@@ -1053,7 +1053,7 @@ export default function GuestCheckoutForm() {
                     <button
                       type="button"
                       onClick={() => { setLocCountryOpen(o => !o); setLocCountrySearch(""); }}
-                      className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-lg text-sm text-left transition-all focus:outline-none focus:ring-1 focus:ring-[#5A1E12] ${fieldErrors.country ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50"}`}
+                      className={`w-full flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3 bg-white border rounded-lg xs:rounded-xl text-sm xs:text-base text-left transition-all focus:outline-none focus:ring-1 focus:ring-[#5A1E12] touch-target-44 ${fieldErrors.country ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50"}`}
                     >
                       <span className={country ? "text-gray-900" : "text-gray-400"}>{country || "Select Country"}</span>
                       <svg className={`w-4 h-4 text-[#a08050] transition-transform ${locCountryOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
@@ -1109,7 +1109,7 @@ export default function GuestCheckoutForm() {
                       <button
                         type="button"
                         onClick={() => { setLocStateOpen(o => !o); setLocStateSearch(""); }}
-                        className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-lg text-sm text-left transition-all focus:outline-none focus:ring-1 focus:ring-[#5A1E12] ${fieldErrors.state ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50"}`}
+                        className={`w-full flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3 bg-white border rounded-lg xs:rounded-xl text-sm xs:text-base text-left transition-all focus:outline-none focus:ring-1 focus:ring-[#5A1E12] touch-target-44 ${fieldErrors.state ? "border-red-400" : "border-[#5A1E12]/20 hover:border-[#5A1E12]/50"}`}
                       >
                         <span className={state ? "text-gray-900" : "text-gray-400"}>{state || `Select ${locationLabels.state}`}</span>
                         <svg className={`w-4 h-4 text-[#a08050] transition-transform ${locStateOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
@@ -1158,7 +1158,7 @@ export default function GuestCheckoutForm() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 xs:gap-4">
                   {/* City/Suburb — manual or auto-filled by street address */}
                   <div>
                     <label className="block text-sm font-medium text-[#5A1E12] mb-1">{locationLabels.city} <span className="text-red-500">*</span></label>
@@ -1167,7 +1167,7 @@ export default function GuestCheckoutForm() {
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder={locationLabels.city}
-                      className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20"}`}
+                      className={`w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border rounded-lg xs:rounded-xl focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm xs:text-base touch-target-44 ${fieldErrors.city ? "border-red-400" : "border-[#5A1E12]/20"}`}
                     />
                     {fieldErrors.city && <p className="mt-1 text-xs text-red-500">{fieldErrors.city}</p>}
                   </div>
@@ -1185,7 +1185,7 @@ export default function GuestCheckoutForm() {
                         }
                       }}
                       placeholder="2000"
-                      className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm ${fieldErrors.zipCode || zipCodeStateError ? "border-red-400" : "border-[#5A1E12]/20"}`}
+                      className={`w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border rounded-lg xs:rounded-xl focus:outline-none focus:ring-1 focus:ring-[#5A1E12] text-sm xs:text-base touch-target-44 ${fieldErrors.zipCode || zipCodeStateError ? "border-red-400" : "border-[#5A1E12]/20"}`}
                     />
                     {(fieldErrors.zipCode || zipCodeStateError) && (
                       <p className="mt-1 text-xs text-red-500">{fieldErrors.zipCode || zipCodeStateError}</p>
@@ -1317,23 +1317,23 @@ export default function GuestCheckoutForm() {
       </div>
 
       {/* ================= RIGHT: ORDER SUMMARY ================= */}
-      <div className="w-full lg:w-96 xl:w-105 shrink-0">
+      <div className="w-full lg:w-96 xl:w-105 shrink-0 mt-6 lg:mt-0">
         <div className="bg-white lg:rounded-tl-xl shadow-sm lg:sticky lg:top-0 lg:h-screen flex flex-col">
 
-          <div className="px-6 pt-6 pb-4 border-b shrink-0">
-            <h2 className="text-xl font-bold">Order Summary</h2>
+          <div className="px-4 xs:px-6 pt-4 xs:pt-6 pb-3 xs:pb-4 border-b shrink-0">
+            <h2 className="text-lg xs:text-xl font-bold">Order Summary</h2>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 no-scrollbar">
-            <h3 className="font-medium mb-4 text-sm text-gray-500 uppercase tracking-wide">Items ({cartItems.length})</h3>
+          <div className="flex-1 overflow-y-auto px-4 xs:px-6 py-3 xs:py-4 no-scrollbar">
+            <h3 className="font-medium mb-3 xs:mb-4 text-sm text-gray-500 uppercase tracking-wide">Items ({cartItems.length})</h3>
             <div className="space-y-4">
               {cartItems.map((item) => (
-                <div key={item.productId} className="flex gap-4">
-                  <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                <div key={item.productId} className="flex gap-3 xs:gap-4">
+                  <div className="relative w-14 h-14 xs:w-16 xs:h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                     <Image src={item.product?.featuredImage || item.product?.images?.[0] || item.product?.image || "/images/placeholder.png"} alt={item.product?.title || "Product"} fill className="object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-sm">{item.product?.title || "Product"}</p>
+                    <p className="font-medium truncate text-sm xs:text-base">{item.product?.title || "Product"}</p>
                     {item.variant?.attributes && Object.keys(item.variant.attributes).length > 0 && (
                       <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
                         {Object.entries(item.variant.attributes).map(([key, attr]) => (
@@ -1346,7 +1346,7 @@ export default function GuestCheckoutForm() {
                         ))}
                       </div>
                     )}
-                    <p className="text-sm text-gray-500">Qty {item.quantity} x ${(item.effectivePrice ?? parseFloat(item.product?.price || '0')).toFixed(2)}</p>
+                    <p className="text-xs xs:text-sm text-gray-500">Qty {item.quantity} x ${(item.effectivePrice ?? parseFloat(item.product?.price || '0')).toFixed(2)}</p>
                   </div>
                   <p className="font-medium text-sm">${(item.quantity * (item.effectivePrice ?? parseFloat(item.product?.price || '0'))).toFixed(2)}</p>
                 </div>

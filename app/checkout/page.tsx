@@ -504,7 +504,14 @@ export default function CheckOutPage() {
   }
 
   return (
-    <section className="relative min-h-screen bg-[#ead7b7] flex flex-col">
+    <>
+      <style jsx>{`
+        .touch-target-44 {
+          min-height: 44px;
+          min-width: 44px;
+        }
+      `}</style>
+      <section className="relative min-h-screen bg-[#ead7b7] flex flex-col">
       {/* Absolute logo top-left */}
       <Link
         href="/"
@@ -515,7 +522,7 @@ export default function CheckOutPage() {
           width={500}
           height={500}
           alt="Logo"
-          className="w-10 md:w-16"
+          className="w-8 xs:w-10 md:w-16"
           priority
         />
       </Link>
@@ -523,7 +530,7 @@ export default function CheckOutPage() {
       {/* Back to Cart button — top-right */}
       <Link
         href="/cart"
-        className="absolute top-5 right-5 z-50 inline-flex items-center gap-2 text-sm font-semibold text-[#5A1E12] bg-white/70 hover:bg-white border border-[#5A1E12]/20 hover:border-[#5A1E12]/50 px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+        className="absolute top-5 right-5 z-50 inline-flex items-center gap-1.5 xs:gap-2 text-xs xs:text-sm font-semibold text-[#5A1E12] bg-white/70 hover:bg-white border border-[#5A1E12]/20 hover:border-[#5A1E12]/50 px-3 xs:px-4 py-2 rounded-lg xs:rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -533,43 +540,43 @@ export default function CheckOutPage() {
 
       <div className="flex flex-col lg:flex-row flex-1">
           {/* ================= LEFT: STEPS ================= */}
-          <div className="flex-1 px-4 md:px-8 lg:px-12 pt-20 pb-8 overflow-x-hidden no-scrollbar">
-            <div className="p-6">
+          <div className="flex-1 px-3 xs:px-4 md:px-8 lg:px-12 pt-16 xs:pt-20 lg:pt-24 pb-6 xs:pb-8 overflow-x-hidden no-scrollbar">
+            <div className="p-3 xs:p-6">
 
               {/* Guest Checkout Form */}
               {showGuestForm ? (
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center mb-6 border-b border-[#5A1E12]/10 pb-4">
-                    <h3 className="text-2xl font-bold text-[#5A1E12]">
+                <div className="space-y-4 xs:space-y-6">
+                  <div className="flex justify-between items-center mb-4 xs:mb-6 border-b border-[#5A1E12]/10 pb-3 xs:pb-4">
+                    <h3 className="text-xl xs:text-2xl font-bold text-[#5A1E12]">
                       Guest Checkout Details
                     </h3>
                     <button
-                      className="text-sm font-medium text-[#5A1E12]/70 hover:text-[#5A1E12] transition-colors"
+                      className="text-sm font-medium text-[#5A1E12]/70 hover:text-[#5A1E12] transition-colors touch-target-44"
                       onClick={() => setShowGuestForm(false)}
                     >
                       ← Back to Login
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xs:gap-6">
                     <div className="space-y-2">
-                      <label className="block text-sm font-medium text-[#5A1E12]">First Name</label>
+                      <label className="block text-sm font-medium text-[#5A1E12]">First Name *</label>
                       <input
                         type="text"
                         value={guestFirstName}
                         onChange={(e) => setGuestFirstName(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                        className="w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border border-[#5A1E12]/20 rounded-lg xs:rounded-xl focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all text-sm xs:text-base touch-target-44"
                         placeholder="John"
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-sm font-medium text-[#5A1E12]">Last Name</label>
+                      <label className="block text-sm font-medium text-[#5A1E12]">Last Name *</label>
                       <input
                         type="text"
                         value={guestLastName}
                         onChange={(e) => setGuestLastName(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                        className="w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border border-[#5A1E12]/20 rounded-lg xs:rounded-xl focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all text-sm xs:text-base touch-target-44"
                         placeholder="Doe"
                         required
                       />
@@ -577,74 +584,74 @@ export default function CheckOutPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-[#5A1E12]">Email</label>
+                    <label className="block text-sm font-medium text-[#5A1E12]">Email *</label>
                     <input
                       type="email"
                       value={guestEmail}
                       onChange={(e) => setGuestEmail(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                      className="w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border border-[#5A1E12]/20 rounded-lg xs:rounded-xl focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all text-sm xs:text-base touch-target-44"
                       placeholder="john@example.com"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-[#5A1E12]">Phone</label>
+                    <label className="block text-sm font-medium text-[#5A1E12]">Phone *</label>
                     <input
                       type="tel"
                       value={guestPhone}
                       onChange={(e) => setGuestPhone(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                      className="w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border border-[#5A1E12]/20 rounded-lg xs:rounded-xl focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all text-sm xs:text-base touch-target-44"
                       placeholder="+1 (555) 000-0000"
                       required
                     />
                   </div>
 
-                  <div className="border-t border-[#5A1E12]/10 pt-6 mt-6">
-                    <h4 className="text-lg font-semibold text-[#5A1E12] mb-4">Shipping Address</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <div className="border-t border-[#5A1E12]/10 pt-4 xs:pt-6 mt-4 xs:mt-6">
+                    <h4 className="text-base xs:text-lg font-semibold text-[#5A1E12] mb-3 xs:mb-4">Shipping Address</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xs:gap-6 mb-4">
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium rounded-full text-[#5A1E12]">Street Address</label>
+                        <label className="block text-sm font-medium text-[#5A1E12]">Street Address *</label>
                         <input
                           type="text"
                           value={shippingStreet}
                           onChange={(e) => setShippingStreet(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                          className="w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border border-[#5A1E12]/20 rounded-lg xs:rounded-xl focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all text-sm xs:text-base touch-target-44"
                           placeholder="123 Main St"
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-[#5A1E12]">City</label>
+                        <label className="block text-sm font-medium text-[#5A1E12]">City *</label>
                         <input
                           type="text"
                           value={shippingCity}
                           onChange={(e) => setShippingCity(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                          className="w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border border-[#5A1E12]/20 rounded-lg xs:rounded-xl focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all text-sm xs:text-base touch-target-44"
                           placeholder="New York"
                           required
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xs:gap-6">
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-[#5A1E12]">State / Province</label>
+                        <label className="block text-sm font-medium text-[#5A1E12]">State / Province *</label>
                         <input
                           type="text"
                           value={shippingState}
                           onChange={(e) => setShippingState(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                          className="w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border border-[#5A1E12]/20 rounded-lg xs:rounded-xl focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all text-sm xs:text-base touch-target-44"
                           placeholder="NY"
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-[#5A1E12]">Zip / Postal Code</label>
+                        <label className="block text-sm font-medium text-[#5A1E12]">Zip / Postal Code *</label>
                         <input
                           type="text"
                           value={shippingZipCode}
                           onChange={(e) => setShippingZipCode(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border border-[#5A1E12]/20 rounded-lg focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all"
+                          className="w-full px-3 xs:px-4 py-2.5 xs:py-3 bg-white border border-[#5A1E12]/20 rounded-lg xs:rounded-xl focus:outline-none focus:border-[#5A1E12] focus:ring-1 focus:ring-[#5A1E12] transition-all text-sm xs:text-base touch-target-44"
                           placeholder="10001"
                           required
                         />
@@ -652,9 +659,9 @@ export default function CheckOutPage() {
                     </div>
                   </div>
 
-                  <div className="pt-6">
+                  <div className="pt-4 xs:pt-6">
                     <button
-                      className="w-full px-8 py-4 bg-[#5A1E12] text-white rounded-lg font-bold text-lg hover:bg-[#441208] shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-6 xs:px-8 py-3 xs:py-4 bg-[#5A1E12] text-white rounded-lg font-bold text-base xs:text-lg hover:bg-[#441208] shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed touch-target-44"
                       onClick={() => {
                         if (
                           !guestFirstName.trim() ||
@@ -783,15 +790,15 @@ export default function CheckOutPage() {
                                   </svg>
                                 </div>
                                 <div>
-                                  <h2 className="text-2xl font-bold text-[#5A1E12]">Payment Method</h2>
-                                  <p className="text-[#5A1E12]/55 text-sm">Choose how you&apos;d like to complete your purchase</p>
+                                  <h2 className="text-xl xs:text-2xl font-bold text-[#5A1E12]">Payment Method</h2>
+                                  <p className="text-[#5A1E12]/55 text-xs xs:text-sm">Choose how you&apos;d like to complete your purchase</p>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-2.5 xs:space-y-3">
                               {/* Stripe / Credit Card */}
-                              <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                              <label className={`flex items-center gap-3 xs:gap-4 p-3 xs:p-4 rounded-lg xs:rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                                 paymentMethod === "stripe"
                                   ? "border-[#5A1E12] bg-[#5A1E12]/5 shadow-sm"
                                   : "border-[#5A1E12]/15 hover:border-[#5A1E12]/40 hover:bg-[#5A1E12]/2"
@@ -834,11 +841,11 @@ export default function CheckOutPage() {
                   </AnimatePresence>
 
                   {/* NAV BUTTONS */}
-                  <div className="flex justify-between mt-8 pt-6 items-start">
+                  <div className="flex justify-between mt-6 xs:mt-8 pt-4 xs:pt-6 items-start gap-3">
                     <button
                       onClick={handleBack}
                       disabled={step === 1}
-                      className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+                      className={`px-4 xs:px-6 py-2.5 xs:py-3 rounded-lg font-medium transition-all duration-300 touch-target-44 ${
                         step === 1
                           ? "opacity-0 pointer-events-none"
                           : "text-[#5A1E12] border border-[#5A1E12] hover:bg-[#5A1E12] hover:text-white"
@@ -854,7 +861,7 @@ export default function CheckOutPage() {
                           cartItems.length === 0 ||
                           (step === 2 && !isAddressValid)
                         }
-                        className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+                        className="px-6 xs:px-8 py-2.5 xs:py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 touch-target-44"
                       >
                         Continue
                       </button>
@@ -862,7 +869,7 @@ export default function CheckOutPage() {
                       <button
                         onClick={handleCreateIntent}
                         disabled={isCreatingIntent || cartItems.length === 0 || !paymentMethod}
-                        className="px-8 py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+                        className="px-6 xs:px-8 py-2.5 xs:py-3 bg-[#5A1E12] text-white rounded-lg font-medium hover:bg-[#441208] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2 touch-target-44"
                       >
                         {isCreatingIntent ? (
                           <><Loader2 className="w-4 h-4 animate-spin" />Creating Order&hellip;</>
@@ -928,23 +935,23 @@ export default function CheckOutPage() {
           </div>
 
           {/* ================= RIGHT: ORDER SUMMARY ================= */}
-          <div className="w-full lg:w-96 xl:w-105 shrink-0">
+          <div className="w-full lg:w-96 xl:w-105 shrink-0 mt-6 lg:mt-0">
             <div className="bg-white lg:rounded-tl-xl shadow-sm lg:sticky lg:top-0 lg:h-screen flex flex-col">
 
               {/* ── Fixed header ── */}
-              <div className="px-6 pt-6 pb-4 border-b shrink-0">
-                <h2 className="text-xl font-bold">Order Summary</h2>
+              <div className="px-4 xs:px-6 pt-4 xs:pt-6 pb-3 xs:pb-4 border-b shrink-0">
+                <h2 className="text-lg xs:text-xl font-bold">Order Summary</h2>
               </div>
 
               {/* ── Scrollable cart items ── */}
-              <div className="flex-1 overflow-y-auto px-6 py-4 no-scrollbar">
-                <h3 className="font-medium mb-4 text-sm text-gray-500 uppercase tracking-wide">
+              <div className="flex-1 overflow-y-auto px-4 xs:px-6 py-3 xs:py-4 no-scrollbar">
+                <h3 className="font-medium mb-3 xs:mb-4 text-sm text-gray-500 uppercase tracking-wide">
                   Items ({cartItems.length})
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3 xs:space-y-4">
                   {cartItems.map((item) => (
-                    <div key={item.productId} className="flex gap-4">
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                    <div key={item.productId} className="flex gap-3 xs:gap-4">
+                      <div className="relative w-14 h-14 xs:w-16 xs:h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                         <Image
                           src={
                             item.product.featuredImage || 
@@ -964,7 +971,7 @@ export default function CheckOutPage() {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{item.product.title}</p>
+                        <p className="font-medium text-sm xs:text-base truncate">{item.product.title}</p>
                         {item.variant?.attributes && Object.keys(item.variant.attributes).length > 0 && (
                           <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
                             {Object.entries(item.variant.attributes).map(([key, attr]) => (
@@ -977,23 +984,23 @@ export default function CheckOutPage() {
                             ))}
                           </div>
                         )}
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs xs:text-sm text-gray-600">
                           Qty {item.quantity} × ${(item.effectivePrice ?? parseFloat(item.product.price || '0')).toFixed(2)}
                         </p>
                       </div>
-                      <p className="font-medium text-sm">
+                      <p className="font-medium text-sm xs:text-base">
                         ${(item.quantity * (item.effectivePrice ?? parseFloat(item.product.price || '0'))).toFixed(2)}
                       </p>
                     </div>
                   ))}
                 </div>
                 {cartItems.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center mt-6">Your cart is empty</p>
+                  <p className="text-sm text-gray-500 text-center mt-4 xs:mt-6">Your cart is empty</p>
                 )}
               </div>
 
               {/* ── Fixed bottom: promo + totals ── */}
-              <div className="px-6 pb-6 pt-4 border-t shrink-0 space-y-4">
+              <div className="px-4 xs:px-6 pb-4 xs:pb-6 pt-3 xs:pt-4 border-t shrink-0 space-y-3 xs:space-y-4">
                 {/* COUPON */}
                 {appliedCoupons.length > 0 && (
                   <div>
@@ -1030,7 +1037,7 @@ export default function CheckOutPage() {
 
                 <hr />
 
-                <div className="flex justify-between text-lg font-bold">
+                <div className="flex justify-between text-lg xs:text-xl font-bold">
                   <span>Total</span>
                   <span>${discountedTotal.toFixed(2)}</span>
                 </div>
@@ -1040,5 +1047,6 @@ export default function CheckOutPage() {
           </div>
       </div>
     </section>
+    </>
   );
 }

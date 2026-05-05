@@ -135,12 +135,192 @@ export default function Page() {
       return next;
     });
   }, [cartItems]);
-  // Handle quantity update — invalidates applied coupon for that product
+
+  // Track cart changes for coupon revalidation
+  const [lastCartSnapshot, setLastCartSnapshot] = useState<string>("");
+
+  const handleRemoveCoupon = useCallback((productId: string) => {
+    updateProductCoupon(productId, { applied: null, input: "", error: "" });
+    setProductCoupons(prev => {
+      const persisted: Record<string, any> = {};
+      Object.entries(prev).forEach(([pid, s]) => {
+        if (pid !== productId && s.applied) persisted[pid] = s.applied;
+      });
+      localStorage.setItem("cartProductCoupons", JSON.stringify(persisted));
+      return prev;
+    });
+  }, [updateProductCoupon]);
+
+  // Re-validate coupon with specific cart data
+  const revalidateCouponWithCartData = useCallback(async (productId: string, coupon: AppliedSellerCoupon, sellerId: string, currentCartItems: any[]) => {
+    try {
+      // Get current cart items for this product
+      const productVariants = currentCartItems.filter(i => i.productId === productId).map(item => ({
+        productId: item.productId,
+        variantId: item.variantId ?? null,
+        quantity: item.quantity,
+      }));
+
+      // If no items left for this product, coupon is invalid
+      if (productVariants.length === 0) {
+        handleRemoveCoupon(productId);
+        return;
+      }
+
+      // Test if the coupon is still valid with new quantities
+      const data = await sellerCouponsApi.applyCoupon(coupon.code, productVariants);
+      
+      if (!data.success || !data.qualifyingItems || data.qualifyingItems.length === 0) {
+        // Coupon no longer valid - remove it
+        handleRemoveCoupon(productId);
+        return;
+      }
+
+      // Coupon is still valid - check if savings changed
+      const updatedCoupon: AppliedSellerCoupon = {
+        code: data.coupon.code,
+        couponType: data.coupon.couponType,
+        eligibleSellerId: data.eligibleSellerId,
+        savings: data.summary.totalSavingsExGST,
+        total: data.summary.discountedInclTotal,
+        nonQualifyingItems: data.nonQualifyingItems || [],
+      };
+      
+      // Only update if values actually changed
+      if (Math.abs(updatedCoupon.savings - coupon.savings) > 0.01 || 
+          Math.abs(updatedCoupon.total - coupon.total) > 0.01) {
+        
+        // Update coupon state with new values
+        updateProductCoupon(productId, { applied: updatedCoupon });
+        
+        // Persist updated coupon
+        setProductCoupons(prev => {
+          const persisted: Record<string, any> = {};
+          Object.entries({ ...prev, [productId]: { ...(prev[productId] ?? makeFreshCouponState()), applied: updatedCoupon } })
+            .forEach(([pid, s]) => { if (s.applied) persisted[pid] = s.applied; });
+          localStorage.setItem("cartProductCoupons", JSON.stringify(persisted));
+          return prev;
+        });
+      }
+    } catch (error) {
+      // If validation fails, remove the coupon
+      handleRemoveCoupon(productId);
+      console.error('Coupon revalidation error:', error);
+    }
+  }, [updateProductCoupon, handleRemoveCoupon]);
+  
+  // Watch for cart changes and revalidate applied coupons + eligibility
+  useEffect(() => {
+    if (!cartItems || cartItems.length === 0) {
+      // If cart is empty, clear all coupons
+      setProductCoupons({});
+      localStorage.removeItem("cartProductCoupons");
+      return;
+    }
+
+    // Create a snapshot of current cart for comparison
+    const currentSnapshot = JSON.stringify(
+      cartItems.map(item => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity
+      }))
+    );
+    
+    // Only revalidate if cart actually changed
+    if (currentSnapshot === lastCartSnapshot) return;
+    setLastCartSnapshot(currentSnapshot);
+    
+    // Use current productCoupons state to find applied coupons AND open pickers
+    setProductCoupons(currentCoupons => {
+      // Find products with applied coupons that need revalidation
+      const productsToRevalidate = Object.entries(currentCoupons).filter(([productId, state]) => {
+        if (!state.applied) return false;
+        
+        // Check if this product still exists in cart
+        const productStillInCart = cartItems.some(item => item.productId === productId);
+        return productStillInCart;
+      });
+      
+      // Find products with open pickers that need eligibility refresh
+      const productsWithOpenPickers = Object.entries(currentCoupons).filter(([productId, state]) => {
+        if (!state.showPicker) return false;
+        
+        // Check if this product still exists in cart and has available coupons
+        const productStillInCart = cartItems.some(item => item.productId === productId);
+        return productStillInCart && state.availableCoupons.length > 0;
+      });
+      
+      // Revalidate each applied coupon
+      productsToRevalidate.forEach(([productId, state]) => {
+        if (state.applied) {
+          const sellerId = sellerProductMap[productId]?.sellerId;
+          if (sellerId) {
+            revalidateCouponWithCartData(productId, state.applied, sellerId, cartItems);
+          }
+        }
+      });
+      
+      // Re-run eligibility checks for open pickers with current cart data
+      productsWithOpenPickers.forEach(([productId, state]) => {
+        const sellerId = sellerProductMap[productId]?.sellerId;
+        if (sellerId && state.availableCoupons.length > 0) {
+          // Get current cart data for this product
+          const currentProductVariants = cartItems.filter(i => i.productId === productId).map(item => ({
+            productId: item.productId,
+            variantId: item.variantId ?? null,
+            quantity: item.quantity,
+          }));
+          
+          // Re-run eligibility checks with current quantities
+          const coupons = state.availableCoupons;
+          const initialMap: Record<string, boolean | null> = {};
+          coupons.forEach((c: any) => { initialMap[c.code] = null; });
+          
+          // Update state to show checking
+          setProductCoupons(prev => ({
+            ...prev,
+            [productId]: { ...(prev[productId] ?? makeFreshCouponState()), eligibilityMap: initialMap },
+          }));
+          
+          // Run eligibility checks with current cart data
+          coupons.forEach(async (c: any) => {
+            try {
+              const data = await sellerCouponsApi.applyCoupon(c.code, currentProductVariants);
+              // Thorough eligibility check - must have actual savings to be truly eligible
+              const eligible = !!(
+                data.success && 
+                data.qualifyingItems && 
+                data.qualifyingItems.length > 0 &&
+                data.summary &&
+                data.summary.totalSavingsExGST > 0 // If there are actual savings, the coupon is eligible
+              );
+              setProductCoupons(prev => {
+                const cur = prev[productId] ?? makeFreshCouponState();
+                return { ...prev, [productId]: { ...cur, eligibilityMap: { ...(cur.eligibilityMap ?? {}), [c.code]: eligible } } };
+              });
+            } catch {
+              setProductCoupons(prev => {
+                const cur = prev[productId] ?? makeFreshCouponState();
+                return { ...prev, [productId]: { ...cur, eligibilityMap: { ...(cur.eligibilityMap ?? {}), [c.code]: false } } };
+              });
+            }
+          });
+        }
+      });
+      
+      // Return current state unchanged (revalidation updates happen in the async functions)
+      return currentCoupons;
+    });
+  }, [cartItems, sellerProductMap, revalidateCouponWithCartData]);
+
+  // Handle quantity update — simplified without manual revalidation
   const handleQuantityUpdate = async (productId: string, newQuantity: number, variantId?: string | null) => {
     const itemKey = variantId ? `${productId}:${variantId}` : productId;
     setUpdatingItems((prev) => new Set(prev).add(itemKey));
-    if (productCoupons[productId]?.applied) handleRemoveCoupon(productId);
+    
     try {
+      // Update quantity - the useEffect will handle coupon revalidation automatically
       await updateQuantity(productId, newQuantity, variantId ?? undefined);
     } finally {
       setUpdatingItems((prev) => { const n = new Set(prev); n.delete(itemKey); return n; });
@@ -187,7 +367,7 @@ export default function Page() {
   });
 
   // ── Per-product coupon handlers ──────────────────────────────────────────
-  const handleApplyCoupon = async (productId: string, sellerId: string, codeOverride?: string) => {
+  const handleApplyCoupon = useCallback(async (productId: string, sellerId: string, codeOverride?: string) => {
     const state = productCoupons[productId] ?? makeFreshCouponState();
     const code = (codeOverride ?? state.input).trim();
     if (!code) {
@@ -234,32 +414,21 @@ export default function Page() {
     } catch (err: any) {
       updateProductCoupon(productId, { error: err?.message || "Failed to validate coupon. Please try again.", loading: false });
     }
-  };
+  }, [productCoupons, updateProductCoupon, cartItems, setProductCoupons]);
 
-  const handleRemoveCoupon = (productId: string) => {
-    updateProductCoupon(productId, { applied: null, input: "", error: "" });
-    setProductCoupons(prev => {
-      const persisted: Record<string, any> = {};
-      Object.entries(prev).forEach(([pid, s]) => {
-        if (pid !== productId && s.applied) persisted[pid] = s.applied;
-      });
-      localStorage.setItem("cartProductCoupons", JSON.stringify(persisted));
-      return prev;
-    });
-  };
-
-  const handleTogglePicker = async (productId: string, sellerId: string) => {
+  const handleTogglePicker = useCallback(async (productId: string, sellerId: string) => {
     const state = productCoupons[productId] ?? makeFreshCouponState();
     const nextOpen = !state.showPicker;
     updateProductCoupon(productId, { showPicker: nextOpen });
 
-    const productVariants = cartItems.filter(i => i.productId === productId).map(item => ({
+    // Get current cart data for this product at the time of opening
+    const currentProductVariants = cartItems.filter(i => i.productId === productId).map(item => ({
       productId: item.productId,
       variantId: item.variantId ?? null,
       quantity: item.quantity,
     }));
 
-    const runEligibilityChecks = (coupons: any[]) => {
+    const runEligibilityChecks = (coupons: any[], productVariants: any[]) => {
       const initialMap: Record<string, boolean | null> = {};
       coupons.forEach((c: any) => { initialMap[c.code] = null; });
       setProductCoupons(prev => ({
@@ -269,7 +438,14 @@ export default function Page() {
       coupons.forEach(async (c: any) => {
         try {
           const data = await sellerCouponsApi.applyCoupon(c.code, productVariants);
-          const eligible = !!(data.success && data.qualifyingItems?.length > 0);
+          // Thorough eligibility check - must have actual savings to be truly eligible
+          const eligible = !!(
+            data.success && 
+            data.qualifyingItems && 
+            data.qualifyingItems.length > 0 &&
+            data.summary &&
+            data.summary.totalSavingsExGST > 0 // If there are actual savings, the coupon is eligible
+          );
           setProductCoupons(prev => {
             const cur = prev[productId] ?? makeFreshCouponState();
             return { ...prev, [productId]: { ...cur, eligibilityMap: { ...(cur.eligibilityMap ?? {}), [c.code]: eligible } } };
@@ -289,20 +465,20 @@ export default function Page() {
         const resp = await sellerCouponsApi.getActiveCoupons(sellerId);
         const coupons = resp.coupons || [];
         updateProductCoupon(productId, { availableCoupons: coupons, availableLoading: false });
-        if (coupons.length > 0) runEligibilityChecks(coupons);
+        if (coupons.length > 0) runEligibilityChecks(coupons, currentProductVariants);
       } catch {
         updateProductCoupon(productId, { availableLoading: false });
       }
-    } else if (nextOpen && state.availableCoupons.length > 0 && Object.keys(state.eligibilityMap ?? {}).length === 0) {
-      // Coupons already loaded but eligibility never checked — run now
-      runEligibilityChecks(state.availableCoupons);
+    } else if (nextOpen && state.availableCoupons.length > 0) {
+      // Always re-check eligibility when opening picker with current cart quantities
+      runEligibilityChecks(state.availableCoupons, currentProductVariants);
     }
-  };
+  }, [productCoupons, updateProductCoupon, cartItems, setProductCoupons]);
 
-  const handlePickCoupon = (productId: string, sellerId: string, code: string) => {
+  const handlePickCoupon = useCallback((productId: string, sellerId: string, code: string) => {
     updateProductCoupon(productId, { input: code, showPicker: false, error: "" });
     handleApplyCoupon(productId, sellerId, code);
-  };
+  }, [updateProductCoupon, handleApplyCoupon]);
 
   // --- LOADING STATE ---
   if (loading) {
@@ -337,14 +513,52 @@ export default function Page() {
   }
 
   return (
-    <motion.main 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="bg-[#FAF7F2] min-h-screen font-sans text-[#4A3728]"
-    >
+    <>
+      <style jsx>{`
+        .touch-target-44 {
+          min-height: 44px;
+          min-width: 44px;
+        }
+        @media (max-width: 640px) {
+          .mobile-stack-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+          }
+        }
+        @media (max-width: 375px) {
+          .mobile-xs-text {
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+          }
+          .mobile-xs-spacing {
+            padding: 0.5rem;
+          }
+          .mobile-xs-gap {
+            gap: 0.5rem;
+          }
+        }
+        @media (max-width: 375px) {
+          .mobile-xs-text {
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+          }
+          .mobile-xs-spacing {
+            padding: 0.5rem;
+          }
+          .mobile-xs-gap {
+            gap: 0.5rem;
+          }
+        }
+      `}</style>
+      <motion.main 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        className="bg-[#FAF7F2] min-h-screen font-sans text-[#4A3728]"
+      >
       
       {/* --- HERO SECTION --- */}
-      <section className="relative h-[80vh] overflow-hidden">
+      <section className="relative h-[50vh] xs:h-[55vh] sm:h-[70vh] lg:h-[80vh] overflow-hidden">
         <div className="absolute inset-0 bg-[url('/images/main.png')] bg-cover bg-center bg-fixed animate-slow-zoom">
           {/* Layered gradient overlay */}
           <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
@@ -352,28 +566,30 @@ export default function Page() {
         </div>
 
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
-          <span className="mb-4 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-sm font-medium backdrop-blur-md">
+          <span className="mb-3 sm:mb-4 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white/20 bg-white/10 text-xs sm:text-sm font-medium backdrop-blur-md">
             Review your items
           </span>
-          <h1 className="text-4xl md:text-6xl font-bold mb-2 md:mb-6 tracking-tight">Your Cart Summary</h1>
-          <p className="text-sm md:text-xl text-gray-200 max-w-2xl leading-relaxed">
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 md:mb-6 tracking-tight leading-tight">
+            Your Cart Summary
+          </h1>
+          <p className="text-sm xs:text-base md:text-xl text-gray-200 max-w-2xl leading-relaxed px-4">
             Review your selected items and proceed to checkout when you&apos;re ready.
           </p>
         </div>
       </section>
 
-      <div className="max-w-400 mx-auto px-4 md:px-8 py-12 relative z-20">
-        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-8 items-start">
+      <div className="max-w-400 mx-auto px-3 xs:px-4 md:px-8 py-6 xs:py-8 sm:py-12 relative z-20">
+        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-4 xs:gap-6 lg:gap-8 items-start">
           
           {/* --- LEFT COLUMN: CART ITEMS GROUPED BY SELLER --- */}
-          <div className="space-y-8">
+          <div className="space-y-4 xs:space-y-6 lg:space-y-8">
             {/* Column header */}
             {cartItems.length > 0 && (
-              <div className="px-2">
+              <div className="px-2 hidden sm:block">
                 <div className="grid grid-cols-[1fr_auto_auto] gap-4 pb-3 border-b border-[#D6C0A9]">
                   <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C]">Product</span>
-                  <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C] w-28 text-center">Quantity</span>
-                  <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C] w-20 text-right">Price</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C] w-24 sm:w-28 text-center">Quantity</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C] w-16 sm:w-20 text-right">Price</span>
                 </div>
               </div>
             )}
@@ -381,11 +597,11 @@ export default function Page() {
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="bg-white rounded-3xl p-12 text-center shadow-sm border border-[#E6DCC8]"
+                className="bg-white rounded-2xl sm:rounded-3xl p-6 xs:p-8 sm:p-12 text-center shadow-sm border border-[#E6DCC8]"
               >
-                <TruckElectric className="h-16 w-16 text-[#D6C0A9] mx-auto mb-4" />
-                <p className="text-2xl font-serif text-[#4A3728] mb-2">Your cart is empty</p>
-                <p className="text-[#8B5E3C]">Looks like you haven&apos;t made your choice yet.</p>
+                <TruckElectric className="h-10 w-10 xs:h-12 xs:w-12 sm:h-16 sm:w-16 text-[#D6C0A9] mx-auto mb-4" />
+                <p className="text-lg xs:text-xl sm:text-2xl font-serif text-[#4A3728] mb-2">Your cart is empty</p>
+                <p className="text-sm xs:text-base sm:text-base text-[#8B5E3C]">Looks like you haven&apos;t made your choice yet.</p>
               </motion.div>
             ) : (
               sellerGroups.map(({ sellerId, sellerName, items: groupItems }) => {
@@ -406,19 +622,19 @@ export default function Page() {
                 }, 0);
 
                 return (
-                  <div key={sellerId} className="rounded-3xl border border-[#E6DCC8] overflow-hidden shadow-sm bg-white">
+                  <div key={sellerId} className="rounded-2xl sm:rounded-3xl border border-[#E6DCC8] overflow-hidden shadow-sm bg-white">
                     {/* Seller header */}
-                    <div className="flex items-center justify-between px-6 py-4 bg-[#F5F1EB] border-b border-[#E6DCC8]">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-[#5A1E12]/10 flex items-center justify-center text-[#5A1E12] font-bold text-sm shrink-0">
+                    <div className="flex items-center justify-between px-3 xs:px-4 sm:px-6 py-2.5 xs:py-3 sm:py-4 bg-[#F5F1EB] border-b border-[#E6DCC8]">
+                      <div className="flex items-center gap-1.5 xs:gap-2">
+                        <div className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 rounded-full bg-[#5A1E12]/10 flex items-center justify-center text-[#5A1E12] font-bold text-xs sm:text-sm shrink-0">
                           {sellerName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-semibold text-[#4A3728]">{sellerName}</span>
-                        <span className="text-xs text-[#8B5E3C] bg-[#E6DCC8] px-2 py-0.5 rounded-full">
+                        <span className="font-semibold text-[#4A3728] text-sm xs:text-sm sm:text-base">{sellerName}</span>
+                        <span className="text-xs text-[#8B5E3C] bg-[#E6DCC8] px-1 xs:px-1.5 sm:px-2 py-0.5 rounded-full">
                           {productGroups.length} {productGroups.length === 1 ? "product" : "products"}
                         </span>
                       </div>
-                      <span className="text-sm font-medium text-[#4A3728]">${groupSubtotal.toFixed(2)}</span>
+                      <span className="text-sm xs:text-sm font-medium text-[#4A3728]">${groupSubtotal.toFixed(2)}</span>
                     </div>
 
                     {/* Per-product blocks */}
@@ -448,7 +664,7 @@ export default function Page() {
                               return (
                                 <div
                                   key={itemKey}
-                                  className="relative flex items-center gap-3 px-4 py-3 border-t border-[#F5F1EB] first:border-t-0 hover:bg-[#FAF7F2] transition-colors"
+                                  className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-3 sm:px-4 py-3 border-t border-[#F5F1EB] first:border-t-0 hover:bg-[#FAF7F2] transition-colors"
                                 >
                                   {isUpdating && (
                                     <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
@@ -456,84 +672,168 @@ export default function Page() {
                                     </div>
                                   )}
 
-                                  {/* Product image */}
-                                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-[#F5F1EB] shrink-0">
-                                    <Image
-                                      src={product.featuredImage || product.images?.[0] || "/images/placeholder.svg"}
-                                      alt={product.title}
-                                      fill
-                                      className="object-cover"
-                                    />
-                                  </div>
+                                  {/* Mobile layout */}
+                                  <div className="sm:hidden w-full">
+                                    <div className="flex items-start gap-2.5 xs:gap-3 mb-3">
+                                      {/* Product image */}
+                                      <div className="relative w-18 h-18 xs:w-20 xs:h-20 sm:w-16 sm:h-16 rounded-lg xs:rounded-xl overflow-hidden bg-[#F5F1EB] shrink-0">
+                                        <Image
+                                          src={product.featuredImage || product.images?.[0] || "/images/placeholder.svg"}
+                                          alt={product.title}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      </div>
 
-                                  {/* Title + category + variant chips */}
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="font-serif text-base font-semibold text-[#4A3728] leading-tight truncate">{product.title}</h3>
-                                    {(product.category || productCategoryMap[productId]) && (
-                                      <p className="text-xs text-[#8B5E3C] leading-none mt-0.5">{product.category || productCategoryMap[productId]}</p>
-                                    )}
-                                    {variantAttrs && variantAttrs.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 mt-1">
-                                        {variantAttrs.map(([key, attr]) =>
-                                          attr.hexColor ? (
-                                            <span key={key} title={`${key}: ${attr.displayValue}`}
-                                              className="inline-flex items-center gap-1 text-xs font-medium text-[#5A1E12] bg-[#EAD7B7]/50 border border-[#5A1E12]/15 rounded-full px-2 py-0.5">
-                                              <span className="w-2 h-2 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: attr.hexColor }} />
-                                              {attr.displayValue}
-                                            </span>
-                                          ) : (
-                                            <span key={key} className="inline-flex items-center text-xs font-medium text-[#5A1E12] bg-[#EAD7B7]/50 border border-[#5A1E12]/15 rounded-full px-2 py-0.5">
-                                              {attr.displayValue}
-                                            </span>
-                                          )
+                                      {/* Title + category + variant chips */}
+                                      <div className="flex-1 min-w-0">
+                                        <h3 className="font-serif text-sm xs:text-base font-semibold text-[#4A3728] leading-tight">{product.title}</h3>
+                                        {(product.category || productCategoryMap[productId]) && (
+                                          <p className="text-xs text-[#8B5E3C] leading-none mt-0.5">{product.category || productCategoryMap[productId]}</p>
+                                        )}
+                                        {variantAttrs && variantAttrs.length > 0 && (
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {variantAttrs.map(([key, attr]) =>
+                                              attr.hexColor ? (
+                                                <span key={key} title={`${key}: ${attr.displayValue}`}
+                                                  className="inline-flex items-center gap-1 text-xs font-medium text-[#5A1E12] bg-[#EAD7B7]/50 border border-[#5A1E12]/15 rounded-full px-2 py-0.5">
+                                                  <span className="w-2 h-2 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: attr.hexColor }} />
+                                                  {attr.displayValue}
+                                                </span>
+                                              ) : (
+                                                <span key={key} className="inline-flex items-center text-xs font-medium text-[#5A1E12] bg-[#EAD7B7]/50 border border-[#5A1E12]/15 rounded-full px-2 py-0.5">
+                                                  {attr.displayValue}
+                                                </span>
+                                              )
+                                            )}
+                                          </div>
                                         )}
                                       </div>
-                                    )}
+
+                                      {/* Remove button */}
+                                      <button
+                                        onClick={() => handleRemoveItem(item.productId, item.variantId)}
+                                        disabled={isUpdating}
+                                        className="p-2.5 xs:p-2 text-[#D6C0A9] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 touch-target-44"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </div>
+
+                                    {/* Quantity and price row */}
+                                    <div className="flex items-center justify-between">
+                                      {/* Qty stepper */}
+                                      <div className="flex items-center bg-white rounded-xl border border-[#E6DCC8] p-0.5">
+                                        <button
+                                          onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)}
+                                          disabled={item.quantity <= 1 || isUpdating}
+                                          className="w-8 h-8 xs:w-7 xs:h-7 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors touch-target-44"
+                                        >
+                                          <Minus size={12} />
+                                        </button>
+                                        <span className="w-10 xs:w-8 text-center text-base xs:text-sm font-semibold text-[#4A3728]">{item.quantity}</span>
+                                        <button
+                                          onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1, item.variantId)}
+                                          disabled={(() => {
+                                            const liveStock = stockMap[item.productId]?.stock;
+                                            const stock = liveStock !== undefined ? liveStock : item.product.stock;
+                                            return stock != null ? item.quantity >= stock : false;
+                                          })() || isUpdating}
+                                          className="w-8 h-8 xs:w-7 xs:h-7 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors touch-target-44"
+                                        >
+                                          <Plus size={12} />
+                                        </button>
+                                      </div>
+
+                                      {/* Price */}
+                                      <div className="text-right">
+                                        <p className="font-bold text-base xs:text-lg text-[#4A3728]">${(effectivePrice * item.quantity).toFixed(2)}</p>
+                                        <p className="text-xs text-[#8B5E3C]">${effectivePrice.toFixed(2)} each</p>
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  {/* Qty stepper */}
-                                  <div className="flex items-center bg-white rounded-xl border border-[#E6DCC8] p-0.5 shrink-0">
+                                  {/* Desktop layout */}
+                                  <div className="hidden sm:flex sm:items-center sm:gap-3 sm:w-full">
+                                    {/* Product image */}
+                                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-[#F5F1EB] shrink-0">
+                                      <Image
+                                        src={product.featuredImage || product.images?.[0] || "/images/placeholder.svg"}
+                                        alt={product.title}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    </div>
+
+                                    {/* Title + category + variant chips */}
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="font-serif text-base font-semibold text-[#4A3728] leading-tight truncate">{product.title}</h3>
+                                      {(product.category || productCategoryMap[productId]) && (
+                                        <p className="text-xs text-[#8B5E3C] leading-none mt-0.5">{product.category || productCategoryMap[productId]}</p>
+                                      )}
+                                      {variantAttrs && variantAttrs.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                          {variantAttrs.map(([key, attr]) =>
+                                            attr.hexColor ? (
+                                              <span key={key} title={`${key}: ${attr.displayValue}`}
+                                                className="inline-flex items-center gap-1 text-xs font-medium text-[#5A1E12] bg-[#EAD7B7]/50 border border-[#5A1E12]/15 rounded-full px-2 py-0.5">
+                                                <span className="w-2 h-2 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: attr.hexColor }} />
+                                                {attr.displayValue}
+                                              </span>
+                                            ) : (
+                                              <span key={key} className="inline-flex items-center text-xs font-medium text-[#5A1E12] bg-[#EAD7B7]/50 border border-[#5A1E12]/15 rounded-full px-2 py-0.5">
+                                                {attr.displayValue}
+                                              </span>
+                                            )
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Qty stepper */}
+                                    <div className="flex items-center bg-white rounded-xl border border-[#E6DCC8] p-0.5 shrink-0">
+                                      <button
+                                        onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)}
+                                        disabled={item.quantity <= 1 || isUpdating}
+                                        className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors"
+                                      >
+                                        <Minus size={11} />
+                                      </button>
+                                      <span className="w-8 text-center text-base font-semibold text-[#4A3728]">{item.quantity}</span>
+                                      <button
+                                        onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1, item.variantId)}
+                                        disabled={(() => {
+                                          const liveStock = stockMap[item.productId]?.stock;
+                                          const stock = liveStock !== undefined ? liveStock : item.product.stock;
+                                          return stock != null ? item.quantity >= stock : false;
+                                        })() || isUpdating}
+                                        className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors"
+                                      >
+                                        <Plus size={11} />
+                                      </button>
+                                    </div>
+
+                                    {/* Price */}
+                                    <div className="text-right shrink-0 w-20 sm:w-24">
+                                      <p className="font-bold text-base text-[#4A3728]">${(effectivePrice * item.quantity).toFixed(2)}</p>
+                                      <p className="text-xs text-[#8B5E3C]">${effectivePrice.toFixed(2)} each</p>
+                                    </div>
+
+                                    {/* Remove */}
                                     <button
-                                      onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)}
-                                      disabled={item.quantity <= 1 || isUpdating}
-                                      className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors"
+                                      onClick={() => handleRemoveItem(item.productId, item.variantId)}
+                                      disabled={isUpdating}
+                                      className="p-1.5 text-[#D6C0A9] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                                     >
-                                      <Minus size={11} />
-                                    </button>
-                                    <span className="w-8 text-center text-base font-semibold text-[#4A3728]">{item.quantity}</span>
-                                    <button
-                                      onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1, item.variantId)}
-                                      disabled={(() => {
-                                        const liveStock = stockMap[item.productId]?.stock;
-                                        const stock = liveStock !== undefined ? liveStock : item.product.stock;
-                                        return stock != null ? item.quantity >= stock : false;
-                                      })() || isUpdating}
-                                      className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors"
-                                    >
-                                      <Plus size={11} />
+                                      <Trash2 size={15} />
                                     </button>
                                   </div>
-
-                                  {/* Price */}
-                                  <div className="text-right shrink-0 w-24">
-                                    <p className="font-bold text-base text-[#4A3728]">${(effectivePrice * item.quantity).toFixed(2)}</p>
-                                    <p className="text-xs text-[#8B5E3C]">${effectivePrice.toFixed(2)} each</p>
-                                  </div>
-
-                                  {/* Remove */}
-                                  <button
-                                    onClick={() => handleRemoveItem(item.productId, item.variantId)}
-                                    disabled={isUpdating}
-                                    className="p-1.5 text-[#D6C0A9] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
                                 </div>
                               );
                             })}
 
                             {/* Per-product coupon section — dropdown only, no text input */}
-                            <div className="px-4 py-2.5 bg-[#FDFCFA] border-t border-[#F0EBE3]">
+                            <div className="px-3 sm:px-4 py-2.5 bg-[#FDFCFA] border-t border-[#F0EBE3]">
                               {couponState.applied ? (
                                 <div className="flex items-center gap-3 px-3 py-2 bg-green-50 border border-green-200 rounded-xl">
                                   <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" />
@@ -543,7 +843,7 @@ export default function Page() {
                                   </div>
                                   <button
                                     onClick={() => handleRemoveCoupon(productId)}
-                                    className="p-1 text-green-600 hover:text-red-500 rounded-lg transition-colors shrink-0"
+                                    className="p-1 text-green-600 hover:text-red-500 rounded-lg transition-colors shrink-0 touch-target-44"
                                   >
                                     <X className="h-3.5 w-3.5" />
                                   </button>
@@ -552,7 +852,7 @@ export default function Page() {
                                 <div>
                                   <button
                                     onClick={() => handleTogglePicker(productId, sellerId)}
-                                    className="flex items-center gap-1.5 text-xs font-medium text-[#5A1E12] border border-[#5A1E12]/30 bg-white px-3 py-1.5 rounded-xl hover:bg-[#5A1E12] hover:text-white transition-colors"
+                                    className="flex items-center gap-1.5 text-xs font-medium text-[#5A1E12] border border-[#5A1E12]/30 bg-white px-3 py-2 sm:py-1.5 rounded-xl hover:bg-[#5A1E12] hover:text-white transition-colors touch-target-44 w-full sm:w-auto justify-center sm:justify-start"
                                   >
                                     {couponState.availableLoading ? (
                                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -625,7 +925,7 @@ export default function Page() {
                                                       <button
                                                         onClick={() => handlePickCoupon(productId, sellerId, c.code)}
                                                         disabled={couponState.loading || isIneligible || isChecking}
-                                                        className={`shrink-0 text-xs font-semibold border px-2.5 py-1 rounded-lg transition-colors ${
+                                                        className={`shrink-0 text-xs font-semibold border px-3 py-2 rounded-lg transition-colors touch-target-44 ${
                                                           isIneligible
                                                             ? "text-gray-300 border-gray-200 cursor-not-allowed"
                                                             : isChecking
@@ -658,8 +958,8 @@ export default function Page() {
           </div>
 
           {/* --- RIGHT COLUMN: SUMMARY (Sticky) --- */}
-          <div className="xl:sticky xl:top-22 h-fit">
-            <div className="bg-[#EBE5D9] rounded-4xl p-8 shadow-lg border border-white/40 backdrop-blur-sm relative overflow-hidden">
+          <div className="mt-6 sm:mt-8 xl:mt-0 xl:sticky xl:top-22 h-fit">
+            <div className="bg-[#EBE5D9] rounded-xl xs:rounded-2xl sm:rounded-3xl lg:rounded-4xl p-4 xs:p-6 sm:p-8 shadow-lg border border-white/40 backdrop-blur-sm relative overflow-hidden">
                 {/* Decorative background grain */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-bl from-white/20 to-transparent rounded-full -mr-16 -mt-16 pointer-events-none" />
 
@@ -671,24 +971,24 @@ export default function Page() {
                   </div>
                 )}
 
-                <div className="mb-8 relative z-10">
-                    <h2 className="text-3xl font-serif text-[#2C1810]">Summary</h2>
+                <div className="mb-6 xs:mb-8 relative z-10">
+                    <h2 className="text-2xl xs:text-3xl font-serif text-[#2C1810]">Summary</h2>
                 </div>
 
                 {/* Shipping Selection */}
-                <div className="space-y-3 mb-8 relative z-10">
+                <div className="space-y-2 xs:space-y-3 mb-6 xs:mb-8 relative z-10">
                     <p className="text-sm font-semibold uppercase tracking-wider text-[#8B5E3C] mb-2">Shipping Method</p>
                     {cartData?.availableShipping.filter(s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)).map((shipping) => (
                     <label
                         key={shipping.id}
-                        className={`group cursor-pointer block relative p-4 rounded-xl border-2 transition-all duration-300 ${
+                        className={`group cursor-pointer block relative p-3 xs:p-4 rounded-lg xs:rounded-xl border-2 transition-all duration-300 ${
                         selectedShipping?.id === shipping.id
                             ? "border-[#4A3728] bg-white shadow-md"
                             : "border-transparent bg-white/40 hover:bg-white/70"
                         }`}
                     >
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2.5 xs:gap-3">
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedShipping?.id === shipping.id ? "border-[#4A3728]" : "border-[#D6C0A9]"}`}>
                                     {selectedShipping?.id === shipping.id && <div className="w-2.5 h-2.5 rounded-full bg-[#4A3728]" />}
                                 </div>
@@ -712,7 +1012,7 @@ export default function Page() {
                     ))}
                 </div>
 
-                <div className="space-y-4 border-t border-[#D6C0A9]/30 pt-6 relative z-10">
+                <div className="space-y-3 xs:space-y-4 border-t border-[#D6C0A9]/30 pt-4 xs:pt-6 relative z-10">
                     <div className="flex justify-between text-[#6D5443]">
                         <span>Subtotal</span>
                         <span className="font-medium text-[#4A3728]">${subtotal.toFixed(2)}</span>
@@ -745,14 +1045,14 @@ export default function Page() {
                     </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t-2 border-white/50 relative z-10">
-                    <div className="flex justify-between items-end mb-6">
-                        <span className="text-lg font-bold text-[#4A3728]">Grand Total</span>
+                <div className="mt-4 xs:mt-6 sm:mt-8 pt-3 xs:pt-4 sm:pt-6 border-t-2 border-white/50 relative z-10">
+                    <div className="flex items-center justify-between mb-3 xs:mb-4 sm:mb-6">
+                        <span className="text-base xs:text-lg font-bold text-[#4A3728]">Grand Total</span>
                         <div className="text-right">
                           {totalDiscount > 0 && (
                             <p className="text-xs text-green-600 font-medium mb-0.5">-${totalDiscount.toFixed(2)} saved</p>
                           )}
-                          <span className="text-2xl font-serif font-bold text-[#2C1810]">
+                          <span className="text-lg xs:text-xl sm:text-2xl font-serif font-bold text-[#2C1810]">
                             ${Math.max(0, grandTotal - totalDiscount).toFixed(2)}
                           </span>
                         </div>
@@ -761,7 +1061,7 @@ export default function Page() {
                     <button
                         onClick={handleProceedToCheckout}
                         disabled={cartItems.length === 0}
-                        className="group w-full py-4 bg-[#5A1E12] text-[#FAF7F2] rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl hover:bg-[#4a180f] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
+                        className="group w-full py-3.5 xs:py-4 bg-[#5A1E12] text-[#FAF7F2] rounded-xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 xs:gap-3 shadow-xl hover:bg-[#4a180f] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none touch-target-44"
                     >
                         Proceed to Checkout
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -780,7 +1080,7 @@ export default function Page() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3 xs:px-4"
           onClick={() => setShowCheckoutModal(false)}
         >
           <motion.div
@@ -790,7 +1090,7 @@ export default function Page() {
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-[#FAF7F2] rounded-2xl shadow-2xl w-full max-w-md p-8"
+            className="relative bg-[#FAF7F2] rounded-xl xs:rounded-2xl shadow-2xl w-full max-w-sm xs:max-w-md p-6 xs:p-8"
           >
             {/* Close button */}
             <button
@@ -802,18 +1102,18 @@ export default function Page() {
             </button>
 
             {/* Header */}
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-[#5A1E12]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <LogIn className="h-7 w-7 text-[#5A1E12]" />
+            <div className="text-center mb-5 xs:mb-6">
+              <div className="w-12 h-12 xs:w-14 xs:h-14 bg-[#5A1E12]/10 rounded-full flex items-center justify-center mx-auto mb-3 xs:mb-4">
+                <LogIn className="h-6 w-6 xs:h-7 xs:w-7 text-[#5A1E12]" />
               </div>
-              <h2 className="text-2xl font-serif font-bold text-[#2C1810] mb-2">How would you like to proceed?</h2>
+              <h2 className="text-xl xs:text-2xl font-serif font-bold text-[#2C1810] mb-2">How would you like to proceed?</h2>
               <p className="text-sm text-[#8B5E3C]">
                 You&apos;re currently not logged in. Please choose an option below to continue.
               </p>
             </div>
 
             {/* Options */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5 xs:gap-3">
               <Link
                 href="/login"
                 className="w-full py-3.5 bg-[#5A1E12] text-[#FAF7F2] rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-md hover:bg-[#4a180f] hover:scale-[1.02] active:scale-[0.98] transition-all"
@@ -844,5 +1144,6 @@ export default function Page() {
     </AnimatePresence>
 
     </motion.main>
+    </>
   );
 }

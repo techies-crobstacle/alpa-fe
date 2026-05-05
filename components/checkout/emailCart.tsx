@@ -76,7 +76,7 @@ export default function EmailCart({ onEmailChange, onNameChange }: EmailCartProp
 
   return (
     <section className="flex flex-col gap-6">
-      <div>
+      <div className="lg:mt-6">
         <h1 className="text-2xl font-bold text-[#5A1E12]">Who is placing this order?</h1>
         <p className="text-sm text-gray-500 mt-1">Fields marked <span className="text-red-500">*</span> are required.</p>
       </div>
