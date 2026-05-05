@@ -1661,6 +1661,25 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Body scroll management for mobile cart
+  useEffect(() => {
+    if (cartOpen) {
+      // Prevent body scroll when cart is open on mobile
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      // Restore body scroll when cart is closed
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [cartOpen]);
+
   // Escape key handler
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -1996,6 +2015,14 @@ export default function Header() {
         <div
           className="fixed inset-0 bg-black/30 z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Cart Backdrop */}
+      {cartOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-60 lg:hidden"
+          onClick={() => setCartOpen(false)}
         />
       )}
 
