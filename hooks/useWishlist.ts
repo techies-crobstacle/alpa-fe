@@ -21,8 +21,8 @@ export function useWishlistQuery() {
         return []; // Return empty array if not authenticated
       }
       const data = await wishlistApi.getWishlist();
-      // Ensure we always return an array
-      return Array.isArray(data) ? data : Array.isArray((data as any)?.wishlist) ? (data as any).wishlist : [];
+      // Ensure we always return an array - API should return any[] already
+      return Array.isArray(data) ? data : Array.isArray((data as any)?.wishlist) ? (data as any).wishlist as any[] : [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
@@ -48,7 +48,7 @@ export function useWishlistCheck(productId: string | number, variantId?: string 
       if (variantId) {
         const wishlistData = await wishlistApi.getWishlist();
         const wishlistArray = Array.isArray(wishlistData) ? wishlistData : 
-                             Array.isArray(wishlistData?.wishlist) ? wishlistData.wishlist : [];
+                             Array.isArray((wishlistData as any)?.wishlist) ? (wishlistData as any).wishlist as any[] : [];
         
         const found = wishlistArray.some((item: any) => {
           const itemProductId = item.productId || item.product?.id || item.id;

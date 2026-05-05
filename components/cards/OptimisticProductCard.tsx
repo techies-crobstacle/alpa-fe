@@ -168,8 +168,8 @@ export default function OptimisticProductCard({
     
     const wishlistArray = Array.isArray(wishlistData) 
       ? wishlistData 
-      : Array.isArray(wishlistData.wishlist) 
-        ? wishlistData.wishlist 
+      : Array.isArray((wishlistData as any)?.wishlist) 
+        ? (wishlistData as any).wishlist as any[] 
         : [];
     
     // For variable products, check if any variant is wishlisted
@@ -186,8 +186,8 @@ export default function OptimisticProductCard({
     
     const wishlistArray = Array.isArray(wishlistData) 
       ? wishlistData 
-      : Array.isArray(wishlistData.wishlist) 
-        ? wishlistData.wishlist 
+      : Array.isArray((wishlistData as any)?.wishlist) 
+        ? (wishlistData as any).wishlist as any[] 
         : [];
     
     // For variable products, check if any variant is wishlisted
