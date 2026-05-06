@@ -99,10 +99,10 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="h-screen max-h-screen w-full bg-white flex flex-col shadow-2xl overflow-hidden">
+    <div className="h-dvh max-h-dvh w-full bg-white flex flex-col shadow-2xl overflow-hidden">
       
       {/* HEADER */}
-      <div className="bg-linear-to-r from-[#440C03] to-[#6F433A] px-4 md:px-6 py-4 md:py-6">
+      <div className="bg-linear-to-r from-[#440C03] to-[#6F433A] px-4 md:px-6 py-3 md:py-6 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3 text-white">
             <div className="p-2 md:p-3 bg-white/10 rounded-lg md:rounded-xl backdrop-blur-sm">
@@ -136,7 +136,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 md:px-6 py-3 md:py-6">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 md:px-6 py-3 md:py-4">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
@@ -298,7 +298,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
 
       {/* FOOTER */}
       {cartItems.length > 0 && (
-        <div className="shrink-0 border-t bg-white px-3 md:px-6 py-3 md:py-6 space-y-2 md:space-y-4">
+        <div className="shrink-0 border-t bg-white px-3 md:px-6 py-4 md:py-6 space-y-3 md:space-y-4 safe-area-inset-bottom">
           {/* Updating indicator */}
           {updatingItems.size > 0 && (
             <div className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
@@ -308,7 +308,7 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
           )}
 
           {/* Subtotal */}
-          <div className="flex justify-between items-center py-1.5 md:py-3 border-t border-b border-gray-200">
+          <div className="flex justify-between items-center py-2 md:py-3 border-t border-b border-gray-200">
             <span className="text-sm md:text-lg font-medium text-gray-700">Subtotal</span>
             <span className="text-lg md:text-2xl font-bold text-[#440C03]">
               ${loading ? "-.--" : subtotal.toFixed(2)}
@@ -321,16 +321,16 @@ export default function MiniCart({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Secondary Actions */}
-          <div className="grid grid-cols-2 gap-2 md:gap-3">
+          <div className="grid grid-cols-2 gap-3 md:gap-3 pb-2 md:pb-0">
             <button
               onClick={() => navigate("/cart")}
-              className="border-2 border-gray-300 py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-gray-50 hover:border-[#A48068] transition font-medium text-xs md:text-sm touch-target-44 min-h-11"
+              className="border-2 border-gray-300 py-3 md:py-3 rounded-lg md:rounded-xl hover:bg-gray-50 hover:border-[#A48068] transition font-medium text-sm md:text-sm touch-target-44 min-h-12"
             >
               View Cart
             </button>
             <button
               onClick={() => navigate("/shop")}
-              className="border-2 border-gray-300 py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-gray-50 hover:border-[#A48068] transition font-medium text-xs md:text-sm touch-target-44 min-h-11"
+              className="border-2 border-gray-300 py-3 md:py-3 rounded-lg md:rounded-xl hover:bg-gray-50 hover:border-[#A48068] transition font-medium text-sm md:text-sm touch-target-44 min-h-12"
             >
               Keep Shopping
             </button>

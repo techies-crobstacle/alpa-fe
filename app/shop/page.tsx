@@ -577,7 +577,7 @@ function ShopContent() {
               ))}
               <button
                 onClick={() => { setSelectedArtists([]); setSelectedCategories([]); setPriceRange([minPrice, maxPrice]); setPage(1); }}
-                className="px-2.5 py-1 text-xs text-gray-400 hover:text-red-500 transition-colors font-medium"
+                className="px-2.5 py-1 md:px-3 md:py-1.5 text-xs md:text-sm text-gray-700 md:text-gray-600 lg:text-gray-400 hover:text-red-500 transition-colors font-medium"
               >
                 Clear all
               </button>
@@ -758,13 +758,13 @@ function ShopContent() {
           <div className="shrink-0 p-4 bg-white border-t border-gray-100 flex gap-3">
             <button
               onClick={() => { setSelectedArtists([]); setSelectedCategories([]); setPriceRange([minPrice, maxPrice]); setPage(1); }}
-              className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="flex-1 py-3 md:py-4 rounded-xl border border-gray-300 text-gray-700 md:text-gray-800 text-sm md:text-base font-semibold hover:bg-gray-50 hover:border-gray-400 transition-colors"
             >
               Reset All
             </button>
             <button
               onClick={() => setShowMobileFilters(false)}
-              className="flex-1 py-3 rounded-xl bg-[#5A1E12] text-white text-sm font-medium hover:bg-[#4a180f] transition-colors"
+              className="flex-1 py-3 md:py-4 rounded-xl bg-[#5A1E12] text-white text-sm md:text-base font-medium hover:bg-[#4a180f] transition-colors"
             >
               Show Results
             </button>
@@ -788,7 +788,7 @@ function ShopContent() {
             {hasActiveFilters && (
               <button
                 onClick={() => { clearAll(); setPage(1); }}
-                className="text-xs text-white/80 hover:text-white border border-white/30 hover:border-white/60 px-3 py-1.5 rounded-full transition-all"
+                className="text-xs text-white hover:text-white/90 border border-white/50 hover:border-white/80 px-3 py-1.5 md:px-4 md:py-2 rounded-full transition-all font-medium md:font-semibold md:text-sm"
               >
                 Clear all
               </button>
@@ -1089,7 +1089,7 @@ function ShopContent() {
 
               <button
                 onClick={clearAll}
-                className="ml-auto text-xs font-semibold text-[#5A1E12] hover:underline"
+                className="ml-auto text-xs font-semibold text-[#5A1E12] sm:text-[#5A1E12] hover:underline"
               >
                 Clear all
               </button>
