@@ -198,16 +198,16 @@ export default function Page() {
       {/* ══════════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════════ */}
-      <section className="relative min-h-[80vh] h-screen flex items-center justify-center bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
+      <section className="relative h-[65vh] sm:h-[70vh] md:h-[75vh] lg:h-[75vh] xl:h-[93vh] flex items-center justify-center bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
         {/* Layered gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
         <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
-        <div className="relative mt-16 z-10 text-white text-center px-4 max-w-3xl mx-auto">
+        <div className="relative mt-8 sm:mt-12 md:mt-16 z-10 text-white text-center px-4 max-w-3xl mx-auto">
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-            className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60 mb-4"
+            className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60 mb-3 sm:mb-4"
           >
             Our Story
           </motion.p>
@@ -217,17 +217,17 @@ export default function Page() {
               initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="text-4xl md:text-7xl font-bold leading-tight"
+              className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold leading-tight"
             >
               Built with <span className="text-[#e5d3b3]">Passion.</span>
             </motion.h1>
           </div>
-          <div className="overflow-hidden mb-6">
+          <div className="overflow-hidden mb-4 sm:mb-6">
             <motion.h1
               initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.75, delay: 0.38, ease: [0.22, 1, 0.36, 1] }}
-              className="text-4xl md:text-7xl font-bold leading-tight"
+              className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold leading-tight"
             >
               Driven by people.
             </motion.h1>
@@ -237,7 +237,7 @@ export default function Page() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.58, ease: "easeOut" }}
-            className="text-base md:text-lg text-white/75 max-w-xl mx-auto leading-relaxed"
+            className="text-sm sm:text-base md:text-lg text-white/75 max-w-xl mx-auto leading-relaxed"
           >
             We started Alpa to make premium shopping accessible, honest, and
             delightful for everyone, everywhere in Australia.
@@ -247,17 +247,17 @@ export default function Page() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.74, ease: "easeOut" }}
-            className="mt-10 flex flex-wrap items-center justify-center gap-4"
+            className="mt-6 sm:mt-8 md:mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4"
           >
             <Link
               href="/shop"
-              className="px-7 py-3 bg-[#5A1E12] hover:bg-[#441208] text-white rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-xl"
+              className="px-6 sm:px-7 py-2.5 sm:py-3 bg-[#5A1E12] hover:bg-[#441208] text-white rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-xl"
             >
               Shop Now
             </Link>
             <a
               href="#our-story"
-              className="px-7 py-3 border border-white/40 hover:border-white text-white rounded-full text-sm font-semibold transition-all"
+              className="px-6 sm:px-7 py-2.5 sm:py-3 border border-white/40 hover:border-white text-white rounded-full text-sm font-semibold transition-all"
             >
               Learn More ↓
             </a>
@@ -718,22 +718,22 @@ export default function Page() {
 {/* ══════════════════════════════════════════════════
     CERTIFICATIONS & RECOGNITION
 ══════════════════════════════════════════════════ */}
-<section className="bg-[#f4e9dc] py-20 md:py-28 px-4 border-t border-[#e8d5c0]">
+<section className="bg-[#f4e9dc] py-12 sm:py-16 md:py-20 lg:py-28 px-3 sm:px-4 border-t border-[#e8d5c0]">
   <div className="max-w-5xl mx-auto">
 
-    <div className="text-center mb-14">
-      <p className="text-xs font-bold tracking-[0.28em] uppercase text-[#5A1E12] mb-3">
+    <div className="text-center mb-8 sm:mb-10 md:mb-14">
+      <p className="text-xs font-bold tracking-[0.28em] uppercase text-[#5A1E12] mb-2 sm:mb-3">
         Recognition & Trust
       </p>
-      <h2 className="text-3xl md:text-4xl font-bold text-[#1a0a06] mb-4">
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1a0a06] mb-3 sm:mb-4 px-2">
         Certifications & Recognition
       </h2>
-      <p className="text-[#7a6558] text-sm md:text-base leading-relaxed">
+      <p className="text-[#7a6558] text-xs sm:text-sm md:text-base leading-relaxed px-2">
         Our commitment to quality and authenticity is recognized by leading organizations.
       </p>
     </div>
 
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {[
         { badge: "Certified", name: "Cultural Heritage Certified", org: "Aboriginal Heritage Council",
           icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /> },
@@ -745,29 +745,29 @@ export default function Page() {
           icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /> },
       ].map((cert) => (
         <div key={cert.name}
-          className="group relative bg-white border border-[#e8d5c0] hover:border-[#c8856a] hover:shadow-[0_8px_28px_rgba(90,30,18,0.10)] hover:-translate-y-1 transition-all duration-300 rounded-[18px] p-7 text-center overflow-hidden"
+          className="group relative bg-white border border-[#e8d5c0] hover:border-[#c8856a] hover:shadow-[0_8px_28px_rgba(90,30,18,0.10)] hover:-translate-y-1 transition-all duration-300 rounded-2xl sm:rounded-[18px] p-4 sm:p-5 md:p-7 text-center overflow-hidden"
         >
           {/* Bottom accent bar on hover */}
-          <div className="absolute bottom-0 left-0 right-0 h-0.75 bg-linear-to-r from-[#5A1E12] to-[#c8856a] rounded-b-[18px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute bottom-0 left-0 right-0 h-0.75 bg-linear-to-r from-[#5A1E12] to-[#c8856a] rounded-b-2xl sm:rounded-b-[18px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          <div className="w-13 h-13 rounded-[14px] bg-[#F4E9DC] border border-[#e8d5c0] flex items-center justify-center mx-auto mb-4">
-            <svg className="w-5 h-5 text-[#5A1E12]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-13 md:h-13 rounded-xl sm:rounded-[14px] bg-[#F4E9DC] border border-[#e8d5c0] flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#5A1E12]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {cert.icon}
             </svg>
           </div>
 
-          <span className="inline-block text-[10px] font-bold tracking-[0.14em] uppercase text-[#5A1E12] bg-[#F4E9DC] border border-[#e8d5c0] rounded-full px-3 py-1 mb-3">
+          <span className="inline-block text-[9px] sm:text-[10px] font-bold tracking-[0.14em] uppercase text-[#5A1E12] bg-[#F4E9DC] border border-[#e8d5c0] rounded-full px-2 sm:px-3 py-0.5 sm:py-1 mb-2 sm:mb-3">
             {cert.badge}
           </span>
-          <p className="text-[13px] font-semibold text-[#1a0a06] leading-snug mb-1.5">{cert.name}</p>
-          <p className="text-[11.5px] text-[#a08070] leading-relaxed">{cert.org}</p>
+          <p className="text-xs sm:text-[13px] font-semibold text-[#1a0a06] leading-tight sm:leading-snug mb-1 sm:mb-1.5">{cert.name}</p>
+          <p className="text-[10px] sm:text-[11.5px] text-[#a08070] leading-relaxed">{cert.org}</p>
         </div>
       ))}
     </div>
 
-    <div className="flex items-center gap-3 max-w-xs mx-auto mt-14">
+    <div className="flex items-center gap-2 sm:gap-3 max-w-xs mx-auto mt-8 sm:mt-10 md:mt-14 px-4">
       <div className="flex-1 h-px bg-[#e8d5c0]" />
-      <span className="text-[10.5px] tracking-[0.13em] uppercase text-[#b09080] whitespace-nowrap">
+      <span className="text-[9px] sm:text-[10.5px] tracking-[0.13em] uppercase text-[#b09080] whitespace-nowrap">
         Verified & Trusted
       </span>
       <div className="flex-1 h-px bg-[#e8d5c0]" />

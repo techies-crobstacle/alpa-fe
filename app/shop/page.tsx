@@ -436,9 +436,9 @@ function ShopContent() {
                 Shop
               </h1>
                {/* TAB CAROUSEL */}
-          <div className="mt-8">
-            <div className="flex items-center justify-center overflow-x-auto scrollbar-hide pb-1">
-              <div className="flex bg-[#EAD7B7]/90 backdrop-blur-sm rounded-full p-2 border border-[#5A1E12]/10 shadow-xl min-w-fit gap-2 sm:gap-4">
+          <div className="mt-8 px-4 sm:px-0">
+            <div className="flex items-center justify-start sm:justify-center overflow-x-auto scrollbar-hide pb-2">
+              <div className="flex bg-[#EAD7B7]/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 border border-[#5A1E12]/10 shadow-xl gap-1 sm:gap-2 md:gap-4 min-w-max">
                 {[
                   { key: "all", label: "All" },
                   { key: "featured", label: "Featured" },
@@ -452,7 +452,7 @@ function ShopContent() {
                       setActiveTab(tab.key);
                       setPage(1);
                     }}
-                    className={`relative px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-300 whitespace-nowrap flex items-center justify-center gap-1.5 min-w-20 sm:min-w-25 ${
+                    className={`relative px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-300 whitespace-nowrap flex items-center justify-center gap-1.5 min-w-16 sm:min-w-20 md:min-w-25 ${
                       activeTab === tab.key
                         ? "text-white"
                         : "text-[#5A1E12] hover:bg-[#5A1E12]/10"
@@ -470,7 +470,7 @@ function ShopContent() {
                     <span className="relative z-10 hidden sm:inline font-bold tracking-wide">
                       {tab.label}
                     </span>
-                    <span className="relative z-10 sm:hidden font-bold tracking-wide">
+                    <span className="relative z-10 sm:hidden font-bold tracking-wide text-[10px] sm:text-xs">
                       {tab.key === "limited-edition"
                         ? "Limited"
                         : tab.key === "new-arrivals"

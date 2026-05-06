@@ -17,6 +17,33 @@ import { detectMultiSellerOrder, logApiResponse, validateOrderData } from "@/lib
 interface OrderItem {
   quantity: number;
   price: string;
+  selectedVariant?: {
+    size?: string;
+    color?: string;
+    [key: string]: any;
+  };
+  variant?: {
+    size?: string;
+    color?: string;
+    [key: string]: any;
+  };
+  size?: string;
+  color?: string;
+  attributes?: {
+    size?: string;
+    color?: string;
+    [key: string]: any;
+  };
+  options?: {
+    size?: string;
+    color?: string;
+    [key: string]: any;
+  };
+  productVariant?: {
+    size?: string;
+    color?: string;
+    [key: string]: any;
+  };
   product: {
     id: any;
     featuredImage: string;
@@ -146,6 +173,51 @@ function SimplifiedSellerSection({
                 <p className="font-semibold text-sm text-[#5A1E12] truncate">{item.product?.title}</p>
                 <p className="text-xs text-[#5A1E12]/50 mt-0.5">
                   Qty {item.quantity} × ${parseFloat(item.price).toFixed(2)}
+                  {(() => {
+                    // Check multiple possible variant data structures
+                    const getVariantAttribute = (attributeName: string) => {
+                      // Check variant.attributes array (new structure)
+                      if (item.variant?.attributes && Array.isArray(item.variant.attributes)) {
+                        const attr = item.variant.attributes.find((attr: any) => 
+                          attr.name?.toLowerCase() === attributeName.toLowerCase()
+                        );
+                        return attr?.value || attr?.displayValue;
+                      }
+                      return null;
+                    };
+
+                    const variantInfo = {
+                      size: getVariantAttribute('size') || 
+                            item.selectedVariant?.size || 
+                            item.variant?.size || 
+                            item.size || 
+                            item.attributes?.size || 
+                            item.options?.size,
+                      color: getVariantAttribute('color') || 
+                             item.selectedVariant?.color || 
+                             item.variant?.color || 
+                             item.color || 
+                             item.attributes?.color || 
+                             item.options?.color
+                    };
+                    
+                    if (variantInfo.size || variantInfo.color) {
+                      return (
+                        <>
+                          <span className="ml-1">•</span>
+                          {variantInfo.size && (
+                            <span className="ml-1 text-[#5A1E12]/70 font-medium">Size: {variantInfo.size}</span>
+                          )}
+                          {variantInfo.color && (
+                            <span className="ml-1 text-[#5A1E12]/70 font-medium">
+                              {variantInfo.size ? ', ' : ''}Color: {variantInfo.color}
+                            </span>
+                          )}
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
                 </p>
               </div>
               <div className="flex items-center shrink-0">
@@ -173,34 +245,84 @@ function TrackOrderContent() {
   // Users cannot edit status - removed parent status updating
   // const [updatingParentStatus, setUpdatingParentStatus] = useState(false);
 
+  // Restore data from sessionStorage on component mount
   useEffect(() => {
-    if (!orderId) setOrderId(sessionStorage.getItem("guestOrderDisplayId") || sessionStorage.getItem("guestOrderId") || "");
-    if (!email)   setEmail  (sessionStorage.getItem("guestOrderEmail") || "");
-  }, [orderId, email]);
+    const savedOrderId = sessionStorage.getItem("guestOrderDisplayId") || sessionStorage.getItem("guestOrderId") || "";
+    const savedEmail = sessionStorage.getItem("guestOrderEmail") || "";
+    const savedOrder = sessionStorage.getItem("guestOrderData");
+    
+    if (!orderId && savedOrderId) setOrderId(savedOrderId);
+    if (!email && savedEmail) setEmail(savedEmail);
+    
+    // Restore order data if available
+    if (savedOrder) {
+      try {
+        const parsedOrder = JSON.parse(savedOrder);
+        setOrder(parsedOrder);
+      } catch (error) {
+        console.error("Failed to parse saved order data:", error);
+        sessionStorage.removeItem("guestOrderData");
+      }
+    }
+  }, []); // Run only once on mount
 
   useEffect(() => {
-    if (orderId && email) handleTrack();
+    // Only call handleTrack if we have credentials but no cached order
+    if (orderId && email && !order) {
+      handleTrack();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Save order data to sessionStorage only when order is successfully fetched
+  const saveToSessionStorage = (orderData: TrackOrder, orderIdValue: string, emailValue: string) => {
+    sessionStorage.setItem("guestOrderData", JSON.stringify(orderData));
+    sessionStorage.setItem("guestOrderDisplayId", orderIdValue.toUpperCase());
+    sessionStorage.setItem("guestOrderEmail", emailValue);
+  };
+
   const handleTrack = async () => {
-    if (!orderId.trim() || !email.trim()) {
+    const trimmedOrderId = orderId.trim().toUpperCase();
+    const trimmedEmail = email.trim();
+    
+    if (!trimmedOrderId || !trimmedEmail) {
       setErrorMsg("Please enter both Order ID and Email.");
       return;
     }
+    
     setIsLoading(true);
     setErrorMsg("");
     setOrder(null);
+    // Clear cached data when starting new search
+    sessionStorage.removeItem("guestOrderData");
+    
     try {
       const res = await fetch(
-        `https://alpa-be.onrender.com/api/orders/guest/track?orderId=${encodeURIComponent(orderId.trim())}&customerEmail=${encodeURIComponent(email.trim())}`
+        `https://alpa-be.onrender.com/api/orders/guest/track?orderId=${encodeURIComponent(trimmedOrderId)}&customerEmail=${encodeURIComponent(trimmedEmail)}`
       );
       const data = await res.json();
       
       // Log the initial API response for debugging
       console.log('🔥 FRESH API CALL - CHECKING FOR UPDATED BACKEND STRUCTURE');
       console.log('Full API Response:', data);
-      logApiResponse('/api/orders/guest/track', data, orderId);
+      
+      // Debug variant data structure
+      if (data.order && data.order.items) {
+        console.log('🔍 VARIANT DATA DEBUG - Checking item structures:');
+        data.order.items.forEach((item: any, index: number) => {
+          console.log(`Item ${index + 1}: ${item.product?.title}`);
+          console.log('  Full item structure:', JSON.stringify(item, null, 2));
+          console.log('  selectedVariant:', item.selectedVariant);
+          console.log('  variant:', item.variant);
+          console.log('  size:', item.size);
+          console.log('  color:', item.color);
+          console.log('  attributes:', item.attributes);
+          console.log('  options:', item.options);
+          console.log('  productVariant:', item.productVariant);
+        });
+      }
+      
+      logApiResponse('/api/orders/guest/track', data, trimmedOrderId);
       
       if (!res.ok || !data.success) { 
         setErrorMsg(data.message || "Order not found."); 
@@ -454,6 +576,8 @@ function TrackOrderContent() {
       });
       
       setOrder(finalOrder);
+      // Save to sessionStorage only on successful order fetch
+      saveToSessionStorage(finalOrder, trimmedOrderId, trimmedEmail);
     } catch (error) {
       console.error("❌ Error in handleTrack:", error);
       setErrorMsg("Something went wrong. Please try again.");
@@ -571,7 +695,7 @@ function TrackOrderContent() {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            orderId: orderId.trim(),
+            orderId: orderId.trim().toUpperCase(),
             customerEmail: email.trim(),
             newStatus
           })
@@ -600,7 +724,7 @@ function TrackOrderContent() {
   const handleDownloadInvoice = async () => {
     setIsDownloading(true);
     try {
-      const url = `https://alpa-be.onrender.com/api/orders/guest/invoice?orderId=${encodeURIComponent(orderId)}&customerEmail=${encodeURIComponent(email)}`;
+      const url = `https://alpa-be.onrender.com/api/orders/guest/invoice?orderId=${encodeURIComponent(orderId.toUpperCase())}&customerEmail=${encodeURIComponent(email)}`;
       const res = await fetch(url);
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: "Download failed" }));
@@ -610,7 +734,7 @@ function TrackOrderContent() {
       const blob = await res.blob();
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = `invoice-${orderId}.pdf`;
+      link.download = `invoice-${orderId.toUpperCase()}.pdf`;
       link.click();
       URL.revokeObjectURL(link.href);
     } catch {
@@ -653,7 +777,7 @@ function TrackOrderContent() {
               <input
                 type="text"
                 value={orderId}
-                onChange={(e) => setOrderId(e.target.value)}
+                onChange={(e) => setOrderId(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === "Enter" && handleTrack()}
                 placeholder="Enter your order ID"
                 className="w-full bg-white/10 border border-white/15 text-white placeholder:text-white/30 rounded-xl px-4 py-3 md:py-3.5 text-sm focus:outline-none focus:border-[#ead7b7]/50 focus:ring-1 focus:ring-[#ead7b7]/30 transition-all"
@@ -877,6 +1001,53 @@ function TrackOrderContent() {
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-0.5">
                               <p className="text-xs text-[#5A1E12]/50">
                                 Qty {item.quantity} × ${parseFloat(item.price).toFixed(2)}
+                                {(() => {
+                                  // Check multiple possible variant data structures
+                                  const getVariantAttribute = (attributeName: string) => {
+                                    // Check variant.attributes array (new structure)
+                                    if (item.variant?.attributes && Array.isArray(item.variant.attributes)) {
+                                      const attr = item.variant.attributes.find((attr: any) => 
+                                        attr.name?.toLowerCase() === attributeName.toLowerCase()
+                                      );
+                                      return attr?.value || attr?.displayValue;
+                                    }
+                                    return null;
+                                  };
+
+                                  const variantInfo = {
+                                    size: getVariantAttribute('size') || 
+                                          item.selectedVariant?.size || 
+                                          item.variant?.size || 
+                                          item.size || 
+                                          item.attributes?.size || 
+                                          item.options?.size,
+                                    color: getVariantAttribute('color') || 
+                                           item.selectedVariant?.color || 
+                                           item.variant?.color || 
+                                           item.color || 
+                                           item.attributes?.color || 
+                                           item.options?.color
+                                  };
+                                  
+                                  console.log(`Variant info for ${item.product?.title}:`, variantInfo);
+                                  
+                                  if (variantInfo.size || variantInfo.color) {
+                                    return (
+                                      <>
+                                        <span className="ml-1">•</span>
+                                        {variantInfo.size && (
+                                          <span className="ml-1 text-[#5A1E12]/70 font-medium">Size: {variantInfo.size}</span>
+                                        )}
+                                        {variantInfo.color && (
+                                          <span className="ml-1 text-[#5A1E12]/70 font-medium">
+                                            {variantInfo.size ? ', ' : ''}Color: {variantInfo.color}
+                                          </span>
+                                        )}
+                                      </>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </p>
                               {/* Show seller status badge for each product */}
                               {(() => {
@@ -1019,6 +1190,51 @@ function TrackOrderContent() {
                                 <p className="font-semibold text-sm text-[#5A1E12] truncate">{item.product?.title}</p>
                                 <p className="text-xs text-[#5A1E12]/50">
                                   Qty {item.quantity} × ${parseFloat(item.price).toFixed(2)}
+                                  {(() => {
+                                    // Check multiple possible variant data structures
+                                    const getVariantAttribute = (attributeName: string) => {
+                                      // Check variant.attributes array (new structure)
+                                      if (item.variant?.attributes && Array.isArray(item.variant.attributes)) {
+                                        const attr = item.variant.attributes.find((attr: any) => 
+                                          attr.name?.toLowerCase() === attributeName.toLowerCase()
+                                        );
+                                        return attr?.value || attr?.displayValue;
+                                      }
+                                      return null;
+                                    };
+
+                                    const variantInfo = {
+                                      size: getVariantAttribute('size') || 
+                                            item.selectedVariant?.size || 
+                                            item.variant?.size || 
+                                            item.size || 
+                                            item.attributes?.size || 
+                                            item.options?.size,
+                                      color: getVariantAttribute('color') || 
+                                             item.selectedVariant?.color || 
+                                             item.variant?.color || 
+                                             item.color || 
+                                             item.attributes?.color || 
+                                             item.options?.color
+                                    };
+                                    
+                                    if (variantInfo.size || variantInfo.color) {
+                                      return (
+                                        <>
+                                          <span className="ml-1">•</span>
+                                          {variantInfo.size && (
+                                            <span className="ml-1 text-[#5A1E12]/70 font-medium">Size: {variantInfo.size}</span>
+                                          )}
+                                          {variantInfo.color && (
+                                            <span className="ml-1 text-[#5A1E12]/70 font-medium">
+                                              {variantInfo.size ? ', ' : ''}Color: {variantInfo.color}
+                                            </span>
+                                          )}
+                                        </>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                 </p>
                               </div>
                               <div className="text-sm font-bold text-[#5A1E12] shrink-0">

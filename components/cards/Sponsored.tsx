@@ -132,7 +132,7 @@ const Sponsored = () => {
             <div
               ref={scroll}
               onScroll={handleScroll}
-              className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth"
+              className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth px-4 sm:px-4 lg:px-0"
               style={{ 
                 scrollbarWidth: "none", 
                 msOverflowStyle: "none",
@@ -143,9 +143,9 @@ const Sponsored = () => {
             >
               {loading ? (
                 // Loading state
-                <div className="w-full shrink-0 snap-center">
+                <div className="w-full shrink-0 snap-center mr-4 sm:mr-4 lg:mr-0">
                   <div 
-                    className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] animate-pulse h-135 md:h-80"
+                    className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] animate-pulse h-110 md:h-80"
                     style={{
                       transform: "translate3d(0, 0, 0)",
                       backfaceVisibility: "hidden",
@@ -153,8 +153,8 @@ const Sponsored = () => {
                       contain: "layout style paint"
                     }}
                   >
-                    <div className="w-full md:w-1/2 h-65 md:h-full bg-[#5A1E12]/30"></div>
-                    <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center h-70 md:h-full">
+                    <div className="w-full md:w-1/2 h-52 md:h-full bg-[#5A1E12]/30"></div>
+                    <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center h-52 md:h-full">
                       <div className="h-4 bg-[#5A1E12]/30 rounded mb-4"></div>
                       <div className="h-8 bg-[#5A1E12]/30 rounded mb-3"></div>
                       <div className="h-16 bg-[#5A1E12]/30 rounded mb-8"></div>
@@ -164,9 +164,9 @@ const Sponsored = () => {
                 </div>
               ) : error ? (
                 // Error state
-                <div className="w-full shrink-0 snap-center">
+                <div className="w-full shrink-0 snap-center mr-4 sm:mr-4 lg:mr-0">
                   <div 
-                    className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-135 md:h-80"
+                    className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-110 md:h-80"
                     style={{
                       transform: "translate3d(0, 0, 0)",
                       backfaceVisibility: "hidden",
@@ -183,9 +183,9 @@ const Sponsored = () => {
               ) : sponsoredSections.length > 0 ? (
                 // Dynamic slides from API
                 sponsoredSections.map((section, index) => (
-                  <div key={section.id} className="w-full shrink-0 snap-center">
+                  <div key={section.id} className="w-full shrink-0 snap-center mr-4 sm:mr-4 lg:mr-0">
                     <div 
-                      className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-135 md:h-80"
+                      className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-110 md:h-80"
                       style={{
                         transform: "translate3d(0, 0, 0)",
                         backfaceVisibility: "hidden",
@@ -193,7 +193,7 @@ const Sponsored = () => {
                         contain: "layout style paint"
                       }}
                     >
-                      <div className="relative w-full md:w-1/2 shrink-0 h-65 md:h-full flex items-stretch">
+                      <div className="relative w-full md:w-1/2 shrink-0 h-52 md:h-full flex items-stretch">
                         {section.mediaType === 'VIDEO' ? (
                           <video
                             src={section.mediaUrl}
@@ -211,7 +211,7 @@ const Sponsored = () => {
                         )}
                         <div className="absolute inset-0 bg-black/5"></div>
                       </div>
-                      <div className="relative w-full md:w-1/2 p-5 sm:p-7 md:p-10 flex flex-col justify-between md:justify-center text-white h-70 md:h-full">
+                      <div className="relative w-full md:w-1/2 p-5 sm:p-7 md:p-10 flex flex-col justify-between md:justify-center text-white h-52 md:h-full">
                         <div className="absolute top-0 bottom-0 -left-10 lg:-left-16 w-12 lg:w-20 hidden md:block text-[#803512]">
                           <svg
                             viewBox="0 0 100 100"
@@ -252,8 +252,8 @@ const Sponsored = () => {
                 ))
               ) : (
                 // Fallback when no data
-                <div className="w-full shrink-0 snap-center">
-                  <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-135 md:h-80">
+                <div className="w-full shrink-0 snap-center mr-4 sm:mr-4 lg:mr-0">
+                  <div className="flex flex-col md:flex-row w-full rounded-3xl overflow-hidden bg-[#803512] h-110 md:h-80">
                     <div className="w-full p-8 md:p-12 flex flex-col justify-center text-white text-center h-full">
                       <h2 className="text-2xl font-bold mb-3">No sponsored content available</h2>
                     </div>

@@ -8,6 +8,19 @@ export interface Seller {
 }
 
 export interface SellerOrderItem {
+  color: any;
+  options: any;
+  attributes: any;
+  size: any;
+  variant: any;
+  selectedVariant: any;
+  selectedVariant: any;
+  selectedVariant: any;
+  selectedVariant: any;
+  selectedVariant: any;
+  selectedVariant: any;
+  selectedVariant: any;
+  selectedVariant: any;
   id: string;
   quantity: number;
   price: string;

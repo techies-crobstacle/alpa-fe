@@ -24,7 +24,7 @@ export default function ScrollToTop() {
     });
   };
 
-  const hiddenPaths = ["/cart", "/checkout", "/shop/cart/checkout"];
+  const hiddenPaths = ["/cart", "/checkout", "/shop/cart/checkout", "/guest/track-order"];
   if (hiddenPaths.includes(pathname)) return null;
   if (!showScrollTop) return null;
 

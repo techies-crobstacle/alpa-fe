@@ -714,7 +714,7 @@ export default function Page() {
                                       <button
                                         onClick={() => handleRemoveItem(item.productId, item.variantId)}
                                         disabled={isUpdating}
-                                        className="p-2.5 xs:p-2 text-[#D6C0A9] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 touch-target-44"
+                                        className="p-2.5 xs:p-2 text-gray-500 md:text-[#D6C0A9] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 touch-target-44"
                                       >
                                         <Trash2 size={16} />
                                       </button>
@@ -823,7 +823,7 @@ export default function Page() {
                                     <button
                                       onClick={() => handleRemoveItem(item.productId, item.variantId)}
                                       disabled={isUpdating}
-                                      className="p-1.5 text-[#D6C0A9] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                                      className="p-1.5 text-gray-500 md:text-[#D6C0A9] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                                     >
                                       <Trash2 size={15} />
                                     </button>
