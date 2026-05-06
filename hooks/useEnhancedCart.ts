@@ -439,7 +439,7 @@ export function useEnhancedCart() {
         const shippingCost = !isNaN(Number(calc.totalShippingCost)) ? Number(calc.totalShippingCost) : (currentShipping ? parseFloat(currentShipping.cost || '0') : 0);
         const gstPercentage = cartData.gst?.percentage ? parseFloat(cartData.gst.percentage) : 10;
         const grandTotal = subtotal + shippingCost;
-        const gstAmount = grandTotal / 11;
+        const gstAmount = subtotal / 11;
 
         return { subtotal, shippingCost, gstAmount, grandTotal, gstPercentage };
       }
@@ -450,7 +450,7 @@ export function useEnhancedCart() {
     const shippingCost = currentShipping ? parseFloat(currentShipping.cost || '0') : 0;
     const gstPercentage = cartData.gst?.percentage ? parseFloat(cartData.gst.percentage) : 10;
     const grandTotal = subtotal + shippingCost;
-    const gstAmount = grandTotal / 11;
+    const gstAmount = subtotal / 11;
 
     return {
       subtotal,
