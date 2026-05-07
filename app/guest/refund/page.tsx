@@ -49,7 +49,21 @@ interface RefundTicket {
 interface EligibleRefundItem {
   orderItemId?: string;
   productId: string;
+  variantId?: string;
   title: string;
+  displayTitle?: string;
+  color?: string;
+  size?: string;
+  variant?: {
+    id?: string;
+    sku?: string;
+    attributes?: Array<{
+      name?: string;
+      value?: string;
+      displayValue?: string;
+    }>;
+    [key: string]: any;
+  };
   image: string;
   quantity: number;
   price: string;
@@ -120,6 +134,19 @@ function statusBadge(status: string): { bg: string; text: string; label: string 
 
 function requestTypeLabel(type: string): string {
   return type === "REFUND" ? "Full Refund" : "Partial Refund";
+}
+
+function getVariantValue(item: EligibleRefundItem, attributeName: "size" | "color"): string | undefined {
+  const directValue = item[attributeName];
+  if (directValue) return directValue;
+
+  const attrs = item.variant?.attributes;
+  if (!Array.isArray(attrs)) return undefined;
+
+  const match = attrs.find(
+    (attr) => attr?.name?.toLowerCase() === attributeName.toLowerCase()
+  );
+  return match?.value || match?.displayValue;
 }
 
 // ─── Status Stepper ──────────────────────────────────────────────────────────
@@ -313,7 +340,7 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
   const [isLooking, setIsLooking] = useState(false);
   const [fetchedOrder, setFetchedOrder] = useState<FetchedOrder | null>(null);
 
-  // Item selection — keyed by productId
+  // Item selection — keyed by orderItemId (fallback: productId)
   const [selectedItems, setSelectedItems] = useState<Record<string, SelectedItem>>({});
 
   // Per-product file input refs
@@ -337,14 +364,8 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
       const data = await res.json();
       if (!res.ok) { toast.error(data.message || "Order not found. Please check your details."); return; }
       setFetchedOrder(data.order);
-      // Pre-select all eligible items at their full quantity
-      const init: Record<string, SelectedItem> = {};
-      (data.order.eligibleRefundOrders ?? []).forEach((subOrder: EligibleRefundOrder) => {
-        subOrder.items.forEach((item: EligibleRefundItem) => {
-          init[item.productId] = { orderItemId: item.orderItemId ?? item.productId, productId: item.productId, title: item.title, quantity: item.quantity, maxQuantity: item.quantity, reason: "", images: [] };
-        });
-      });
-      setSelectedItems(init);
+      // Start with no selected items so users only provide reasons for intended returns
+      setSelectedItems({});
       setStep("form");
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -406,11 +427,32 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
   // ── Submit ────────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const selected = Object.values(selectedItems);
+    // Keep only items that are still visible/eligible for the currently fetched order.
+    const eligibleKeys = new Set(
+      (fetchedOrder?.eligibleRefundOrders ?? [])
+        .flatMap((order) => order.items)
+        .map((item) => item.orderItemId ?? item.productId)
+    );
+
+    const selectedEntries = Object.entries(selectedItems).filter(([key]) => eligibleKeys.has(key));
+    if (selectedEntries.length !== Object.keys(selectedItems).length) {
+      setSelectedItems(Object.fromEntries(selectedEntries));
+    }
+
+    const selected = selectedEntries.map(([, value]) => value);
     if (selected.length === 0) { toast.error("Please select at least one item to return."); return; }
 
-    const missingReason = selected.find((s) => !s.reason.trim());
-    if (missingReason) { toast.error(`Please provide a reason for "${missingReason.title}".`); return; }
+    const missingReasonItems = selected.filter((s) => !s.reason.trim());
+    if (missingReasonItems.length > 0) {
+      const firstMissing = missingReasonItems[0].title;
+      const moreCount = missingReasonItems.length - 1;
+      toast.error(
+        moreCount > 0
+          ? `Please provide reasons for all selected items. Missing: "${firstMissing}" and ${moreCount} more.`
+          : `Please provide a reason for "${firstMissing}".`
+      );
+      return;
+    }
 
     // Auto-compute: full refund if every eligible item selected at max qty, else partial
     const totalEligible = (fetchedOrder?.eligibleRefundOrders ?? []).flatMap((o) => o.items).length;
@@ -588,7 +630,9 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
                     </p>
                     <div className="space-y-2">
                       {subOrder.items.map((item) => {
-                        const pid = item.productId;
+                        const pid = item.orderItemId ?? item.productId;
+                        const size = getVariantValue(item, "size");
+                        const color = getVariantValue(item, "color");
                         const isChecked = !!selectedItems[pid];
                         return (
                           <div
@@ -639,7 +683,14 @@ function SubmitTab({ onSuccess }: SubmitTabProps) {
 
                               {/* Name + price */}
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-800 truncate">{item.title}</p>
+                                <p className="text-sm font-medium text-gray-800 truncate">{item.displayTitle ?? item.title}</p>
+                                {!item.displayTitle && (size || color) && (
+                                  <p className="text-[11px] text-gray-500 truncate">
+                                    {size ? `Size: ${size}` : ""}
+                                    {size && color ? " | " : ""}
+                                    {color ? `Color: ${color}` : ""}
+                                  </p>
+                                )}
                                 <p className="text-xs text-gray-400">{item.quantity}× @ ₹{item.price}</p>
                               </div>
 

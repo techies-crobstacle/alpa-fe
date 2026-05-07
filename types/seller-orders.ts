@@ -14,13 +14,6 @@ export interface SellerOrderItem {
   size: any;
   variant: any;
   selectedVariant: any;
-  selectedVariant: any;
-  selectedVariant: any;
-  selectedVariant: any;
-  selectedVariant: any;
-  selectedVariant: any;
-  selectedVariant: any;
-  selectedVariant: any;
   id: string;
   quantity: number;
   price: string;
