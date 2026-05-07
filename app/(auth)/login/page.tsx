@@ -15,21 +15,34 @@ export default function LoginPage() {
   const url = "https://alpa-be.onrender.com";
   const router = useRouter();
 
+  const [authStep, setAuthStep] = useState<"login" | "forgot" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   const { setUserDirect } = useAuth();
   const { notifyLogin } = useCart();
   const { fetchCartData } = useSharedEnhancedCart();
 
+  const clearMessages = () => {
+    setError("");
+    setSuccess("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    clearMessages();
     setShowModal(true);
 
     try {
@@ -80,6 +93,103 @@ export default function LoginPage() {
     }
   };
 
+  const requestForgotPassword = async () => {
+    if (!forgotEmail.trim()) {
+      setError("Email is required");
+      return;
+    }
+
+    setLoading(true);
+    clearMessages();
+
+    try {
+      const res = await fetch(`${url}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Failed to send OTP");
+        return;
+      }
+
+      setSuccess("OTP sent to your email. Enter OTP and your new password.");
+      setResetOtp("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setAuthStep("reset");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await requestForgotPassword();
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!resetOtp.trim()) {
+      setError("OTP is required");
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      setError("New password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    clearMessages();
+
+    try {
+      const res = await fetch(`${url}/api/auth/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: forgotEmail.trim().toLowerCase(),
+          otp: resetOtp.trim(),
+          newPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Failed to reset password");
+        return;
+      }
+
+      setSuccess("Password reset successful. Please login with your new password.");
+      setAuthStep("login");
+      setEmail(forgotEmail.trim().toLowerCase());
+      setPassword("");
+      setResetOtp("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="relative min-h-screen w-full overflow-hidden text-white min-[1360px]:bg-[#440C03]">
       <AnimatePresence>
@@ -124,7 +234,7 @@ export default function LoginPage() {
       />
 
       <div className="absolute inset-0 bg-[#440C03] lg:hidden" />
-      <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(90deg,_#440C03_0%,_#440C03_44%,_rgba(68,12,3,0.55)_68%,_rgba(68,12,3,0)_100%)]" />
+      <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(90deg,#440C03_0%,#440C03_44%,rgba(68,12,3,0.55)_68%,rgba(68,12,3,0)_100%)]" />
 
       <section className="relative z-10 flex min-h-screen w-full items-center px-6 py-20 sm:px-10 md:px-16 lg:px-20">
         <Link href="/" className="absolute top-6 left-6 sm:top-8 sm:left-8">
@@ -133,61 +243,213 @@ export default function LoginPage() {
             alt="Logo"
             width={90}
             height={90}
-            className="w-14 h-14 md:w-[90px] md:h-[90px]"
+            className="w-14 h-14 md:w-22.5 md:h-22.5"
           />
         </Link>
 
         <div className="w-full max-w-md">
           <p className="uppercase text-xs tracking-widest mb-4 opacity-80">Start for free</p>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Log into your account</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+            {authStep === "login" && "Log into your account"}
+            {authStep === "forgot" && "Forgot Password"}
+            {authStep === "reset" && "Reset Password"}
+          </h1>
 
-          <p className="text-sm mb-10 opacity-80">
-            New here?{" "}
-            <Link href="/signup" className="font-semibold underline hover:opacity-100 transition">
-              Sign up
-            </Link>
-          </p>
+          {authStep === "login" && (
+            <p className="text-sm mb-10 opacity-80">
+              New here?{" "}
+              <Link href="/signup" className="font-semibold underline hover:opacity-100 transition">
+                Sign up
+              </Link>
+            </p>
+          )}
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+          {authStep === "forgot" && (
+            <p className="text-sm mb-10 opacity-80">Enter your email to receive an OTP for password reset.</p>
+          )}
 
-            <div className="relative">
+          {authStep === "reset" && (
+            <p className="text-sm mb-10 opacity-80">Enter the OTP sent to {forgotEmail} and your new password.</p>
+          )}
+
+          {authStep === "login" && (
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                placeholder="Password"
+                type="email"
+                placeholder="Email"
+                value={email}
                 className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
+
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  placeholder="Password"
+                  className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearMessages();
+                    setForgotEmail(email);
+                    setAuthStep("forgot");
+                  }}
+                  className="text-sm text-white/80 hover:text-white underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              {error && <p className="text-red-200 text-sm">{error}</p>}
+              {success && <p className="text-green-200 text-sm">{success}</p>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-6 bg-white text-[#7A2F12] font-semibold rounded-full py-3 flex items-center justify-center gap-2"
+              >
+                {loading ? "Logging in..." : "Login \u2192"}
+              </button>
+            </form>
+          )}
+
+          {authStep === "forgot" && (
+            <form className="space-y-4" onSubmit={handleForgotPassword}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={forgotEmail}
+                className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
+                onChange={(e) => setForgotEmail(e.target.value)}
+                required
+              />
+
+              {error && <p className="text-red-200 text-sm">{error}</p>}
+              {success && <p className="text-green-200 text-sm">{success}</p>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-6 bg-white text-[#7A2F12] font-semibold rounded-full py-3 flex items-center justify-center gap-2"
+              >
+                {loading ? "Sending OTP..." : "Send OTP \u2192"}
+              </button>
+
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
-                tabIndex={-1}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => {
+                  clearMessages();
+                  setAuthStep("login");
+                }}
+                className="w-full text-sm text-white/80 hover:text-white underline"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                Back to login
               </button>
-            </div>
+            </form>
+          )}
 
-            {error && <p className="text-red-200 text-sm">{error}</p>}
+          {authStep === "reset" && (
+            <form className="space-y-4" onSubmit={handleResetPassword}>
+              <input
+                type="text"
+                placeholder="OTP"
+                value={resetOtp}
+                className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
+                onChange={(e) => setResetOtp(e.target.value)}
+                required
+              />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-6 bg-white text-[#7A2F12] font-semibold rounded-full py-3 flex items-center justify-center gap-2"
-            >
-              {loading ? "Logging in..." : "Login \u2192"}
-            </button>
-          </form>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  placeholder="New password"
+                  className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                  tabIndex={-1}
+                  aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showConfirmNewPassword ? "text" : "password"}
+                  value={confirmNewPassword}
+                  placeholder="Confirm new password"
+                  className="w-full rounded-3xl px-5 py-3 bg-[#873007] placeholder-white/70 outline-none"
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                  tabIndex={-1}
+                  aria-label={showConfirmNewPassword ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirmNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {error && <p className="text-red-200 text-sm">{error}</p>}
+              {success && <p className="text-green-200 text-sm">{success}</p>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-6 bg-white text-[#7A2F12] font-semibold rounded-full py-3 flex items-center justify-center gap-2"
+              >
+                {loading ? "Resetting..." : "Reset Password \u2192"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  void requestForgotPassword();
+                }}
+                disabled={loading}
+                className="w-full text-sm text-white/80 hover:text-white underline disabled:opacity-60"
+              >
+                Resend OTP
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  clearMessages();
+                  setAuthStep("login");
+                }}
+                className="w-full text-sm text-white/80 hover:text-white underline"
+              >
+                Back to login
+              </button>
+            </form>
+          )}
         </div>
       </section>
     </main>

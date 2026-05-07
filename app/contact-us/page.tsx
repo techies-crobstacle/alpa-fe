@@ -132,6 +132,7 @@ import { getCountries, getCountryCallingCode } from "react-phone-number-input/in
 import { isValidPhoneNumber } from "react-phone-number-input";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import type { CountryCode } from "libphonenumber-js";
+import en from "react-phone-number-input/locale/en.json";
 import { apiClient } from "@/lib/api";
 
 // ─── FAQ Data ────────────────────────────────────────────────────────────────
@@ -161,39 +162,17 @@ const FAQS = [
 // ─── Country phone data from react-phone-number-input ────────────────────────
 const countryCodeList = getCountries();
 
-// Country flag emojis mapping
-const countryFlags: Record<string, string> = {
-  'AU': '🇦🇺', 'US': '🇺🇸', 'GB': '🇬🇧', 'IN': '🇮🇳', 'CA': '🇨🇦', 'NZ': '🇳🇿', 
-  'SG': '🇸🇬', 'AE': '🇦🇪', 'SA': '🇸🇦', 'DE': '🇩🇪', 'FR': '🇫🇷', 'JP': '🇯🇵',
-  'CN': '🇨🇳', 'BR': '🇧🇷', 'PK': '🇵🇰', 'MY': '🇲🇾', 'PH': '🇵🇭', 'ID': '🇮🇩',
-  'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
-  'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'IE': '🇮🇪', 'PT': '🇵🇹',
-  'GR': '🇬🇷', 'PL': '🇵🇱', 'CZ': '🇨🇿', 'HU': '🇭🇺', 'TR': '🇹🇷', 'RU': '🇷🇺',
-  'KR': '🇰🇷', 'TH': '🇹🇭', 'VN': '🇻🇳', 'ZA': '🇿🇦', 'EG': '🇪🇬', 'NG': '🇳🇬',
-  'KE': '🇰🇪', 'MX': '🇲🇽', 'AR': '🇦🇷', 'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪',
-};
+// Get flag image URL from flagcdn.com (works on all platforms including Windows)
+const getFlagUrl = (isoCode: string): string =>
+  `https://flagcdn.com/24x18/${isoCode.toLowerCase()}.png`;
 
-// Country names mapping
-const countryNames: Record<string, string> = {
-  'AU': 'Australia', 'US': 'United States', 'GB': 'United Kingdom', 'IN': 'India', 
-  'CA': 'Canada', 'NZ': 'New Zealand', 'SG': 'Singapore', 'AE': 'United Arab Emirates',
-  'SA': 'Saudi Arabia', 'DE': 'Germany', 'FR': 'France', 'JP': 'Japan', 'CN': 'China',
-  'BR': 'Brazil', 'PK': 'Pakistan', 'MY': 'Malaysia', 'PH': 'Philippines', 'ID': 'Indonesia',
-  'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands', 'CH': 'Switzerland', 'AT': 'Austria',
-  'BE': 'Belgium', 'SE': 'Sweden', 'NO': 'Norway', 'DK': 'Denmark', 'FI': 'Finland',
-  'IE': 'Ireland', 'PT': 'Portugal', 'GR': 'Greece', 'PL': 'Poland', 'CZ': 'Czech Republic',
-  'HU': 'Hungary', 'TR': 'Turkey', 'RU': 'Russia', 'KR': 'South Korea', 'TH': 'Thailand',
-  'VN': 'Vietnam', 'ZA': 'South Africa', 'EG': 'Egypt', 'NG': 'Nigeria', 'KE': 'Kenya',
-  'MX': 'Mexico', 'AR': 'Argentina', 'CL': 'Chile', 'CO': 'Colombia', 'PE': 'Peru',
-};
-
-// Build COUNTRIES array from react-phone-number-input data
-const COUNTRIES = countryCodeList.map(code => ({
+// Build COUNTRIES array — all countries from react-phone-number-input with CDN flag images
+const COUNTRIES = countryCodeList.map((code) => ({
   code,
-  flag: countryFlags[code] || '🏳️',
-  name: countryNames[code] || code,
+  flagUrl: getFlagUrl(code),
+  name: (en as Record<string, string>)[code] || code,
   dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
-})).filter(country => countryFlags[country.code]); // Only include countries with flags
+})).sort((a, b) => a.name.localeCompare(b.name));
 
 type Country = typeof COUNTRIES[number];
 
@@ -265,10 +244,11 @@ export default function Page() {
     const newErrors: Record<string, string> = {};
     if (!fields.issueType)      newErrors.issueType = 'Please select an issue type.';
     if (!fields.name.trim())    newErrors.name    = 'Full name is required.';
+    if (!fields.phone.trim())   newErrors.phone   = 'Phone number is required.';
     if (!fields.email.trim())   newErrors.email   = 'Email address is required.';
     if (!fields.message.trim()) newErrors.message = 'Message is required.';
     
-    // Optional phone number - only validate if it's partially filled
+    // Validate phone number format when present
     if (fields.phone.trim()) {
       const phoneErr = validatePhone(fields.phone, phoneCountry);
       if (phoneErr) newErrors.phone = phoneErr;
@@ -399,7 +379,7 @@ export default function Page() {
                           onClick={() => { setShowPhoneDropdown(v => !v); setPhoneSearch(''); }}
                           className="flex items-center gap-1.5 px-3 py-4 text-sm font-medium border-r border-gray-200 hover:bg-gray-100 transition rounded-l-xl shrink-0"
                         >
-                          <span className="text-lg leading-none">{phoneCountry.flag}</span>
+                          <img src={phoneCountry.flagUrl} alt={phoneCountry.name} width={24} height={18} className="rounded-sm shrink-0" />
                           <span className="text-gray-700 text-xs font-semibold">{phoneCountry.dialCode}</span>
                           <span className="text-gray-400 text-xs">▾</span>
                         </button>
@@ -449,7 +429,7 @@ export default function Page() {
                                       c.code === phoneCountry.code ? 'bg-[#3b0f06]/8 font-medium text-[#3b0f06]' : 'text-gray-700'
                                     }`}
                                   >
-                                    <span className="text-base w-6 shrink-0">{c.flag}</span>
+                                    <img src={c.flagUrl} alt={c.name} width={24} height={18} className="rounded-sm shrink-0" />
                                     <span className="flex-1 truncate">{c.name}</span>
                                     <span className="text-gray-400 text-xs shrink-0">{c.dialCode}</span>
                                   </button>
@@ -530,7 +510,12 @@ export default function Page() {
                         </div>
                         <div>
                             <p className="font-semibold text-white">Phone Number</p>
-                            <p className="text-sm text-white/70 mt-1">+61 (08) 8944 6444</p>
+                            <a
+                              href="tel:+61889446444"
+                              className="text-sm text-white/70 mt-1 inline-block hover:text-white underline-offset-2 hover:underline transition-colors"
+                            >
+                              +61 (08) 8944 6444
+                            </a>
                         </div>
                     </div>
 
@@ -540,7 +525,12 @@ export default function Page() {
                         </div>
                         <div>
                             <p className="font-semibold text-white">Email Address</p>
-                            <p className="text-sm text-white/70 mt-1">reception@alpa.asn.au</p>
+                            <a
+                              href="mailto:reception@alpa.asn.au"
+                              className="text-sm text-white/70 mt-1 inline-block hover:text-white underline-offset-2 hover:underline break-all transition-colors"
+                            >
+                              reception@alpa.asn.au
+                            </a>
                         </div>
                     </div>
                 </div>
