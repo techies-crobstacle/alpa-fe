@@ -9,12 +9,71 @@ import {
   FaHeart,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
-import { X } from "lucide-react";
+import { X, Loader2, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+const API = "https://alpa-be.onrender.com/api";
+
 export default function Footer() {
   const [email, setEmail] = useState("");
+  const [subState, setSubState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [subMsg, setSubMsg] = useState("");
+
+  // Unsubscribe modal
+  const [showUnsub, setShowUnsub] = useState(false);
+  const [unsubEmail, setUnsubEmail] = useState("");
+  const [unsubState, setUnsubState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [unsubMsg, setUnsubMsg] = useState("");
+
+  const handleSubscribe = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) { setSubMsg("Please enter your email."); setSubState("error"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { setSubMsg("Please enter a valid email."); setSubState("error"); return; }
+
+    setSubState("loading");
+    setSubMsg("");
+    try {
+      const res = await fetch(`${API}/newsletter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSubMsg(data.message || "Subscription failed. Please try again."); setSubState("error"); return; }
+      setSubMsg(data.message || "You're subscribed! Welcome aboard.");
+      setSubState("success");
+      setEmail("");
+    } catch {
+      setSubMsg("Something went wrong. Please try again.");
+      setSubState("error");
+    }
+  };
+
+  const handleUnsubscribe = async () => {
+    const trimmed = unsubEmail.trim();
+    if (!trimmed) { setUnsubMsg("Please enter your email."); setUnsubState("error"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { setUnsubMsg("Please enter a valid email."); setUnsubState("error"); return; }
+
+    setUnsubState("loading");
+    setUnsubMsg("");
+    try {
+      const res = await fetch(`${API}/newsletter/unsubscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setUnsubMsg(data.message || "Failed to unsubscribe. Please try again."); setUnsubState("error"); return; }
+      setUnsubMsg(data.message || "You've been unsubscribed successfully.");
+      setUnsubState("success");
+      setUnsubEmail("");
+    } catch {
+      setUnsubMsg("Something went wrong. Please try again.");
+      setUnsubState("error");
+    }
+  };
+
   return (
     <footer className="bg-[#440C03]  bg-cover text-white px-4 sm:px-8 md:px-12 lg:px-20 pt-12 lg:pb-10 md:py-16"> 
       {/* Top Main Section */}
@@ -113,27 +172,52 @@ export default function Footer() {
               type="email"
               placeholder="Enter Email here"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-transparent outline-none text-white placeholder-white/80 flex-1 text-sm md:text-base"
+              onChange={(e) => { setEmail(e.target.value); if (subState !== "idle") { setSubState("idle"); setSubMsg(""); } }}
+              onKeyDown={(e) => e.key === "Enter" && handleSubscribe()}
+              disabled={subState === "loading"}
+              className="bg-transparent outline-none text-white placeholder-white/80 flex-1 text-sm md:text-base disabled:opacity-60"
             />
-            {email && (
+            {email && subState !== "loading" && (
               <button
                 type="button"
-                onClick={() => setEmail("")}
+                onClick={() => { setEmail(""); setSubState("idle"); setSubMsg(""); }}
                 aria-label="Clear email"
                 className="text-white/70 hover:text-white transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
-            <button 
-              type="submit" 
+            <button
+              type="button"
+              onClick={handleSubscribe}
+              disabled={subState === "loading"}
               aria-label="Subscribe to newsletter"
-              className="hover:scale-110 transition-transform"
+              className="hover:scale-110 transition-transform disabled:opacity-60 shrink-0"
             >
-              <FaEnvelope className="w-5 h-5 text-black" />
+              {subState === "loading"
+                ? <Loader2 className="w-5 h-5 text-black animate-spin" />
+                : subState === "success"
+                ? <CheckCircle2 className="w-5 h-5 text-black" />
+                : <FaEnvelope className="w-5 h-5 text-black" />}
             </button>
           </div>
+
+          {subMsg && (
+            <p className={`text-sm mt-2 px-1 ${subState === "error" ? "text-red-300" : "text-green-300"}`}>
+              {subMsg}
+            </p>
+          )}
+
+          <p className="mt-3 text-white/50 text-xs">
+            Changed your mind?{" "}
+            <button
+              type="button"
+              onClick={() => { setShowUnsub(true); setUnsubState("idle"); setUnsubMsg(""); setUnsubEmail(""); }}
+              className="underline hover:text-white/80 transition-colors"
+            >
+              Unsubscribe
+            </button>
+          </p>
           
           <p className="text-white/80 text-sm md:text-base bg-white/10 backdrop-blur-sm px-4 py-3 rounded-lg flex items-start gap-2 mt-8">
             <FaHeart className="w-4 h-4 text-red-400 shrink-0 mt-1" />
@@ -225,6 +309,66 @@ export default function Footer() {
           © 2026 Made in Arnhem Land. All rights reserved. | Respecting 65,000+ years of continuous culture
         </p>
       </div>
+
+      {/* ── Unsubscribe Modal ─────────────────────────────────────────────── */}
+      {showUnsub && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-gray-800">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-[#440C03]">Unsubscribe from Newsletter</h3>
+              <button
+                type="button"
+                onClick={() => setShowUnsub(false)}
+                className="text-gray-400 hover:text-gray-700 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {unsubState === "success" ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <CheckCircle2 className="w-10 h-10 text-green-500" />
+                <p className="text-center text-sm text-gray-600">{unsubMsg}</p>
+                <button
+                  type="button"
+                  onClick={() => setShowUnsub(false)}
+                  className="mt-2 px-6 py-2 bg-[#440C03] text-white rounded-full text-sm font-semibold hover:bg-[#5a1e12] transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-4">Enter the email address you subscribed with and we'll remove you from our list.</p>
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={unsubEmail}
+                  onChange={(e) => { setUnsubEmail(e.target.value); if (unsubState !== "idle") { setUnsubState("idle"); setUnsubMsg(""); } }}
+                  onKeyDown={(e) => e.key === "Enter" && handleUnsubscribe()}
+                  disabled={unsubState === "loading"}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#440C03] focus:ring-2 focus:ring-[#440C03]/10 transition-all disabled:opacity-60"
+                />
+                {unsubMsg && (
+                  <p className={`text-xs mt-2 ${unsubState === "error" ? "text-red-500" : "text-green-600"}`}>
+                    {unsubMsg}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleUnsubscribe}
+                  disabled={unsubState === "loading"}
+                  className="mt-4 w-full py-3 bg-[#440C03] text-white rounded-xl font-semibold text-sm hover:bg-[#5a1e12] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {unsubState === "loading" && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {unsubState === "loading" ? "Unsubscribing..." : "Confirm Unsubscribe"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </footer>
   );
 }
