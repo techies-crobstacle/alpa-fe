@@ -174,6 +174,9 @@ const COUNTRIES = countryCodeList.map((code) => ({
   dialCode: `+${getCountryCallingCode(code as CountryCode)}`,
 })).sort((a, b) => a.name.localeCompare(b.name));
 
+const DEFAULT_PHONE_COUNTRY =
+  COUNTRIES.find((country) => country.code === "AU") ?? COUNTRIES[0];
+
 type Country = typeof COUNTRIES[number];
 
 function validatePhone(digits: string, country: Country): string | null {
@@ -204,6 +207,8 @@ const ISSUE_TYPES = [
   "General Enquiry"
 ];
 
+const CONTACT_MAP_URL = "https://www.google.com/maps/search/?api=1&query=70+O'Sullivan+Circuit+East+Arm+NT+0822";
+
 export default function Page() {
   const [fields, setFields] = useState({ issueType: "", name: "", phone: "", email: "", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -214,7 +219,7 @@ export default function Page() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Phone country picker
-  const [phoneCountry, setPhoneCountry] = useState<Country>(COUNTRIES[3]);
+  const [phoneCountry, setPhoneCountry] = useState<Country>(DEFAULT_PHONE_COUNTRY);
   const [phoneSearch, setPhoneSearch] = useState('');
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
@@ -488,7 +493,7 @@ export default function Page() {
             
             {/* Contact Details Card */}
             <div className="bg-[#3b0f06] text-[#ebe2d5] rounded-3xl p-8 shadow-xl">
-                <h3 className="text-2xl font-bold text-white mb-6">Contact Info</h3>
+                <h3 className="text-2xl font-bold text-white mb-6">Contact Information</h3>
                 
                 <div className="space-y-6">
                     <div className="flex items-start gap-4">
@@ -496,11 +501,17 @@ export default function Page() {
                             <MapPin className="w-6 h-6 text-[#d3b994]" />
                         </div>
                         <div>
-                            <p className="font-semibold text-white">Our Location</p>
-                            <p className="text-sm text-white/70 leading-relaxed mt-1">
-                                70 O’Sullivan Circuit East Arm<br />
-                                 NT 0822
-                            </p>
+                            <p className="font-semibold text-white">Address</p>
+                            <a
+                              href={CONTACT_MAP_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-white/70 leading-relaxed mt-1 inline-block hover:text-white underline-offset-2 hover:underline transition-colors"
+                              aria-label="Open address in Google Maps"
+                            >
+                              70 O'Sullivan Circuit East Arm<br />
+                              NT 0822
+                            </a>
                         </div>
                     </div>
 

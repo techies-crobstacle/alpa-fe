@@ -2730,7 +2730,7 @@ export default function Header() {
           <>
             <motion.div
               key="search-backdrop"
-              className="fixed inset-0 z-200 bg-black/40 backdrop-blur-[2px]"
+              className="fixed inset-0 z-200 bg-black/35 backdrop-blur-[1px]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
