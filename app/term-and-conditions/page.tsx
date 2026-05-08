@@ -70,7 +70,7 @@ export default function Page() {
           </h1>
 
           <p className="leading-relaxed mb-12 text-gray-700">
-            Version: Draft 1.1 &nbsp;|&nbsp; Date: 11/13/2026 &nbsp;|&nbsp; Prepared for: Made in Arnhem Land Marketplace and Certification
+            Version: Draft 1.1 &nbsp;|&nbsp; Date: 13/11/2026 &nbsp;|&nbsp; Prepared for: Made in Arnhem Land Marketplace and Certification
           </p>
 
           {/* INTRODUCTION */}
