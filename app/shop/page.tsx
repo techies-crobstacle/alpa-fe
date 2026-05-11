@@ -542,7 +542,7 @@ function ShopContent() {
           `}
         >
           {/* ── Header band ── */}
-          <div className="shrink-0 bg-[#5A1E12] px-5 pt-10 pb-5 flex items-start justify-between">
+          <div className="shrink-0 bg-[#5A1E12] px-5 pt-5 md:pt-6 pb-5 flex items-start justify-between">
             <div>
               <h2 className="text-white font-bold text-lg leading-tight">Filters</h2>
               {hasActiveFilters ? (

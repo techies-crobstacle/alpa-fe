@@ -447,11 +447,11 @@ const Page = () => {
             {/* Left Arrow */}
             <button
               onClick={() => scrollProductByOne(-1)}
-              className="absolute -left-6 top-1/2 -translate-y-1/2 z-30 bg-[#5A1E12] hover:bg-[#7a2a1a] text-white p-2 rounded-full hidden md:flex items-center justify-center transition-all shadow-lg cursor-pointer"
+              className="absolute left-1 md:-left-6 top-1/2 -translate-y-1/2 z-30 bg-[#5A1E12] hover:bg-[#7a2a1a] text-white p-1.5 md:p-2 rounded-full flex items-center justify-center transition-all shadow-lg cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-5 md:h-6 w-5 md:w-6"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -468,11 +468,11 @@ const Page = () => {
             {/* Right Arrow */}
             <button
               onClick={() => scrollProductByOne(1)}
-              className="absolute -right-6 top-1/2 -translate-y-1/2 z-30 bg-[#5A1E12] hover:bg-[#7a2a1a] text-white p-2 rounded-full hidden md:flex items-center justify-center transition-all shadow-lg cursor-pointer"
+              className="absolute right-1 md:-right-6 top-1/2 -translate-y-1/2 z-30 bg-[#5A1E12] hover:bg-[#7a2a1a] text-white p-1.5 md:p-2 rounded-full flex items-center justify-center transition-all shadow-lg cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-5 md:h-6 w-5 md:w-6"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

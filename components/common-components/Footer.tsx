@@ -252,7 +252,7 @@ export default function Footer() {
         {/* Social Icons */}
         <div className="flex items-center gap-4 md:gap-6">
           <Link 
-            href="https://www.instagram.com" 
+            href="https://www.instagram.com/arnhemland_1972/" 
             target="_blank" 
             rel="noopener noreferrer"
             aria-label="Follow us on Instagram"
@@ -262,7 +262,7 @@ export default function Footer() {
           </Link>
 
           <Link 
-            href="https://www.facebook.com" 
+            href="https://www.facebook.com/ALPA1972" 
             target="_blank" 
             rel="noopener noreferrer"
             aria-label="Follow us on Facebook"
@@ -272,7 +272,7 @@ export default function Footer() {
           </Link>
 
           <Link 
-            href="https://www.linkedin.com" 
+            href="https://www.linkedin.com/company/the-arnhem-land-progress-aboriginal-corporation" 
             target="_blank" 
             rel="noopener noreferrer"
             aria-label="Follow us on LinkedIn"
@@ -282,7 +282,7 @@ export default function Footer() {
           </Link>
 
           <Link 
-            href="https://www.youtube.com" 
+            href="https://www.youtube.com/channel/UCdTcDZefhjM_aybwAyrqKaQ" 
             target="_blank" 
             rel="noopener noreferrer"
             aria-label="Subscribe on YouTube"
@@ -306,7 +306,7 @@ export default function Footer() {
       {/* Copyright */}
       <div>
         <p className="text-white/80 text-center">
-          © 2026 Made in Arnhem Land. All rights reserved. | Respecting 65,000+ years of continuous culture
+          © 2026 Made in Arnhem Land. All rights reserved. Honouring the culture and heritage of Arnhem Land
         </p>
       </div>
 

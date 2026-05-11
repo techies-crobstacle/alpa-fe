@@ -2051,7 +2051,7 @@ export default function Header() {
             width={500}
             height={500}
             alt="Logo"
-            className="w-10"
+            className="w-11"
             priority
           />
         </Link>
@@ -2103,10 +2103,10 @@ export default function Header() {
         <header
           className="relative flex items-center overflow-visible"
           style={{
-            paddingLeft: isSticky ? '64px' : '40px',
-            paddingRight: isSticky ? '64px' : '40px',
-            paddingTop: '12px',
-            paddingBottom: '12px',
+            paddingLeft: isSticky ? '48px' : '32px',
+            paddingRight: isSticky ? '48px' : '32px',
+            paddingTop: '8px',
+            paddingBottom: '8px',
             transition: 'padding-left 350ms cubic-bezier(0.4,0,0.2,1), padding-right 350ms cubic-bezier(0.4,0,0.2,1)',
           }}
         >
@@ -2127,7 +2127,7 @@ export default function Header() {
            />
         {/* Logo */}
         <Link href="/" className="relative z-10 font-bold transition-transform hover:scale-105 active:scale-95 shrink-0">
-          <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-10 md:w-14" priority />
+          <Image src="/images/navbarLogo.png" width={500} height={500} alt="Logo" className="w-11 md:w-16" priority />
         </Link>
 
         {/* Spacer */}
