@@ -363,6 +363,17 @@ export default function BlogPage() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Newsletter subscription state
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterState, setNewsletterState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [newsletterMsg, setNewsletterMsg] = useState("");
+  
+  // Unsubscribe modal state
+  const [showUnsubModal, setShowUnsubModal] = useState(false);
+  const [unsubEmail, setUnsubEmail] = useState("");
+  const [unsubState, setUnsubState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [unsubMsg, setUnsubMsg] = useState("");
 
   // Fetch blog posts from API
   useEffect(() => {
@@ -404,6 +415,109 @@ export default function BlogPage() {
 
     fetchBlogs();
   }, []);
+
+  // Newsletter subscription handler
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const trimmed = newsletterEmail.trim();
+    if (!trimmed) {
+      setNewsletterMsg("Please enter your email.");
+      setNewsletterState("error");
+      return;
+    }
+    
+    // Email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setNewsletterMsg("Please enter a valid email.");
+      setNewsletterState("error");
+      return;
+    }
+
+    setNewsletterState("loading");
+    setNewsletterMsg("");
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/newsletter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setNewsletterMsg(data.message || "Subscription failed. Please try again.");
+        setNewsletterState("error");
+        return;
+      }
+      
+      setNewsletterMsg(data.message || "You're subscribed! Welcome aboard.");
+      setNewsletterState("success");
+      setNewsletterEmail("");
+      
+      // Auto-clear success message after 4 seconds
+      setTimeout(() => {
+        setNewsletterState("idle");
+        setNewsletterMsg("");
+      }, 4000);
+    } catch (err) {
+      setNewsletterMsg("Something went wrong. Please try again.");
+      setNewsletterState("error");
+    }
+  };
+
+  // Unsubscribe handler
+  const handleUnsubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const trimmed = unsubEmail.trim();
+    if (!trimmed) {
+      setUnsubMsg("Please enter your email.");
+      setUnsubState("error");
+      return;
+    }
+    
+    // Email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setUnsubMsg("Please enter a valid email.");
+      setUnsubState("error");
+      return;
+    }
+
+    setUnsubState("loading");
+    setUnsubMsg("");
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/newsletter/unsubscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setUnsubMsg(data.message || "Failed to unsubscribe. Please try again.");
+        setUnsubState("error");
+        return;
+      }
+      
+      setUnsubMsg(data.message || "You've been unsubscribed successfully.");
+      setUnsubState("success");
+      setUnsubEmail("");
+      
+      // Auto-clear and close modal after 3 seconds
+      setTimeout(() => {
+        setUnsubState("idle");
+        setUnsubMsg("");
+        setShowUnsubModal(false);
+      }, 3000);
+    } catch (err) {
+      setUnsubMsg("Something went wrong. Please try again.");
+      setUnsubState("error");
+    }
+  };
 
   // Generate tags from fetched posts
   const allTags = [
@@ -741,27 +855,138 @@ export default function BlogPage() {
             from Arnhem Land delivered straight to your inbox.
           </p>
           <form
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={handleNewsletterSubscribe}
             className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
           >
             <input
               type="email"
               placeholder="Your email address"
               aria-label="Email address"
-              className="flex-1 px-5 py-3.5 rounded-full bg-white/10 border border-white/20 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ead7b7]/60 transition-colors"
+              value={newsletterEmail}
+              onChange={(e) => setNewsletterEmail(e.target.value)}
+              disabled={newsletterState === "loading"}
+              className="flex-1 px-5 py-3.5 rounded-full bg-white/10 border border-white/20 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ead7b7]/60 transition-colors disabled:opacity-60"
             />
             <button
               type="submit"
-              className="shrink-0 px-7 py-3.5 bg-[#ead7b7] hover:bg-white text-[#3a1208] font-bold text-sm rounded-full transition-all duration-300 hover:-translate-y-0.5 shadow-lg"
+              disabled={newsletterState === "loading"}
+              className={`shrink-0 px-7 py-3.5 font-bold text-sm rounded-full transition-all duration-300 hover:-translate-y-0.5 shadow-lg disabled:opacity-60 ${
+                newsletterState === "loading"
+                  ? "bg-[#ead7b7]/60 text-[#3a1208] cursor-not-allowed"
+                  : "bg-[#ead7b7] hover:bg-white text-[#3a1208]"
+              }`}
             >
-              Subscribe
+              {newsletterState === "loading" ? "Subscribing..." : "Subscribe"}
             </button>
           </form>
+          
+          {/* Message feedback */}
+          {newsletterMsg && (
+            <p className={`text-sm mt-4 transition-opacity duration-300 ${
+              newsletterState === "success"
+                ? "text-[#ead7b7] font-medium"
+                : newsletterState === "error"
+                ? "text-red-300 font-medium"
+                : "text-white/50"
+            }`}>
+              {newsletterMsg}
+            </p>
+          )}
+          
           <p className="text-white/25 text-[11px] mt-4">
-            No spam, unsubscribe at any time.
+            No spam, unsubscribe at any time.{" "}
+            <button
+              onClick={() => {
+                setShowUnsubModal(true);
+                setUnsubState("idle");
+                setUnsubMsg("");
+                setUnsubEmail("");
+              }}
+              className="text-[#ead7b7] hover:text-white underline transition-colors"
+            >
+              Manage preferences
+            </button>
           </p>
         </div>
       </section>
+
+      {/* ── UNSUBSCRIBE MODAL ── */}
+      {showUnsubModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="bg-[#5A1E12] px-6 pt-6 pb-5 text-center">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <p className="text-white font-bold text-lg">Unsubscribe from Newsletter</p>
+              <p className="text-white/70 text-sm mt-1">We'll miss you, but we understand</p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <form onSubmit={handleUnsubscribe} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={unsubEmail}
+                    onChange={(e) => setUnsubEmail(e.target.value)}
+                    disabled={unsubState === "loading"}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#5A1E12]/40 focus:ring-2 focus:ring-[#5A1E12]/10 transition-colors disabled:opacity-60"
+                  />
+                </div>
+
+                {/* Message feedback */}
+                {unsubMsg && (
+                  <p className={`text-sm rounded-lg px-3 py-2 ${
+                    unsubState === "success"
+                      ? "bg-green-50 text-green-700"
+                      : unsubState === "error"
+                      ? "bg-red-50 text-red-700"
+                      : "bg-gray-50 text-gray-700"
+                  }`}>
+                    {unsubMsg}
+                  </p>
+                )}
+
+                {/* Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUnsubModal(false);
+                      setUnsubState("idle");
+                      setUnsubMsg("");
+                      setUnsubEmail("");
+                    }}
+                    disabled={unsubState === "loading"}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={unsubState === "loading"}
+                    className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors ${
+                      unsubState === "loading"
+                        ? "bg-[#5A1E12]/60 text-white cursor-not-allowed"
+                        : "bg-[#5A1E12] hover:bg-[#4a180f] text-white"
+                    }`}
+                  >
+                    {unsubState === "loading" ? "Unsubscribing..." : "Unsubscribe"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
   );
