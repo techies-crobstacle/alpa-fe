@@ -11,7 +11,7 @@ import ToastProvider from "@/providers/ToastProvider";
 import ScrollToTop from "@/components/common-components/ScrollToTop";
 
 export const metadata = {
-  title: "Arnhem  ",
+  title: "Made in Arnhem Land",
   // You can add more meta fields here if needed
 };
 export default function RootLayout({

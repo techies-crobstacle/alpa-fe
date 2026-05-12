@@ -1541,6 +1541,34 @@ export default function Header() {
     return { products: [], categories: [], artists: [] };
   }, [searchTerm, products]);
 
+  const defaultSearchSuggestions = useMemo(() => {
+    const categoryCount = new Map<string, number>();
+    const artistCount = new Map<string, number>();
+
+    products.forEach((product) => {
+      const category = product.category?.trim();
+      if (category) {
+        categoryCount.set(category, (categoryCount.get(category) || 0) + 1);
+      }
+
+      const artist = product.artistName?.trim();
+      if (artist) {
+        artistCount.set(artist, (artistCount.get(artist) || 0) + 1);
+      }
+    });
+
+    const toTopList = (countMap: Map<string, number>) =>
+      Array.from(countMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([name]) => name);
+
+    return {
+      categories: toTopList(categoryCount),
+      artists: toTopList(artistCount),
+    };
+  }, [products]);
+
   const closeSearch = useCallback(() => {
     setIsSearchModalOpen(false);
     setSearchTerm("");
@@ -2453,6 +2481,77 @@ export default function Header() {
             </div>
           )}
 
+          {searchTerm.trim().length <= 1 &&
+            (defaultSearchSuggestions.categories.length > 0 ||
+              defaultSearchSuggestions.artists.length > 0) && (
+              <div className="mx-4 mt-3 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                {defaultSearchSuggestions.categories.length > 0 && (
+                  <div className="px-4 pt-3 pb-2">
+                    <div className="flex items-center gap-2 pb-1.5">
+                      <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">
+                        Top Categories
+                      </span>
+                      <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {defaultSearchSuggestions.categories.map((category) => (
+                        <button
+                          key={category}
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            handleCategorySelect(category);
+                          }}
+                          className="text-xs px-3 py-1.5 rounded-full border border-[#5A1E12]/20 text-[#5A1E12] hover:bg-[#5A1E12] hover:text-white transition-all"
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {defaultSearchSuggestions.artists.length > 0 && (
+                  <div className="pb-2">
+                    <div className="flex items-center gap-2 px-4 pt-2 pb-1">
+                      <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">
+                        Top Artists
+                      </span>
+                      <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                    </div>
+                    {defaultSearchSuggestions.artists.map((artist) => (
+                      <button
+                        key={artist}
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          handleArtistSelect(artist);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#5A1E12]/5 transition-colors group"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-[#EAD7B7]/60 flex items-center justify-center shrink-0">
+                          <User className="w-3.5 h-3.5 text-[#5A1E12]" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-[#5A1E12] transition-colors truncate flex-1 text-left">
+                          {artist}
+                        </span>
+                        <svg
+                          className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#5A1E12] transition-colors shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
           {/* Navigation */}
           <div className="px-4 pt-5">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">
@@ -2730,7 +2829,7 @@ export default function Header() {
           <>
             <motion.div
               key="search-backdrop"
-              className="fixed inset-0 z-200 bg-black/35 backdrop-blur-[1px]"
+              className="fixed inset-0 z-200 bg-black/35 backdrop-blur-[]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -2948,16 +3047,92 @@ export default function Header() {
                     )}
                   </div>
                 ) : (
-                  <div className="py-12 flex flex-col items-center gap-2 text-center px-6">
-                    <div className="w-12 h-12 rounded-full bg-[#EAD7B7]/40 flex items-center justify-center mb-1">
-                      <Search className="w-5 h-5 text-[#5A1E12]" />
+                  <div className="max-h-[55vh] overflow-y-auto py-4">
+                    <div className="px-6 pb-3 text-center">
+                      <p className="text-sm font-medium text-gray-700">
+                        Top suggestions
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Browse popular categories and artists
+                      </p>
                     </div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Search products, categories or artists
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Type at least 2 characters to see results
-                    </p>
+
+                    {defaultSearchSuggestions.categories.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 px-5 pt-1 pb-2">
+                          <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">
+                            Top Categories
+                          </span>
+                          <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                        </div>
+                        <div className="px-5 pb-2 flex flex-wrap gap-2">
+                          {defaultSearchSuggestions.categories.map((category) => (
+                            <button
+                              key={category}
+                              onClick={() => handleCategorySelect(category)}
+                              className="text-xs font-medium px-3 py-1.5 rounded-full border border-[#5A1E12]/20 text-[#5A1E12] hover:bg-[#5A1E12] hover:text-white transition-all"
+                            >
+                              {category}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {defaultSearchSuggestions.artists.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 px-5 pt-3 pb-2">
+                          <span className="text-[10px] font-bold text-[#5A1E12] uppercase tracking-widest">
+                            Top Artists
+                          </span>
+                          <div className="flex-1 h-px bg-[#5A1E12]/10" />
+                        </div>
+                        <div className="px-3 pb-2">
+                          {defaultSearchSuggestions.artists.map((artist) => (
+                            <button
+                              key={artist}
+                              onClick={() => handleArtistSelect(artist)}
+                              className="w-full text-left px-3 py-3 rounded-xl hover:bg-[#5A1E12]/5 transition-colors group flex items-center gap-3"
+                            >
+                              <div className="w-9 h-9 rounded-full bg-[#EAD7B7]/50 flex items-center justify-center shrink-0">
+                                <User className="w-4 h-4 text-[#5A1E12]" />
+                              </div>
+                              <span className="text-sm text-gray-700 group-hover:text-[#5A1E12] font-medium transition-colors flex-1 text-left">
+                                {artist}
+                              </span>
+                              <svg
+                                className="w-4 h-4 text-gray-300 group-hover:text-[#5A1E12] transition-colors shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {defaultSearchSuggestions.categories.length === 0 &&
+                      defaultSearchSuggestions.artists.length === 0 && (
+                        <div className="py-8 flex flex-col items-center gap-2 text-center px-6">
+                          <div className="w-12 h-12 rounded-full bg-[#EAD7B7]/40 flex items-center justify-center mb-1">
+                            <Search className="w-5 h-5 text-[#5A1E12]" />
+                          </div>
+                          <p className="text-sm font-medium text-gray-600">
+                            Search products, categories or artists
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Type at least 2 characters to see results
+                          </p>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>
