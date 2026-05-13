@@ -56,7 +56,7 @@ const Page = () => {
   const productScrollRef = useRef<HTMLDivElement>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const { data: products = [], isLoading: productsLoading } = useProducts();
-  const limitedProducts = products.slice(0, 12);
+  const limitedProducts = products.filter((product) => product.featured).slice(0, 12);
 
   // Blog state management
   const [blogPosts, setBlogPosts] = useState<HomeBlogPost[]>([]);
@@ -314,7 +314,7 @@ const Page = () => {
       <Sponsored />
 
       {/* Fetch the Product cards dynamically  */}
-      <section className="relative max-w-screen-2xl mx-auto py-10 sm:py-16 lg:py-20 sm:px-12 px-4 overflow-hidden">
+      <section id="featured-products" className="relative max-w-screen-2xl mx-auto py-10 sm:py-16 lg:py-20 sm:px-12 px-4 overflow-hidden">
         {/* ── ABORIGINAL PATTERN: TOP-RIGHT ── */}
         <div
           className="absolute top-0 right-0 w-72 h-72 sm:w-96 sm:h-96 pointer-events-none opacity-[0.13]"

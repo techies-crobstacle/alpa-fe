@@ -86,7 +86,7 @@ export default function Footer() {
             <Link href="/shop" className="mb-2 hover:text-[#A48068] transition-colors">
               All Products
             </Link>
-            <Link href="/shop?featured=true" className="mb-2 hover:text-[#A48068] transition-colors">
+            <Link href="/#featured-products" className="mb-2 hover:text-[#A48068] transition-colors">
               Featured Makers
             </Link>
             <Link href="/shop?category=art-crafts" className="mb-2 hover:text-[#A48068] transition-colors">
