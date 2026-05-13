@@ -54,7 +54,10 @@ const transformApiBlogToHomePost = (apiPost: ApiBlogPost): HomeBlogPost => ({
 const Page = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const productScrollRef = useRef<HTMLDivElement>(null);
+  const heroVideoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const heroLoopingRef = useRef(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [activeHeroVideo, setActiveHeroVideo] = useState(0);
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const limitedProducts = products.filter((product) => product.featured).slice(0, 12);
 
@@ -142,11 +145,77 @@ const Page = () => {
     }
   };
 
+  const handleHeroVideoTimeUpdate = (index: number) => {
+    const current = heroVideoRefs.current[index];
+    if (!current || heroLoopingRef.current) return;
+
+    const remaining = current.duration - current.currentTime;
+    if (!Number.isFinite(remaining) || remaining > 0.4) return;
+
+    const nextIndex = index === 0 ? 1 : 0;
+    const next = heroVideoRefs.current[nextIndex];
+    if (!next) return;
+
+    heroLoopingRef.current = true;
+    next.currentTime = 0;
+
+    next
+      .play()
+      .then(() => {
+        setActiveHeroVideo(nextIndex);
+        window.setTimeout(() => {
+          current.pause();
+          current.currentTime = 0;
+          heroLoopingRef.current = false;
+        }, 500);
+      })
+      .catch(() => {
+        heroLoopingRef.current = false;
+      });
+  };
+
+  useEffect(() => {
+    const first = heroVideoRefs.current[0];
+    if (!first) return;
+
+    first.currentTime = 0;
+    first.play().catch(() => undefined);
+  }, []);
+
   return (
     <main className="min-h-screen bg-[#EAD7B7]">
       {/* ================= HERO ================= */}
       <section>
-        <div className="relative min-h-[110vh] h-screen overflow-hidden bg-[url('/images/main.png')] bg-cover bg-center bg-fixed">
+        <div className="relative min-h-[110vh] h-screen overflow-hidden bg-black">
+          <video
+            ref={(el) => {
+              heroVideoRefs.current[0] = el;
+            }}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+              activeHeroVideo === 0 ? "opacity-100" : "opacity-0"
+            }`}
+            autoPlay
+            muted
+            playsInline
+            preload="metadata"
+            onTimeUpdate={() => handleHeroVideoTimeUpdate(0)}
+          >
+            <source src="/home-video.mp4" type="video/mp4" />
+          </video>
+          <video
+            ref={(el) => {
+              heroVideoRefs.current[1] = el;
+            }}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+              activeHeroVideo === 1 ? "opacity-100" : "opacity-0"
+            }`}
+            muted
+            playsInline
+            preload="metadata"
+            onTimeUpdate={() => handleHeroVideoTimeUpdate(1)}
+          >
+            <source src="/home-video.mp4" type="video/mp4" />
+          </video>
           {/* Layered gradient overlay */}
           <div className="absolute inset-0 bg-linear-to-b from-amber-900/70 via-amber-900/40 to-black/80" />
           <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
