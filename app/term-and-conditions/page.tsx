@@ -70,7 +70,7 @@ export default function Page() {
           </h1>
 
           <p className="leading-relaxed mb-12 text-gray-700">
-            Version: Draft 1.1 &nbsp;|&nbsp; Date: 13/11/2026 &nbsp;|&nbsp; Prepared for: Made in Arnhem Land Marketplace and Certification
+             Date: 13/11/2026 &nbsp;|&nbsp; Prepared for: Made in Arnhem Land Marketplace and Certification
           </p>
 
           {/* INTRODUCTION */}
@@ -434,7 +434,7 @@ export default function Page() {
           {/* VERSION CONTROL */}
           <section className="scroll-mt-32 mb-20 border-t border-gray-300 pt-8">
             <h2 className="text-xl font-bold mb-3">Version Control</h2>
-            <p className="text-gray-700">Version: Draft 1.1</p>
+            {/* <p className="text-gray-700">Version: Draft 1.1</p> */}
             <p className="text-gray-700">Date: 11/13/2026</p>
             <p className="text-gray-700">Prepared for: Made in Arnhem Land Marketplace and Certification</p>
           </section>
