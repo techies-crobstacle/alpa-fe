@@ -159,30 +159,34 @@ export function useEnhancedCart() {
           ...(i.variantId && { variantId: i.variantId }),
         }));
         
-        const activeGuestShipping = currentSelectedShipping || (availableShipping.find(s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)) || availableShipping[0]);
+        const nonCodOptions = availableShipping.filter(
+          s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)
+        );
         let shippingCalculations: Record<string, ShippingCalculation> = {};
         
-        if (activeGuestShipping && cartItems.length > 0) {
+        if (nonCodOptions.length > 0 && cartItems.length > 0) {
           try {
-            const res = await fetch('https://alpa-be.onrender.com/api/cart/calculate-guest', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ items: guestItemsPayload, shippingMethodId: activeGuestShipping.id }),
-            });
-            if (res.ok) {
-              const data = await res.json();
-              const c = data.calculations || {};
-              const sc = data.shippingCalculations?.[activeGuestShipping.id] || {};
-              shippingCalculations[activeGuestShipping.id] = {
-                shippingMethodId: activeGuestShipping.id,
-                baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? 0),
-                sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
-                totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? 0),
-                subtotal: Number(sc.subtotal ?? c.subtotal ?? subtotal),
-                gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
-                grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? subtotal),
-              };
-            }
+            await Promise.all(nonCodOptions.map(async (shipping) => {
+              const res = await fetch('https://alpa-be.onrender.com/api/cart/calculate-guest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: guestItemsPayload, shippingMethodId: shipping.id }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                const c = data.calculations || {};
+                const sc = data.shippingCalculations?.[shipping.id] || {};
+                shippingCalculations[shipping.id] = {
+                  shippingMethodId: shipping.id,
+                  baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? parseFloat(shipping.cost || '0')),
+                  sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
+                  totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? parseFloat(shipping.cost || '0')),
+                  subtotal: Number(sc.subtotal ?? c.subtotal ?? subtotal),
+                  gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
+                  grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? subtotal),
+                };
+              }
+            }));
           } catch (e) {
             console.error("Guest shipping calc failed:", e);
           }
@@ -306,6 +310,8 @@ export function useEnhancedCart() {
       const data: EnhancedCartData = {
         ...rawData,
         cart: (rawData.cart || []).map(normalizeItem),
+        availableShipping: rawData.availableShipping && rawData.availableShipping.length > 0 ? rawData.availableShipping : (cartDataRef.current?.availableShipping || []),
+        gst: rawData.gst || cartDataRef.current?.gst,
       };
 
       // ── Fallback merge: if server still returned no attributes, pull from
@@ -339,9 +345,9 @@ export function useEnhancedCart() {
       // 3. Default "General" shipping
       
       if (!currentSelectedShipping) {
-        if (data.calculations.selectedShipping) {
+        if (data.calculations?.selectedShipping) {
            setSelectedShipping(data.calculations.selectedShipping);
-        } else if (data.availableShipping.length > 0) {
+        } else if (data.availableShipping?.length > 0) {
            const nonCodOptions = data.availableShipping.filter(
              s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)
            );
@@ -352,10 +358,12 @@ export function useEnhancedCart() {
         }
       }
 
-      // ── Re-calculate shipping ONLY for the selected method to reduce backend load ──
-      const activeShipping = currentSelectedShipping || (data.calculations.selectedShipping ? data.calculations.selectedShipping : (data.availableShipping.find(s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)) || data.availableShipping[0]));
+      // ── Re-calculate shipping for ALL available methods to reduce backend load and UI popping ──
+      const nonCodOptions = (data.availableShipping || []).filter(
+        s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)
+      );
       
-      if (activeShipping && data.cart.length > 0) {
+      if (nonCodOptions.length > 0 && data.cart.length > 0) {
         const itemsPayload = data.cart.map((i: CartItem) => ({
           productId: i.productId,
           quantity: i.quantity,
@@ -363,31 +371,37 @@ export function useEnhancedCart() {
         }));
         
         try {
-          const res = await fetch(`${baseUrl}/api/cart/calculate-guest`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: itemsPayload, shippingMethodId: activeShipping.id }),
-          });
-          if (res.ok) {
-            const json = await res.json();
-            const c = json.calculations || {};
-            const sc = json.shippingCalculations?.[activeShipping.id] || {};
-            
-            const calcObj: ShippingCalculation = {
-              shippingMethodId: activeShipping.id,
-              baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? 0),
-              sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
-              totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? 0),
-              subtotal: Number(sc.subtotal ?? c.subtotal ?? 0),
-              gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
-              grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? 0),
-            };
-            
-            setCartData((prev) => prev ? { ...prev, shippingCalculations: { [activeShipping.id]: calcObj } } : prev);
-          }
+          const calcMap: Record<string, ShippingCalculation> = {};
+          
+          await Promise.all(nonCodOptions.map(async (shipping) => {
+            const res = await fetch(`${baseUrl}/api/cart/calculate-guest`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ items: itemsPayload, shippingMethodId: shipping.id }),
+            });
+            if (res.ok) {
+              const json = await res.json();
+              const c = json.calculations || {};
+              const sc = json.shippingCalculations?.[shipping.id] || {};
+              
+              calcMap[shipping.id] = {
+                shippingMethodId: shipping.id,
+                baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? parseFloat(shipping.cost || '0')),
+                sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
+                totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? parseFloat(shipping.cost || '0')),
+                subtotal: Number(sc.subtotal ?? c.subtotal ?? 0),
+                gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
+                grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? 0),
+              };
+            }
+          }));
+          
+          setCartData((prev) => prev ? { ...prev, shippingCalculations: calcMap } : prev);
         } catch (e) {
-          console.error("Failed to calculate shipping for method:", e);
+          console.error("Failed to calculate shipping for methods:", e);
         }
+      } else if (data.cart.length === 0) {
+        setCartData((prev) => prev ? { ...prev, shippingCalculations: {} } : prev);
       }
 
       setError(null);
@@ -441,7 +455,7 @@ export function useEnhancedCart() {
 
     // ── Fallback: compute locally (guest mode / no shippingCalculations) ──
     const subtotal = localSubtotal;
-    const shippingCost = currentShipping ? parseFloat(currentShipping.cost || '0') : 0;
+    const shippingCost = subtotal > 0 ? (currentShipping ? parseFloat(currentShipping.cost || '0') : 0) : 0;
     const gstPercentage = cartData.gst?.percentage ? parseFloat(cartData.gst.percentage) : 10;
     const grandTotal = subtotal + shippingCost;
     const gstAmount = subtotal / 11;

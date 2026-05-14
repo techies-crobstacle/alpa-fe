@@ -86,10 +86,8 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
           category: '',
         }, 1, productData.variantId, productData.variantAttributes);
         
-        // Small delay to ensure localStorage is updated before triggering refresh
-        setTimeout(() => {
-          triggerUpdate();
-        }, 100);
+        await cartData.fetchCartData(true);
+        triggerUpdate();
         return;
       }
 
