@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { TruckElectric, Plus, Minus, Trash2, Loader, Loader2, ArrowRight, Tag, X, LogIn, User, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -44,6 +44,10 @@ export default function Page() {
   const router = useRouter();
   const { user } = useAuth();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
+  const [editingQuantities, setEditingQuantities] = useState<Record<string, string>>({});
+  const [activeQtyEditor, setActiveQtyEditor] = useState<string | null>(null);
+  const qtyEditTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const applyingQtyKeysRef = useRef<Set<string>>(new Set());
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
   const handleProceedToCheckout = () => {
@@ -365,6 +369,69 @@ export default function Page() {
     cartQuantities,
     onOverstock: (productId, newStock) => handleQuantityUpdate(productId, newStock),
   });
+
+  const getItemStock = (productId: string, fallbackStock?: number | null) => {
+    const liveStock = stockMap[productId]?.stock;
+    return liveStock !== undefined ? liveStock : fallbackStock;
+  };
+
+  const clearQtyEditTimeout = (itemKey: string) => {
+    const timeoutId = qtyEditTimeoutsRef.current[itemKey];
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      delete qtyEditTimeoutsRef.current[itemKey];
+    }
+  };
+
+  const startQtyEdit = (itemKey: string, currentQuantity: number) => {
+    if (updatingItems.has(itemKey)) return;
+    setActiveQtyEditor(itemKey);
+    setEditingQuantities((prev) => ({ ...prev, [itemKey]: String(currentQuantity) }));
+  };
+
+  const applyQtyEdit = async (item: (typeof cartItems)[number], overrideValue?: string) => {
+    const itemKey = item.variantId ? `${item.productId}:${item.variantId}` : item.productId;
+    if (applyingQtyKeysRef.current.has(itemKey)) return;
+    applyingQtyKeysRef.current.add(itemKey);
+    clearQtyEditTimeout(itemKey);
+    try {
+      const rawValue = (overrideValue ?? editingQuantities[itemKey] ?? String(item.quantity)).trim();
+      const parsed = Number.parseInt(rawValue, 10);
+
+      const stock = getItemStock(item.productId, item.product.stock);
+      const boundedValue = Number.isFinite(parsed)
+        ? Math.max(1, stock != null ? Math.min(parsed, stock) : parsed)
+        : item.quantity;
+
+      if (boundedValue !== item.quantity) {
+        await handleQuantityUpdate(item.productId, boundedValue, item.variantId);
+      }
+
+      setActiveQtyEditor(null);
+      setEditingQuantities((prev) => {
+        const next = { ...prev };
+        delete next[itemKey];
+        return next;
+      });
+    } finally {
+      applyingQtyKeysRef.current.delete(itemKey);
+    }
+  };
+
+  const scheduleQtyEditApply = (item: (typeof cartItems)[number], value: string) => {
+    const itemKey = item.variantId ? `${item.productId}:${item.variantId}` : item.productId;
+    clearQtyEditTimeout(itemKey);
+    qtyEditTimeoutsRef.current[itemKey] = setTimeout(() => {
+      void applyQtyEdit(item, value);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(qtyEditTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId));
+      qtyEditTimeoutsRef.current = {};
+    };
+  }, []);
 
   // ── Per-product coupon handlers ──────────────────────────────────────────
   const handleApplyCoupon = useCallback(async (productId: string, sellerId: string, codeOverride?: string) => {
@@ -725,18 +792,67 @@ export default function Page() {
                                       {/* Qty stepper */}
                                       <div className="flex items-center bg-white rounded-xl border border-[#E6DCC8] p-0.5">
                                         <button
-                                          onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)}
-                                          disabled={item.quantity <= 1 || isUpdating}
+                                          onClick={() =>
+                                            item.quantity <= 1
+                                              ? handleRemoveItem(item.productId, item.variantId)
+                                              : handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)
+                                          }
+                                          disabled={isUpdating}
                                           className="w-8 h-8 xs:w-7 xs:h-7 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors touch-target-44"
+                                          aria-label={item.quantity <= 1 ? "Remove item" : "Decrease quantity"}
                                         >
-                                          <Minus size={12} />
+                                          {item.quantity <= 1 ? <Trash2 size={12} /> : <Minus size={12} />}
                                         </button>
-                                        <span className="w-10 xs:w-8 text-center text-base xs:text-sm font-semibold text-[#4A3728]">{item.quantity}</span>
+                                        {activeQtyEditor === itemKey ? (
+                                          <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            value={editingQuantities[itemKey] ?? String(item.quantity)}
+                                            onChange={(e) => {
+                                              const onlyDigits = e.target.value.replace(/\D/g, "");
+                                              setEditingQuantities((prev) => ({ ...prev, [itemKey]: onlyDigits }));
+                                              scheduleQtyEditApply(item, onlyDigits);
+                                            }}
+                                            onBlur={(e) => {
+                                              clearQtyEditTimeout(itemKey);
+                                              void applyQtyEdit(item, e.currentTarget.value);
+                                            }}
+                                            onKeyDown={(e) => {
+                                              if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                clearQtyEditTimeout(itemKey);
+                                                void applyQtyEdit(item, (e.currentTarget as HTMLInputElement).value);
+                                              }
+                                              if (e.key === "Escape") {
+                                                clearQtyEditTimeout(itemKey);
+                                                setActiveQtyEditor(null);
+                                                setEditingQuantities((prev) => {
+                                                  const next = { ...prev };
+                                                  delete next[itemKey];
+                                                  return next;
+                                                });
+                                              }
+                                            }}
+                                            autoFocus
+                                            className="w-10 xs:w-8 text-center text-base xs:text-sm font-semibold text-[#4A3728] outline-none bg-white"
+                                            aria-label="Edit quantity"
+                                          />
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={() => startQtyEdit(itemKey, item.quantity)}
+                                            disabled={isUpdating}
+                                            className="w-10 xs:w-8 text-center text-base xs:text-sm font-semibold text-[#4A3728] hover:bg-[#FAF7F2] rounded-md transition-colors disabled:opacity-30"
+                                            aria-label="Edit quantity"
+                                          >
+                                            {item.quantity}
+                                          </button>
+                                        )}
                                         <button
                                           onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1, item.variantId)}
                                           disabled={(() => {
-                                            const liveStock = stockMap[item.productId]?.stock;
-                                            const stock = liveStock !== undefined ? liveStock : item.product.stock;
+                                            const stock = getItemStock(item.productId, item.product.stock);
                                             return stock != null ? item.quantity >= stock : false;
                                           })() || isUpdating}
                                           className="w-8 h-8 xs:w-7 xs:h-7 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors touch-target-44"
@@ -793,18 +909,67 @@ export default function Page() {
                                     {/* Qty stepper */}
                                     <div className="flex items-center bg-white rounded-xl border border-[#E6DCC8] p-0.5 shrink-0">
                                       <button
-                                        onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)}
-                                        disabled={item.quantity <= 1 || isUpdating}
+                                        onClick={() =>
+                                          item.quantity <= 1
+                                            ? handleRemoveItem(item.productId, item.variantId)
+                                            : handleQuantityUpdate(item.productId, item.quantity - 1, item.variantId)
+                                        }
+                                        disabled={isUpdating}
                                         className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors"
+                                        aria-label={item.quantity <= 1 ? "Remove item" : "Decrease quantity"}
                                       >
-                                        <Minus size={11} />
+                                        {item.quantity <= 1 ? <Trash2 size={11} /> : <Minus size={11} />}
                                       </button>
-                                      <span className="w-8 text-center text-base font-semibold text-[#4A3728]">{item.quantity}</span>
+                                      {activeQtyEditor === itemKey ? (
+                                        <input
+                                          type="text"
+                                          inputMode="numeric"
+                                          pattern="[0-9]*"
+                                          value={editingQuantities[itemKey] ?? String(item.quantity)}
+                                          onChange={(e) => {
+                                            const onlyDigits = e.target.value.replace(/\D/g, "");
+                                            setEditingQuantities((prev) => ({ ...prev, [itemKey]: onlyDigits }));
+                                            scheduleQtyEditApply(item, onlyDigits);
+                                          }}
+                                          onBlur={(e) => {
+                                            clearQtyEditTimeout(itemKey);
+                                            void applyQtyEdit(item, e.currentTarget.value);
+                                          }}
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                              e.preventDefault();
+                                              clearQtyEditTimeout(itemKey);
+                                              void applyQtyEdit(item, (e.currentTarget as HTMLInputElement).value);
+                                            }
+                                            if (e.key === "Escape") {
+                                              clearQtyEditTimeout(itemKey);
+                                              setActiveQtyEditor(null);
+                                              setEditingQuantities((prev) => {
+                                                const next = { ...prev };
+                                                delete next[itemKey];
+                                                return next;
+                                              });
+                                            }
+                                          }}
+                                          autoFocus
+                                          className="w-8 text-center text-base font-semibold text-[#4A3728] outline-none bg-white"
+                                          aria-label="Edit quantity"
+                                        />
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => startQtyEdit(itemKey, item.quantity)}
+                                          disabled={isUpdating}
+                                          className="w-8 text-center text-base font-semibold text-[#4A3728] hover:bg-[#FAF7F2] rounded-md transition-colors disabled:opacity-30"
+                                          aria-label="Edit quantity"
+                                        >
+                                          {item.quantity}
+                                        </button>
+                                      )}
                                       <button
                                         onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1, item.variantId)}
                                         disabled={(() => {
-                                          const liveStock = stockMap[item.productId]?.stock;
-                                          const stock = liveStock !== undefined ? liveStock : item.product.stock;
+                                          const stock = getItemStock(item.productId, item.product.stock);
                                           return stock != null ? item.quantity >= stock : false;
                                         })() || isUpdating}
                                         className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-[#FAF7F2] text-[#4A3728] disabled:opacity-30 transition-colors"

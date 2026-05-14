@@ -152,42 +152,41 @@ export function useEnhancedCart() {
         // Fetch real shipping methods from backend
         const availableShipping = await getShippingMethods();
 
-        // ── Build shippingCalculations for guest (parallel calls per method) ──
+        // ── Build shippingCalculations for guest (only for selected method) ──
         const guestItemsPayload = cartItems.map(i => ({
           productId: i.productId,
           quantity: i.quantity,
           ...(i.variantId && { variantId: i.variantId }),
         }));
-        const shippingCalcEntries = await Promise.all(
-          availableShipping.map(async (method) => {
-            try {
-              const res = await fetch('https://alpa-be.onrender.com/api/cart/calculate-guest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: guestItemsPayload, shippingMethodId: method.id }),
-              });
-              if (!res.ok) return null;
+        
+        const activeGuestShipping = currentSelectedShipping || (availableShipping.find(s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)) || availableShipping[0]);
+        let shippingCalculations: Record<string, ShippingCalculation> = {};
+        
+        if (activeGuestShipping && cartItems.length > 0) {
+          try {
+            const res = await fetch('https://alpa-be.onrender.com/api/cart/calculate-guest', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ items: guestItemsPayload, shippingMethodId: activeGuestShipping.id }),
+            });
+            if (res.ok) {
               const data = await res.json();
-              // Backend may nest under data.calculations or data.shippingCalculations[id]
               const c = data.calculations || {};
-              const sc = data.shippingCalculations?.[method.id] || {};
-              return [method.id, {
-                shippingMethodId: method.id,
+              const sc = data.shippingCalculations?.[activeGuestShipping.id] || {};
+              shippingCalculations[activeGuestShipping.id] = {
+                shippingMethodId: activeGuestShipping.id,
                 baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? 0),
                 sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
                 totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? 0),
                 subtotal: Number(sc.subtotal ?? c.subtotal ?? subtotal),
                 gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
                 grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? subtotal),
-              }] as [string, ShippingCalculation];
-            } catch {
-              return null;
+              };
             }
-          })
-        );
-        const shippingCalculations: Record<string, ShippingCalculation> = Object.fromEntries(
-          shippingCalcEntries.filter((e): e is [string, ShippingCalculation] => e !== null)
-        );
+          } catch (e) {
+            console.error("Guest shipping calc failed:", e);
+          }
+        }
 
         // Create guest cart data structure
         const guestCartData: EnhancedCartData = {
@@ -353,47 +352,42 @@ export function useEnhancedCart() {
         }
       }
 
-      // ── Re-calculate shipping for ALL methods in parallel so the summary
-      // always shows the correct multi-seller total when switching methods ──
-      if (data.availableShipping.length > 0 && data.cart.length > 0) {
+      // ── Re-calculate shipping ONLY for the selected method to reduce backend load ──
+      const activeShipping = currentSelectedShipping || (data.calculations.selectedShipping ? data.calculations.selectedShipping : (data.availableShipping.find(s => !/cod|cash[\s_-]*on[\s_-]*delivery/i.test(s.name)) || data.availableShipping[0]));
+      
+      if (activeShipping && data.cart.length > 0) {
         const itemsPayload = data.cart.map((i: CartItem) => ({
           productId: i.productId,
           quantity: i.quantity,
           ...(i.variantId && { variantId: i.variantId }),
         }));
-        Promise.all(
-          data.availableShipping.map(async (method) => {
-            try {
-              const res = await fetch(`${baseUrl}/api/cart/calculate-guest`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: itemsPayload, shippingMethodId: method.id }),
-              });
-              if (!res.ok) return null;
-              const json = await res.json();
-              const c = json.calculations || {};
-              const sc = json.shippingCalculations?.[method.id] || {};
-              return [method.id, {
-                shippingMethodId: method.id,
-                baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? 0),
-                sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
-                totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? 0),
-                subtotal: Number(sc.subtotal ?? c.subtotal ?? 0),
-                gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
-                grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? 0),
-              }] as [string, ShippingCalculation];
-            } catch {
-              return null;
-            }
-          })
-        ).then((entries) => {
-          const calcs: Record<string, ShippingCalculation> = Object.fromEntries(
-            entries.filter((e): e is [string, ShippingCalculation] => e !== null)
-          );
-          if (Object.keys(calcs).length > 0) {
-            setCartData((prev) => prev ? { ...prev, shippingCalculations: calcs } : prev);
+        
+        try {
+          const res = await fetch(`${baseUrl}/api/cart/calculate-guest`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: itemsPayload, shippingMethodId: activeShipping.id }),
+          });
+          if (res.ok) {
+            const json = await res.json();
+            const c = json.calculations || {};
+            const sc = json.shippingCalculations?.[activeShipping.id] || {};
+            
+            const calcObj: ShippingCalculation = {
+              shippingMethodId: activeShipping.id,
+              baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? 0),
+              sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
+              totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? 0),
+              subtotal: Number(sc.subtotal ?? c.subtotal ?? 0),
+              gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
+              grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? 0),
+            };
+            
+            setCartData((prev) => prev ? { ...prev, shippingCalculations: { [activeShipping.id]: calcObj } } : prev);
           }
-        });
+        } catch (e) {
+          console.error("Failed to calculate shipping for method:", e);
+        }
       }
 
       setError(null);
@@ -603,10 +597,58 @@ export function useEnhancedCart() {
     };
   }, [mergeGuestCartOnLogin, handleLogout]);
 
-  // Refetch when shipping changes to get updated calculations
+  // Refetch when shipping changes to get updated calculations for the newly selected method
   useEffect(() => {
-    if (selectedShipping) {
-      // You can add an API call here to update shipping selection on backend if needed
+    if (selectedShipping && cartData && cartData.cart.length > 0) {
+      // If we don't already have the calculation for this method, fetch it
+      if (!cartData.shippingCalculations?.[selectedShipping.id]) {
+        const fetchMissingShipping = async () => {
+          setRefreshing(true);
+          try {
+            const itemsPayload = cartDataRef.current?.cart.map((i: CartItem) => ({
+              productId: i.productId,
+              quantity: i.quantity,
+              ...(i.variantId && { variantId: i.variantId }),
+            })) || [];
+            
+            const res = await fetch(`${baseUrl}/api/cart/calculate-guest`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ items: itemsPayload, shippingMethodId: selectedShipping.id }),
+            });
+            
+            if (res.ok) {
+              const data = await res.json();
+              const c = data.calculations || {};
+              const sc = data.shippingCalculations?.[selectedShipping.id] || {};
+              
+              setCartData((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  shippingCalculations: {
+                    ...(prev.shippingCalculations || {}),
+                    [selectedShipping.id]: {
+                      shippingMethodId: selectedShipping.id,
+                      baseShippingCost: Number(sc.baseShippingCost ?? c.shippingCost ?? 0),
+                      sellerCount: Number(sc.sellerCount ?? c.sellerCount ?? 1),
+                      totalShippingCost: Number(sc.totalShippingCost ?? c.totalShippingCost ?? c.shippingCost ?? 0),
+                      subtotal: Number(sc.subtotal ?? c.subtotal ?? 0),
+                      gstAmount: Number(sc.gstAmount ?? c.gstAmount ?? 0),
+                      grandTotal: Number(sc.grandTotal ?? c.grandTotal ?? 0),
+                    }
+                  }
+                };
+              });
+            }
+          } catch (e) {
+            console.error("Failed to fetch changed shipping calculation:", e);
+          } finally {
+            setRefreshing(false);
+          }
+        };
+        fetchMissingShipping();
+      }
     }
   }, [selectedShipping]);
 
