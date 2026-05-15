@@ -554,8 +554,17 @@ export default function BlogPage() {
   if (blogPosts.length === 0) {
     return (
       <main className="min-h-screen bg-[#EAD7B7] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-[#803512] font-semibold">No blogs available</p>
+        <div className="text-center bg-white/50 backdrop-blur-sm p-10 rounded-3xl shadow-sm border border-[#e8d5c0] max-w-lg mx-auto">
+          <h2 className="text-3xl font-black text-[#3a1208] mb-4">Coming Soon</h2>
+          <p className="text-[#803512]/80 leading-relaxed">
+            We are working hard compiling the wonderful stories, crafts, and culture of Arnhem Land. 
+            Check back here very soon for insights from our community!
+          </p>
+          <div className="mt-8 flex justify-center">
+            <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#3a1208] text-white text-sm font-semibold hover:bg-[#5A1E12] transition-colors">
+              Return Home
+            </Link>
+          </div>
         </div>
       </main>
     );

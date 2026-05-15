@@ -215,7 +215,7 @@ function OrderSuccessContent() {
                   <Package className="w-4 h-4 text-[#5A1E12]" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[#5A1E12]">Being Prepared</p>
+                  <p className="text-sm font-semibold text-[#5A1E12]">Being Packed</p>
                   <p className="text-xs text-[#5A1E12]/60">We&apos;re packing your items with care</p>
                 </div>
               </div>
