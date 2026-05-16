@@ -298,7 +298,7 @@ function TrackOrderContent() {
     
     try {
       const res = await fetch(
-        `http://127.0.0.1:5000/api/orders/guest/track?orderId=${encodeURIComponent(trimmedOrderId)}&customerEmail=${encodeURIComponent(trimmedEmail)}`
+        `https://alpa-be.onrender.com/api/orders/guest/track?orderId=${encodeURIComponent(trimmedOrderId)}&customerEmail=${encodeURIComponent(trimmedEmail)}`
       );
       const data = await res.json();
       
@@ -593,7 +593,7 @@ function TrackOrderContent() {
     
     try {
       const res = await fetch(
-        `http://127.0.0.1:5000/api/orders/guest/seller-status`,
+        `https://alpa-be.onrender.com/api/orders/guest/seller-status`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -690,7 +690,7 @@ function TrackOrderContent() {
     
     try {
       const res = await fetch(
-        `http://127.0.0.1:5000/api/orders/guest/parent-status`,
+        `https://alpa-be.onrender.com/api/orders/guest/parent-status`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -724,7 +724,7 @@ function TrackOrderContent() {
   const handleDownloadInvoice = async () => {
     setIsDownloading(true);
     try {
-      const url = `http://127.0.0.1:5000/api/orders/guest/invoice?orderId=${encodeURIComponent(orderId.toUpperCase())}&customerEmail=${encodeURIComponent(email)}`;
+      const url = `https://alpa-be.onrender.com/api/orders/guest/invoice?orderId=${encodeURIComponent(orderId.toUpperCase())}&customerEmail=${encodeURIComponent(email)}`;
       const res = await fetch(url);
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: "Download failed" }));

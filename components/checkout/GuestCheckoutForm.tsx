@@ -177,7 +177,7 @@ export default function GuestCheckoutForm() {
       }
 
       // Confirm with backend — do NOT call stripe.confirmPayment() again
-      fetch("http://127.0.0.1:5000/api/payments/guest/confirm", {
+      fetch("https://alpa-be.onrender.com/api/payments/guest/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentIntentId, customerEmail }),
@@ -792,7 +792,7 @@ export default function GuestCheckoutForm() {
       console.log("Cart items:", cartItems);
       console.log("Request body being sent:", body);
 
-      const res  = await fetch("http://127.0.0.1:5000/api/payments/guest/create-intent", {
+      const res  = await fetch("https://alpa-be.onrender.com/api/payments/guest/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

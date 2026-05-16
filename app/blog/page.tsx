@@ -226,7 +226,7 @@ interface BlogPost {
 // ─────────────────────────────────────────────
 // Utility functions
 // ─────────────────────────────────────────────
-const API_BASE_URL = "http://127.0.0.1:5000/api";
+const API_BASE_URL = "https://alpa-be.onrender.com/api";
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 
-const baseURL = 'http://127.0.0.1:5000';
+const baseURL = 'https://alpa-be.onrender.com';
 
 // ─── Country phone data ───────────────────────────────────────────────────────
 type Country = { code: string; flag: string; name: string; dialCode: string; digits: [number, number] };
