@@ -67,7 +67,7 @@ export default function GuestStripePaymentForm({
 
       // Step C2 – confirm with backend
       const res = await fetch(
-        "https://alpa-be.onrender.com/api/payments/guest/confirm",
+        "http://127.0.0.1:5000/api/payments/guest/confirm",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

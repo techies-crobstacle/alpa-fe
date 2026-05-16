@@ -182,15 +182,25 @@ type Country = typeof COUNTRIES[number];
 function validatePhone(digits: string, country: Country): string | null {
   if (!digits.trim()) return 'Phone number is required.';
   
-  // Create a full phone number with country calling code for validation
-  const fullNumber = `${country.dialCode}${digits.replace(/\D/g, '')}`;
+  const cleaned = digits.replace(/\D/g, '');
   
+  if (country.code === 'AU') {
+    if (cleaned.length === 9 && !cleaned.startsWith('0')) return null;
+    if (cleaned.length === 10 && cleaned.startsWith('0')) return null;
+    if (cleaned.length < 9 || (cleaned.length === 9 && cleaned.startsWith('0')))
+      return "Too short — enter 9 digits without leading 0, or 10 digits starting with 0";
+    if (cleaned.length > 10)
+      return "Too long — Australian numbers are at most 10 digits";
+    if (cleaned.length === 10 && !cleaned.startsWith('0'))
+      return "10-digit Australian numbers must start with 0";
+    return "Invalid format — enter 9 digits (e.g. 412345678) or 10 starting with 0 (e.g. 0412345678)";
+  }
+
   try {
-    const phoneNumber = parsePhoneNumberFromString(fullNumber);
+    const phoneNumber = parsePhoneNumberFromString(cleaned, country.code as any);
     if (!phoneNumber) return 'Invalid phone number format.';
     
-    const isValid = isValidPhoneNumber(fullNumber);
-    if (!isValid) return `Invalid ${country.name} phone number.`;
+    if (!phoneNumber.isValid()) return `Invalid ${country.name} phone number.`;
     
     return null;
   } catch (error) {

@@ -92,7 +92,7 @@ export function EnhancedCartProvider({ children }: { children: React.ReactNode }
       }
 
       // Authenticated mode: API call
-      const response = await fetch("https://alpa-be.onrender.com/api/cart/add", {
+      const response = await fetch("http://127.0.0.1:5000/api/cart/add", {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

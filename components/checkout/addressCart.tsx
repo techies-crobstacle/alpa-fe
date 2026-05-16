@@ -159,14 +159,20 @@ function validatePhone(digits: string, country: Country): string | null {
   const cleaned = digits.replace(/\D/g, '');
   if (!cleaned) return null;
 
-  // Strip leading 0: AU, NZ, UK and many others use a local format that
-  // starts with 0 (e.g. 0412 345 678). In E.164 that 0 is NOT part of the
-  // subscriber number, so +61 0412345678 is wrong — it must be +61412345678.
-  const normalized = cleaned.startsWith('0') ? cleaned.slice(1) : cleaned;
-  const fullNumber = `${country.dialCode}${normalized}`;
+  if (country.code === 'AU') {
+    if (cleaned.length === 9 && !cleaned.startsWith('0')) return null;
+    if (cleaned.length === 10 && cleaned.startsWith('0')) return null;
+    if (cleaned.length < 9 || (cleaned.length === 9 && cleaned.startsWith('0')))
+      return "Too short — enter 9 digits without leading 0, or 10 digits starting with 0";
+    if (cleaned.length > 10)
+      return "Too long — Australian numbers are at most 10 digits";
+    if (cleaned.length === 10 && !cleaned.startsWith('0'))
+      return "10-digit Australian numbers must start with 0";
+    return "Invalid format — enter 9 digits (e.g. 412345678) or 10 starting with 0 (e.g. 0412345678)";
+  }
 
   try {
-    const parsed = parsePhoneNumberFromString(fullNumber);
+    const parsed = parsePhoneNumberFromString(cleaned, country.code as any);
     if (!parsed || !parsed.isValid()) return `Invalid ${country.name} phone number.`;
     return null;
   } catch {
