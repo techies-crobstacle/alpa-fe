@@ -24,6 +24,13 @@ function OrderSuccessContent() {
     setDisplayId(dispId || id);
     setEmail(em);
 
+    // Disable back button
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+
     // Handle 3DS redirect: Stripe appends ?payment_intent=pi_xxx to the return_url
     const paymentIntent = searchParams.get("payment_intent");
     const redirectStatus = searchParams.get("redirect_status");
@@ -40,6 +47,10 @@ function OrderSuccessContent() {
         pollStatus(id, em, 0);
       }
     }
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -109,6 +120,10 @@ function OrderSuccessContent() {
     }
   };
 
+  const handleBackToHome = () => {
+    window.location.href = "/";
+  };
+
   if (status === "loading") {
     return (
       <main className="min-h-screen bg-[#ead7b7] flex flex-col items-center justify-center px-4">
@@ -141,7 +156,18 @@ function OrderSuccessContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#ead7b7] flex flex-col items-center justify-center px-4 py-16">
+    <main className="relative min-h-screen bg-[#ead7b7] flex flex-col items-center justify-center px-4 py-16">
+      {/* Back to Home Button at Top Left */}
+      <button
+        onClick={handleBackToHome}
+        className="absolute top-5 left-5 xs:top-8 xs:left-8 z-50 inline-flex items-center gap-1.5 xs:gap-2 text-xs xs:text-sm font-semibold text-[#5A1E12] bg-white/70 hover:bg-white border border-[#5A1E12]/20 hover:border-[#5A1E12]/50 px-3 xs:px-4 py-2 rounded-lg xs:rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Home
+      </button>
+
       {/* Logo */}
       <Link href="/" className="mb-8">
         <Image src="/images/navbarLogo.png" width={70} height={70} alt="Logo" priority />

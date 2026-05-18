@@ -296,6 +296,19 @@ function OrderConfirmationContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Disable back button
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!orderId) { return; }
 
     const checkStatus = async () => {
@@ -519,13 +532,13 @@ function OrderConfirmationContent() {
               <ShoppingBag className="w-4 h-4" />
               Continue Shopping
             </Link>
-            <Link
-              href="/"
+            <button
+              onClick={() => { window.location.href = "/"; }}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-all active:scale-[0.97]"
             >
               <Home className="w-4 h-4" />
               Back to Home
-            </Link>
+            </button>
           </motion.div>
 
           {/* Footer note */}

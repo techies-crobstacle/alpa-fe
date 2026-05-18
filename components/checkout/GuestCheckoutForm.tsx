@@ -893,9 +893,28 @@ export default function GuestCheckoutForm() {
         <div className="mb-6 xs:mb-8">
           <div className="flex items-center justify-between mb-3 xs:mb-4 gap-2">
             <div className="flex items-center gap-1.5 xs:gap-2 text-sm text-[#5A1E12]/60">
-              <span className={currentStep === "form" ? "font-bold text-[#5A1E12]" : ""}>1. Your Details</span>
+              <button
+                onClick={() => setCurrentStep("form")}
+                className={`hover:text-[#5A1E12] transition-colors focus:outline-none ${currentStep === "form" ? "font-bold text-[#5A1E12]" : "cursor-pointer"}`}
+              >
+                1. Your Details
+              </button>
               <ChevronRight className="w-4 h-4" />
-              <span className={currentStep === "payment" ? "font-bold text-[#5A1E12]" : ""}>2. Payment</span>
+              <button
+                onClick={() => {
+                  // Only allow navigating to payment if details are already filled and moving forward is safe.
+                  // For a simple approach, we can just allow it, but users might skip validation.
+                  // Usually breadcrumbs are clickable only for completed steps. We'll enable it for both to fulfill the request.
+                  if (currentStep === "form") {
+                    handleContinueToPayment();
+                  } else {
+                    setCurrentStep("payment");
+                  }
+                }}
+                className={`hover:text-[#5A1E12] transition-colors focus:outline-none ${currentStep === "payment" ? "font-bold text-[#5A1E12]" : "cursor-pointer"}`}
+              >
+                2. Payment
+              </button>
             </div>
             <Link
               href="/cart"

@@ -217,15 +217,20 @@ const handleSubmit = async (e: React.FormEvent) => {
     setSuccess("");
 
     try {
-      // In real app, call your API here:
-      // const response = await fetch('/api/auth/resend-otp', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email: email }),
-      // });
+      const response = await fetch(`${url}/api/auth/resend-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: email }),
+      });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Failed to resend OTP. Please try again.");
+        return;
+      }
 
       setSuccess("New OTP has been sent to your email!");
 
