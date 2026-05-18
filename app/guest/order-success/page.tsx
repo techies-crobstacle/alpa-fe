@@ -169,9 +169,9 @@ function OrderSuccessContent() {
       </button>
 
       {/* Logo */}
-      <Link href="/" className="mb-8">
+      <a href="/" className="mb-8">
         <Image src="/images/navbarLogo.png" width={70} height={70} alt="Logo" priority />
-      </Link>
+      </a>
 
       <div className="bg-white rounded-3xl shadow-xl max-w-lg w-full flex flex-col items-center text-center overflow-hidden">
         {/* Celebratory header band */}
@@ -228,20 +228,10 @@ function OrderSuccessContent() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-full bg-[#5A1E12]/10 flex items-center justify-center shrink-0">
-                  <CheckCircle className="w-4 h-4 text-[#5A1E12]" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#5A1E12]">Order Confirmed</p>
-                  <p className="text-xs text-[#5A1E12]/60">Your payment was successful</p>
-                </div>
-              </div>
-              <div className="ml-4 w-px h-4 bg-[#5A1E12]/15" />
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-[#5A1E12]/10 flex items-center justify-center shrink-0">
                   <Package className="w-4 h-4 text-[#5A1E12]" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[#5A1E12]">Being Packed</p>
+                  <p className="text-sm font-semibold text-[#5A1E12]">Order Processed</p>
                   <p className="text-xs text-[#5A1E12]/60">We&apos;re packing your items with care</p>
                 </div>
               </div>
@@ -251,8 +241,18 @@ function OrderSuccessContent() {
                   <Truck className="w-4 h-4 text-[#5A1E12]" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[#5A1E12]">Out for Delivery</p>
+                  <p className="text-sm font-semibold text-[#5A1E12]">Order Shipped</p>
                   <p className="text-xs text-[#5A1E12]/60">Your order will be on its way soon</p>
+                </div>
+              </div>
+              <div className="ml-4 w-px h-4 bg-[#5A1E12]/15" />
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-[#5A1E12]/10 flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-4 h-4 text-[#5A1E12]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#5A1E12]">Delivered</p>
+                  <p className="text-xs text-[#5A1E12]/60">Your package safely arrives to you</p>
                 </div>
               </div>
             </div>
@@ -269,12 +269,12 @@ function OrderSuccessContent() {
                 Track Your Order
               </Link>
             )}
-            <Link
+            <a
               href="/shop"
-              className="w-full py-3 border border-[#5A1E12]/25 text-[#5A1E12] font-medium rounded-xl hover:bg-[#5A1E12]/5 transition-all text-center"
+              className="w-full py-3 border border-[#5A1E12]/25 text-[#5A1E12] font-medium rounded-xl hover:bg-[#5A1E12]/5 transition-all text-center block"
             >
               Continue Shopping
-            </Link>
+            </a>
           </div>
         </div>
       </div>

@@ -348,19 +348,17 @@ export default function SignupPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">
             Create new Account
           </h1>
-          <div className="pt-4 border-t border-white/10">
-            <p className="text-left text-white/80 text-sm">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-white font-semibold hover:text-gray-200 hover:underline transition-colors"
-              >
-                Login here
-              </Link>
-            </p>
+          <div className="pt-3 border-t border-white/10 flex items-center gap-3">
+            <p className="text-sm opacity-80">Already have an account?</p>
+            <Link
+              href="/login"
+              className="px-5 py-1.5 border border-white/30 rounded-full text-sm font-semibold hover:bg-white hover:text-[#440C03] transition-all"
+            >
+              Login
+            </Link>
           </div>
 
-          <form className="space-y-4 mt-12" onSubmit={handleSubmit}>
+          <form className="space-y-4 mt-8" onSubmit={handleSubmit}>
             {/* Name */}
             <div className="space-y-1">
               <p className="text-white/90 text-sm font-medium">Name</p>

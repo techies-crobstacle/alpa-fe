@@ -248,7 +248,7 @@ export default function LoginPage() {
         </Link>
 
         <div className="w-full max-w-md">
-          <p className="uppercase text-xs tracking-widest mb-4 opacity-80">Start for free</p>
+          <p className="uppercase text-xs tracking-widest mb-4 opacity-80">Start your journey</p>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">
             {authStep === "login" && "Log into your account"}
             {authStep === "forgot" && "Forgot Password"}
@@ -256,12 +256,12 @@ export default function LoginPage() {
           </h1>
 
           {authStep === "login" && (
-            <p className="text-sm mb-10 opacity-80">
-              New here?{" "}
-              <Link href="/signup" className="font-semibold underline hover:opacity-100 transition">
+            <div className="flex items-center gap-3 mb-10">
+              <p className="text-md opacity-80">New here?</p>
+              <Link href="/signup" className="px-5 py-1.5 border border-white/30 rounded-full text-sm font-semibold hover:bg-white hover:text-[#440C03] transition-all">
                 Sign up
               </Link>
-            </p>
+            </div>
           )}
 
           {authStep === "forgot" && (

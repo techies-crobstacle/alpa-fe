@@ -260,7 +260,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               alt="Logo"
               width={70}
               height={70}
-              className="w-14 h-14 md:w-[70px] md:h-[70px] hover:scale-105 transition-transform"
+              className="w-14 h-14 md:w-17.5 md:h-17.5 hover:scale-105 transition-transform"
               priority
             />
           </Link>
